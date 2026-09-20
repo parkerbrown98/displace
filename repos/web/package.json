@@ -1,6 +1,7 @@
 {
   "name": "web",
   "version": "0.1.0",
+  "description": "The Displace web application.",
   "private": true,
   "scripts": {
     "dev": "next dev",
