@@ -121,8 +121,27 @@ const environmentSchema = z
           .filter(Boolean);
       }),
     DATABASE_URL: serviceUrl(['postgres:', 'postgresql:']).default(
-      'postgresql://displace:displace_dev@localhost:5432/displace',
+      'postgresql://displace_app:displace_app_dev@localhost:5432/displace',
     ),
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
+    DATABASE_CONNECTION_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(100)
+      .max(30_000)
+      .default(2_000),
+    DATABASE_IDLE_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(1_000)
+      .max(300_000)
+      .default(10_000),
+    DATABASE_STATEMENT_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(100)
+      .max(60_000)
+      .default(5_000),
     REDIS_URL: serviceUrl(['redis:', 'rediss:']).default(
       'redis://localhost:6379',
     ),
@@ -270,7 +289,7 @@ const environmentSchema = z
     const insecureServiceValues = [
       [
         'DATABASE_URL',
-        'postgresql://displace:displace_dev@localhost:5432/displace',
+        'postgresql://displace_app:displace_app_dev@localhost:5432/displace',
       ],
       ['S3_SECRET_KEY', 'displace_dev_secret'],
       ['MEILISEARCH_MASTER_KEY', 'displace-dev-search-key'],

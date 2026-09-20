@@ -1,34 +1,25 @@
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RoomServiceClient } from 'livekit-server-sdk';
 import { Meilisearch } from 'meilisearch';
-import pg from 'pg';
+import type { Pool } from 'pg';
 import type { AppEnvironment } from '../config/environment.js';
+import { PG_POOL } from '../database/database.constants.js';
 import type { DependencyProbe } from './dependency-probe.js';
 
 const timeoutMilliseconds = 2_000;
-const { Client } = pg;
 
 @Injectable()
 export class SystemDependencyProbe implements DependencyProbe {
-  constructor(private readonly config: ConfigService<AppEnvironment, true>) {}
+  constructor(
+    private readonly config: ConfigService<AppEnvironment, true>,
+    @Inject(PG_POOL) private readonly pool: Pool,
+  ) {}
 
   async checkPostgres(): Promise<void> {
-    const client = new Client({
-      connectionString: this.config.get('DATABASE_URL', { infer: true }),
-      connectionTimeoutMillis: timeoutMilliseconds,
-      query_timeout: timeoutMilliseconds,
-      statement_timeout: timeoutMilliseconds,
-    });
-
-    try {
-      await client.connect();
-      await client.query('SELECT 1');
-    } finally {
-      await client.end();
-    }
+    await this.pool.query('SELECT 1');
   }
 
   async checkRedis(): Promise<void> {

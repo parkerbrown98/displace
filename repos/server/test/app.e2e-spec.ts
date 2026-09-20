@@ -1,10 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { AppModule } from './../src/app.module.js';
-import { configureApp } from './../src/configure-app.js';
-import { validateEnvironment } from './../src/config/environment.js';
-import { DEPENDENCY_PROBE } from './../src/health/dependency-probe.js';
-import { createFastifyAdapter } from './../src/platform/http/create-fastify-adapter.js';
+import type { DependencyProbe } from './../src/health/dependency-probe.js';
+import { createTestApplication } from './factories/test-application.js';
 
 describe('application foundation (e2e)', () => {
   let app: NestFastifyApplication;
@@ -12,37 +8,18 @@ describe('application foundation (e2e)', () => {
 
   beforeEach(async () => {
     dependenciesAvailable = true;
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(DEPENDENCY_PROBE)
-      .useValue(
-        Object.fromEntries(
-          [
-            'checkPostgres',
-            'checkRedis',
-            'checkObjectStorage',
-            'checkSearch',
-            'checkVoice',
-          ].map((method) => [
-            method,
-            () =>
-              dependenciesAvailable
-                ? Promise.resolve()
-                : Promise.reject(new Error('Unavailable')),
-          ]),
-        ),
-      )
-      .compile();
-
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(
-      createFastifyAdapter(
-        validateEnvironment({ ...process.env, NODE_ENV: 'test' }),
-      ),
-    );
-    await configureApp(app);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
+    const check = () =>
+      dependenciesAvailable
+        ? Promise.resolve()
+        : Promise.reject(new Error('Unavailable'));
+    const dependencyProbe: DependencyProbe = {
+      checkObjectStorage: check,
+      checkPostgres: check,
+      checkRedis: check,
+      checkSearch: check,
+      checkVoice: check,
+    };
+    app = await createTestApplication({ dependencyProbe });
   });
 
   it('/api/v1/health/live (GET)', async () => {
@@ -131,6 +108,24 @@ describe('application foundation (e2e)', () => {
       instance: '/api/v1/missing',
       requestId: 'test-request-id',
     });
+  });
+
+  it('closes a partially initialized test application', async () => {
+    let closed = false;
+
+    await expect(
+      createTestApplication({
+        onApplicationCreated(application) {
+          const close = application.close.bind(application);
+          application.close = async () => {
+            closed = true;
+            await close();
+          };
+          throw new Error('Injected initialization failure');
+        },
+      }),
+    ).rejects.toThrow('Injected initialization failure');
+    expect(closed).toBe(true);
   });
 
   afterEach(async () => {
