@@ -28,6 +28,6 @@ import { TokenHashService } from './token-hash.service.js';
     TokenHashService,
     { provide: APP_GUARD, useClass: AccessAuthenticationGuard },
   ],
-  exports: [AuthMailQueueService, AuthService],
+  exports: [AuthMailQueueService, AuthService, TokenHashService],
 })
 export class AuthModule {}

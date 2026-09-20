@@ -48,6 +48,14 @@ pnpm worker:dev
 
 When `SMTP_HOST` is unset, the worker captures messages in structured development logs. Docker Compose configures Mailpit at `http://localhost:8025`. OIDC is enabled only when all `OIDC_*` settings are supplied and uses discovery, authorization code flow, PKCE, state, and nonce validation. Existing local accounts must sign in before linking a provider identity.
 
+## Places And Permissions
+
+The `/api/v1/places` API provides public place discovery and lookup plus authenticated place creation, updates, settings, archival, membership requests and approvals, invites, roles, role assignments, bans, and ownership transfer. Public places are anonymously readable; unlisted and private places require active membership. All writes require a verified account.
+
+Places support `open`, `approval`, and `invite_only` join policies. Creation seeds immutable Owner, Admin, Moderator, and Member system roles from the fixed permission catalog. Custom roles may be created below the actor's highest role and can grant only permissions the actor already has. Place-scoped foreign keys, guards, and repository predicates prevent cross-place role, member, invite, and ban access; ownership transfer is required before the current owner can leave.
+
+Discovery and administrative collection endpoints use signed keyset cursors. Set `SINGLE_PLACE_MODE=true` with `SINGLE_PLACE_SLUG` to restrict creation, lookup, and discovery to one configured place while retaining the same schema and endpoints.
+
 ## Configuration
 
 Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.

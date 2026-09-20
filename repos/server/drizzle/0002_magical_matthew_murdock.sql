@@ -1,0 +1,2 @@
+CREATE INDEX "bans_place_id_created_at_id_idx" ON "bans" USING btree ("place_id","created_at","id");--> statement-breakpoint
+CREATE INDEX "invites_place_id_created_at_id_idx" ON "invites" USING btree ("place_id","created_at","id");

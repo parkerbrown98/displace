@@ -37,6 +37,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 4: Places, Membership, and Permissions
 
+**Status:** Complete as of 2026-09-20.
+
 4. Implement the multi-place tenancy model and single-place deployment policy. *Depends on step 3.*
    - Add place create/read/update/archive, slug lookup, public discovery, membership list/profile, join/leave/request/approve flows, invites, ownership transfer, and place settings.
    - Support visibility (`public`, `unlisted`, `private`) and join policy (`open`, `approval`, `invite_only`). Anonymous users may read public places and public forum content; all writes require a verified account and membership as policy dictates.

@@ -5,6 +5,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -15,6 +16,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { uuidV7Default } from './common.js';
+import { emptyJsonObject } from './common.js';
 import { users } from './identity.js';
 
 export const placeVisibility = pgEnum('place_visibility', [
@@ -43,6 +45,10 @@ export const places = pgTable(
     slug: text('slug').notNull(),
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
+    settings: jsonb('settings')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(emptyJsonObject),
     visibility: placeVisibility('visibility').notNull().default('public'),
     joinPolicy: placeJoinPolicy('join_policy').notNull().default('open'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
@@ -235,6 +241,11 @@ export const invites = pgTable(
       table.expiresAt,
       table.id,
     ),
+    index('invites_place_id_created_at_id_idx').on(
+      table.placeId,
+      table.createdAt,
+      table.id,
+    ),
     index('invites_place_id_role_id_idx').on(table.placeId, table.roleId),
     index('invites_invited_by_user_id_idx').on(table.invitedByUserId),
     index('invites_accepted_by_user_id_idx').on(table.acceptedByUserId),
@@ -278,6 +289,11 @@ export const bans = pgTable(
     index('bans_place_id_user_id_created_at_id_idx').on(
       table.placeId,
       table.userId,
+      table.createdAt,
+      table.id,
+    ),
+    index('bans_place_id_created_at_id_idx').on(
+      table.placeId,
       table.createdAt,
       table.id,
     ),
