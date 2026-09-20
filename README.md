@@ -41,5 +41,5 @@ buried within non-indexed "servers" requiring an account to even discover.
 
 ### Deployment
 
-- **Docker Compose:** Default local-development and single-community self-hosting environment for the API, clients, LiveKit, coturn, PostgreSQL, Redis, MinIO, and Meilisearch.
+- **Docker Compose:** [`compose.dev.yaml`](compose.dev.yaml) runs the API, LiveKit, coturn, PostgreSQL, Redis, MinIO, and Meilisearch for local development. Production will use a separate Compose definition with production images, secrets, networking, and resource policies.
 - **Containers:** Each service is independently deployable; production installations can move to Kubernetes only when their scale warrants it.

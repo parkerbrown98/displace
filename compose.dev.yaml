@@ -1,0 +1,157 @@
+name: displace-dev
+
+services:
+  api:
+    build:
+      context: ./repos/server
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-displace}:${POSTGRES_PASSWORD:-displace_dev}@postgres:5432/${POSTGRES_DB:-displace}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-displace}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-displace_dev_secret}
+      S3_BUCKET: ${MINIO_BUCKET:-displace}
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-displace-dev-search-key}
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: secret
+    ports:
+      - "${API_PORT:-3001}:3000"
+    volumes:
+      - ./repos/server:/workspace
+      - api_node_modules:/workspace/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      meilisearch:
+        condition: service_started
+      livekit:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    init: true
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-displace}
+      POSTGRES_USER: ${POSTGRES_USER:-displace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-displace_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    stop_grace_period: 30s
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-displace}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-displace_dev_secret}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-displace}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-displace_dev_secret}
+      MINIO_BUCKET: ${MINIO_BUCKET:-displace}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - >-
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
+        do sleep 1; done;
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+    restart: "no"
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-displace-dev-search-key}
+    ports:
+      - "${MEILISEARCH_PORT:-7700}:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+
+  livekit:
+    image: livekit/livekit-server:v1.9
+    command: --config /etc/livekit.yaml
+    ports:
+      - "${LIVEKIT_HTTP_PORT:-7880}:7880"
+      - "${LIVEKIT_TCP_PORT:-7881}:7881"
+      - "50000-50100:50000-50100/udp"
+    volumes:
+      - ./infra/livekit.dev.yaml:/etc/livekit.yaml:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  coturn:
+    image: coturn/coturn:4.6-alpine
+    command:
+      - --no-cli
+      - --log-file=stdout
+      - --fingerprint
+      - --lt-cred-mech
+      - --realm=localhost
+      - --user=${TURN_USERNAME:-displace}:${TURN_PASSWORD:-displace_dev}
+      - --external-ip=${TURN_EXTERNAL_IP:-127.0.0.1}
+      - --min-port=49160
+      - --max-port=49200
+    ports:
+      - "${TURN_PORT:-3478}:3478"
+      - "${TURN_PORT:-3478}:3478/udp"
+      - "49160-49200:49160-49200/udp"
+
+volumes:
+  api_node_modules:
+  postgres_data:
+  redis_data:
+  minio_data:
+  meilisearch_data:
