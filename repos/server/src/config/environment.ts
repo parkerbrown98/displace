@@ -236,6 +236,14 @@ const environmentSchema = z
       return;
     }
 
+    if (!environment.SMTP_HOST) {
+      context.addIssue({
+        code: 'custom',
+        path: ['SMTP_HOST'],
+        message: 'SMTP_HOST is required in production.',
+      });
+    }
+
     if (new URL(environment.PUBLIC_URL).protocol !== 'https:') {
       context.addIssue({
         code: 'custom',

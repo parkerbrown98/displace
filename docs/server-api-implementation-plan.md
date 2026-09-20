@@ -27,6 +27,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 3: Identity and Sessions
 
+**Status:** Complete as of 2026-09-20.
+
 3. Implement first-party authentication and account lifecycle. *Depends on step 2.*
    - Add registration, email verification, login, logout-current/logout-all, refresh rotation, forgot/reset password, current profile, email change, password change, and session/device listing/revocation.
    - Hash passwords with Argon2id. Use 15-minute signed access JWTs and 30-day opaque rotating refresh tokens stored only as hashes; detect token-family reuse and revoke the family. Web receives an HttpOnly Secure SameSite cookie plus CSRF protection; native clients may receive the refresh token in the response for secure OS storage.

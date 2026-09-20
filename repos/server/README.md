@@ -34,6 +34,20 @@ The server listens on port `3000` by default. Set `PORT` to use another port.
 
 REST endpoints are versioned under `/api/v1`. Errors use RFC 9457 problem details and every response includes `X-Request-Id`. Readiness authenticates to PostgreSQL, Redis, MinIO, Meilisearch, and LiveKit and verifies the configured database and object-storage bucket.
 
+## Authentication
+
+The `/api/v1/auth` API provides registration and email verification, login, refresh rotation, current/all-session logout, password recovery, profile and email/password changes, session listing/revocation, and optional generic OIDC login/linking. Passwords use Argon2id; access tokens expire after 15 minutes and opaque rotating refresh tokens expire after 30 days.
+
+Browser clients use the signed HttpOnly `displace_session` cookie and must echo the `displace_csrf` cookie in `X-CSRF-Token` for cookie-based refresh and logout. Native clients set `refreshTokenDelivery` to `response_body`, store the returned refresh token in secure OS storage, and submit it in the refresh request body.
+
+Run the worker alongside the API to deliver verification and password-reset mail:
+
+```bash
+pnpm worker:dev
+```
+
+When `SMTP_HOST` is unset, the worker captures messages in structured development logs. Docker Compose configures Mailpit at `http://localhost:8025`. OIDC is enabled only when all `OIDC_*` settings are supplied and uses discovery, authorization code flow, PKCE, state, and nonce validation. Existing local accounts must sign in before linking a provider identity.
+
 ## Configuration
 
 Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.
@@ -83,7 +97,7 @@ pnpm test:cov
 
 Format source and test files with `pnpm format`.
 
-The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; queue processors are added in Phase 7.
+The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it currently processes authentication mail, with the remaining domain queues added in Phase 7.
 
 ## Docker Development
 
@@ -93,7 +107,7 @@ From the repository root, copy `.env.example` to `.env` if you need to override 
 docker compose -f compose.dev.yaml up --build
 ```
 
-Compose runs the database role bootstrap, migrations, and deterministic development seed before starting the API. The API liveness endpoint is available at `http://localhost:3001/api/v1/health/live`. PostgreSQL, Redis, MinIO, Meilisearch, LiveKit, and coturn are reachable through the ports documented in `.env.example`.
+Compose runs the database role bootstrap, migrations, and deterministic development seed before starting the API and mail worker. The API liveness endpoint is available at `http://localhost:3001/api/v1/health/live`, and captured development email is available in Mailpit at `http://localhost:8025`. PostgreSQL, Redis, MinIO, Meilisearch, LiveKit, and coturn are reachable through the ports documented in `.env.example`.
 
 Stop the stack without deleting development data:
 

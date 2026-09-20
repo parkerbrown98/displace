@@ -26,6 +26,15 @@ describe('validateEnvironment', () => {
     ).toThrow(/must be changed in production/);
   });
 
+  it('requires SMTP delivery in production', () => {
+    expect(() =>
+      validateEnvironment({
+        NODE_ENV: 'production',
+        PUBLIC_URL: 'https://displace.example',
+      }),
+    ).toThrow(/SMTP_HOST is required in production/);
+  });
+
   it('requires a complete OIDC configuration', () => {
     expect(() =>
       validateEnvironment({ OIDC_ISSUER_URL: 'https://identity.example' }),
