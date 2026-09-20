@@ -7,7 +7,14 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       NODE_ENV: development
+      HOST: 0.0.0.0
       PORT: 3000
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3001}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      BODY_LIMIT_BYTES: ${BODY_LIMIT_BYTES:-1048576}
+      UPLOAD_LIMIT_BYTES: ${UPLOAD_LIMIT_BYTES:-26214400}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       DATABASE_URL: postgresql://${POSTGRES_USER:-displace}:${POSTGRES_PASSWORD:-displace_dev}@postgres:5432/${POSTGRES_DB:-displace}
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
@@ -19,6 +26,22 @@ services:
       LIVEKIT_URL: http://livekit:7880
       LIVEKIT_API_KEY: devkey
       LIVEKIT_API_SECRET: secret
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-development-access-token-secret-change-me}
+      REFRESH_TOKEN_PEPPER: ${REFRESH_TOKEN_PEPPER:-development-refresh-token-pepper-change-me}
+      COOKIE_SECRET: ${COOKIE_SECRET:-development-cookie-signing-secret-change-me}
+      CURSOR_SECRET: ${CURSOR_SECRET:-development-cursor-signing-secret-change-me}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@localhost.invalid}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URL: ${OIDC_REDIRECT_URL:-}
+      SINGLE_PLACE_MODE: ${SINGLE_PLACE_MODE:-false}
+      SINGLE_PLACE_SLUG: ${SINGLE_PLACE_SLUG:-}
     ports:
       - "${API_PORT:-3001}:3000"
     volumes:
@@ -41,7 +64,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "fetch('http://localhost:3000/api').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
+          "fetch('http://localhost:3000/api/v1/health/live').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
         ]
       interval: 10s
       timeout: 5s

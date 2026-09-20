@@ -6,6 +6,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 1: Runtime and API Contract Foundation
 
+**Status:** Complete as of 2026-09-20.
+
 1. Replace the scaffold root response with a versioned API foundation while retaining Swagger at `/api/docs`.
    - Enable URI versioning under `/api/v1` and expose `/api/v1/health/live` plus dependency-aware `/api/v1/health/ready`.
    - Add validated configuration for PostgreSQL, Redis, S3, Meilisearch, LiveKit, SMTP/OIDC, session secrets, public URL, single-place mode, body/upload limits, CORS origins, and trusted proxies. Fail startup on invalid or production-insecure values.

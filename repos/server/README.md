@@ -26,9 +26,16 @@ pnpm start:prod
 
 The server listens on port `3000` by default. Set `PORT` to use another port.
 
-- API: `http://localhost:3000/api`
+- Liveness: `http://localhost:3000/api/v1/health/live`
+- Readiness: `http://localhost:3000/api/v1/health/ready`
 - Swagger UI: `http://localhost:3000/api/docs`
 - OpenAPI document: `http://localhost:3000/api/docs-json`
+
+REST endpoints are versioned under `/api/v1`. Errors use RFC 9457 problem details and every response includes `X-Request-Id`. Readiness authenticates to PostgreSQL, Redis, MinIO, Meilisearch, and LiveKit and verifies the configured database and object-storage bucket.
+
+## Configuration
+
+Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.
 
 ## Quality Checks
 
@@ -49,7 +56,7 @@ From the repository root, copy `.env.example` to `.env` if you need to override 
 docker compose -f compose.dev.yaml up --build
 ```
 
-The API is available at `http://localhost:3001/api`. PostgreSQL, Redis, MinIO, Meilisearch, LiveKit, and coturn are reachable through the ports documented in `.env.example`.
+The API liveness endpoint is available at `http://localhost:3001/api/v1/health/live`. PostgreSQL, Redis, MinIO, Meilisearch, LiveKit, and coturn are reachable through the ports documented in `.env.example`.
 
 Stop the stack without deleting development data:
 

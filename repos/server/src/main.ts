@@ -1,19 +1,20 @@
 import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module.js';
 import { configureApp } from './configure-app.js';
+import { validateEnvironment } from './config/environment.js';
+import { createFastifyAdapter } from './platform/http/create-fastify-adapter.js';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
+  const environment = validateEnvironment(process.env);
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    createFastifyAdapter(environment),
+    { bufferLogs: true },
   );
 
-  configureApp(app);
+  await configureApp(app);
 
-  await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
+  await app.listen(environment.PORT, environment.HOST);
 }
 await bootstrap();
