@@ -1751,6 +1751,217 @@ textarea:focus-visible {
 	border-bottom: 1px solid var(--ink);
 }
 
+.place-forum-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 24px 36px;
+	padding: 26px 0 0;
+	border-bottom: 1px solid var(--ink);
+}
+
+.place-forum-identity {
+	display: grid;
+	grid-template-columns: 58px minmax(0, 1fr);
+	align-items: center;
+	gap: 16px;
+}
+
+.place-forum-mark {
+	display: grid;
+	width: 58px;
+	aspect-ratio: 1;
+	place-items: center;
+	color: white;
+	background: var(--teal);
+	border-radius: 7px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 19px;
+}
+
+.place-forum-identity h1 {
+	margin: 3px 0 4px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 32px;
+	font-weight: 500;
+}
+
+.place-forum-identity p:last-child {
+	max-width: 620px;
+	margin: 0;
+	color: var(--muted);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.place-header-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.place-header-actions > span {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--teal);
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.place-forum-nav {
+	display: flex;
+	grid-column: 1 / -1;
+	gap: 26px;
+}
+
+.place-forum-nav a {
+	padding: 13px 0 12px;
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.place-forum-nav a:first-child {
+	color: var(--ink);
+	box-shadow: inset 0 -3px var(--coral);
+}
+
+.forum-portal-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 286px;
+	gap: 38px;
+	align-items: start;
+}
+
+.forum-portal-rail {
+	position: sticky;
+	top: 86px;
+	display: grid;
+	gap: 20px;
+	padding-top: 48px;
+}
+
+.portal-panel {
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 7px;
+}
+
+.portal-panel > header {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 13px 15px;
+	border-bottom: 1px solid var(--line);
+}
+
+.portal-panel h2 {
+	margin: 0;
+	font-size: 14px;
+}
+
+.portal-activity-list article {
+	padding: 13px 15px;
+	border-bottom: 1px solid var(--line);
+}
+
+.portal-activity-list article:last-child {
+	border-bottom: 0;
+}
+
+.portal-activity-list a {
+	display: block;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 15px;
+	line-height: 1.35;
+}
+
+.portal-activity-list a:hover,
+.portal-panel-link:hover {
+	color: var(--coral);
+}
+
+.portal-activity-list p,
+.portal-community-panel > p,
+.portal-panel-empty {
+	margin: 5px 0 0;
+	color: var(--muted);
+	font-size: 11px;
+	line-height: 1.45;
+}
+
+.portal-community-panel > p,
+.portal-panel-empty {
+	margin: 0;
+	padding: 15px;
+}
+
+.portal-panel-link {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 15px 15px;
+	color: var(--teal);
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.portal-member-list {
+	display: grid;
+	padding: 7px 0;
+}
+
+.portal-member-list > a {
+	display: grid;
+	grid-template-columns: 34px minmax(0, 1fr);
+	align-items: center;
+	gap: 10px;
+	padding: 7px 15px;
+}
+
+.portal-member-list > a:hover strong {
+	color: var(--coral);
+}
+
+.portal-member-avatar {
+	display: grid;
+	width: 34px;
+	aspect-ratio: 1;
+	place-items: center;
+	color: white;
+	background: var(--teal);
+	border-radius: 50%;
+	font-size: 10px;
+	font-weight: 800;
+}
+
+.portal-member-list span:last-child {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+.portal-member-list strong,
+.portal-member-list small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.portal-member-list strong {
+	font-size: 12px;
+}
+
+.portal-member-list small {
+	color: var(--muted);
+	font-size: 10px;
+}
+
+.forum-subroute > .breadcrumbs {
+	margin-top: 30px;
+}
+
 .place-profile-header > span {
 	flex: 0 0 auto;
 	gap: 7px;
@@ -2288,6 +2499,25 @@ textarea:focus-visible {
 	.place-profile-header,
 	.public-topic-toolbar {
 		display: block;
+	}
+
+	.place-forum-header,
+	.forum-portal-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.place-forum-header {
+		gap: 18px;
+	}
+
+	.place-header-actions {
+		justify-content: flex-start;
+		flex-wrap: wrap;
+	}
+
+	.forum-portal-rail {
+		position: static;
+		padding-top: 30px;
 	}
 
 	.place-profile-header > span {

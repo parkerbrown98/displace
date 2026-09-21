@@ -209,7 +209,7 @@ export class PlacesService {
   async listMembers(
     placeId: string,
     userId: string,
-    query: CursorQueryDto & { q?: string; status?: 'pending' | 'active' },
+    query: CursorQueryDto & { q?: string; sort?: 'joined' | 'last_seen'; status?: 'pending' | 'active' },
   ) {
     const authorization = await this.requireAuthorization(placeId, userId);
     if (
@@ -223,6 +223,7 @@ export class PlacesService {
       cursor,
       limit: query.limit,
       query: query.q?.trim(),
+      sort: query.sort,
       status: query.status ?? 'active',
     });
     const hasMore = records.length > query.limit;
@@ -231,7 +232,7 @@ export class PlacesService {
     return {
       items,
       nextCursor:
-        hasMore && last
+        query.sort !== 'last_seen' && hasMore && last
           ? this.cursors.encode({
               createdAt: last.createdAt.toISOString(),
               id: last.id,

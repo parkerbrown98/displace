@@ -379,6 +379,8 @@ export class MemberDto {
   status: 'pending' | 'active' | 'left';
   @ApiPropertyOptional({ format: 'date-time' })
   joinedAt: Date | null;
+  @ApiPropertyOptional({ format: 'date-time' })
+  lastSeenAt?: Date | null;
   @ApiProperty({ type: RoleDto, isArray: true })
   roles: RoleDto[];
 }
@@ -401,4 +403,9 @@ export class MemberQueryDto extends CursorQueryDto {
   @IsIn(['active', 'pending'])
   @IsOptional()
   status?: 'active' | 'pending';
+
+  @ApiPropertyOptional({ enum: ['joined', 'last_seen'] })
+  @IsIn(['joined', 'last_seen'])
+  @IsOptional()
+  sort?: 'joined' | 'last_seen';
 }

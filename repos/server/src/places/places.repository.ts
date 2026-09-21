@@ -7,6 +7,7 @@ import {
   inArray,
   isNull,
   lt,
+  max,
   or,
 } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
@@ -18,6 +19,7 @@ import {
   places,
   rolePermissions,
   roles,
+  sessions,
   users,
 } from '../database/schema/index.js';
 import { DEFAULT_PLACE_ROLES } from './place-permissions.js';
@@ -49,6 +51,7 @@ export interface MemberRecord {
   handle: string;
   id: string;
   joinedAt: Date | null;
+  lastSeenAt?: Date | null;
   roles: Array<{
     id: string;
     isSystem: boolean;
@@ -391,6 +394,7 @@ export class PlacesRepository {
       cursor?: PlaceCursor;
       limit: number;
       query?: string;
+      sort?: 'joined' | 'last_seen';
       status?: 'pending' | 'active';
     },
   ): Promise<MemberRecord[]> {
@@ -410,11 +414,13 @@ export class PlacesRepository {
         handle: users.handle,
         id: placeMembers.id,
         joinedAt: placeMembers.joinedAt,
+        lastSeenAt: max(sessions.lastSeenAt),
         status: placeMembers.status,
         userId: placeMembers.userId,
       })
       .from(placeMembers)
       .innerJoin(users, eq(users.id, placeMembers.userId))
+      .leftJoin(sessions, eq(sessions.userId, placeMembers.userId))
       .where(
         and(
           eq(placeMembers.placeId, placeId),
@@ -428,7 +434,21 @@ export class PlacesRepository {
           cursor,
         ),
       )
-      .orderBy(desc(placeMembers.createdAt), desc(placeMembers.id))
+      .groupBy(
+        placeMembers.createdAt,
+        placeMembers.id,
+        placeMembers.joinedAt,
+        placeMembers.status,
+        placeMembers.userId,
+        users.displayName,
+        users.handle,
+      )
+      .orderBy(
+        options.sort === 'last_seen'
+          ? desc(max(sessions.lastSeenAt))
+          : desc(placeMembers.createdAt),
+        desc(placeMembers.id),
+      )
       .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
     return this.attachRoles(placeId, members);
   }

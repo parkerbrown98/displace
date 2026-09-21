@@ -58,6 +58,7 @@ export interface PlaceMemberContract {
   displayName: string;
   status: "pending" | "active" | "left";
   joinedAt: string | null;
+  lastSeenAt?: string | null;
   roles: PlaceRoleContract[];
 }
 

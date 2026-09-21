@@ -1,4 +1,4 @@
-import { Lock, MessageSquareText, Pin, Users } from "lucide-react";
+import { Clock3, Lock, MessageSquareText, Pin, Users } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
@@ -16,6 +16,7 @@ import type {
   TopicContract,
   TopicPageContract,
 } from "./public-contracts";
+import { ForumMemberPreview } from "./forum-member-preview";
 
 export function DiscoveryView({ joinPolicy, page, query }: { joinPolicy?: string; page: PlacePageContract; query?: string }) {
   return (
@@ -64,25 +65,23 @@ interface PlaceViewProps {
 
 export function PlaceView({ feed, navigation, place, tag, topics }: PlaceViewProps) {
   return (
-    <main className="public-main" id="main-content">
-      <header className="place-profile-header">
-        <div>
-          <p className="eyebrow">Place / {place.visibility}</p>
-          <h1>{place.name}</h1>
-          <p>{place.description}</p>
+    <main className="public-main forum-portal" id="main-content">
+      <PlaceForumHeader place={place} />
+      <div className="forum-portal-grid">
+        <div className="forum-portal-content">
+          <ForumNavigation navigation={navigation} placeSlug={place.slug} />
+          <TopicDirectory
+            feed={feed}
+            nextCursor={topics.nextCursor}
+            path={routes.place(place.slug)}
+            placeId={place.id}
+            placeSlug={place.slug}
+            tag={tag}
+            topics={topics.items}
+          />
         </div>
-        <div className="place-header-actions"><span><Users size={17} aria-hidden="true" /> {place.visibility === "public" ? "Public community" : place.visibility}</span><PlaceMembershipActions place={place} /></div>
-      </header>
-      <ForumNavigation navigation={navigation} placeSlug={place.slug} />
-      <TopicDirectory
-        feed={feed}
-        nextCursor={topics.nextCursor}
-        path={routes.place(place.slug)}
-        placeId={place.id}
-        placeSlug={place.slug}
-        tag={tag}
-        topics={topics.items}
-      />
+        <ForumPortalRail place={place} topics={topics.items} />
+      </div>
     </main>
   );
 }
@@ -99,9 +98,10 @@ export function ForumView({
   topics: TopicPageContract;
 }) {
   return (
-    <main className="public-main" id="main-content">
+    <main className="public-main forum-subroute" id="main-content">
+      <PlaceForumHeader place={place} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href={routes.place(place.slug)}>{place.name}</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
+        <Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
       </nav>
       <header className="public-page-heading compact-heading">
         <p className="eyebrow">Forum</p>
@@ -134,9 +134,10 @@ export function TopicView({
   topic: TopicContract;
 }) {
   return (
-    <main className="public-main topic-page" id="main-content">
+    <main className="public-main topic-page forum-subroute" id="main-content">
+      <PlaceForumHeader place={place} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href={routes.place(place.slug)}>{place.name}</Link>
+        <Link href={routes.place(place.slug)}>Forums</Link>
         {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}
       </nav>
       <header className="topic-header">
@@ -190,6 +191,42 @@ export function PublicUnavailableView() {
 
 export function findForum(navigation: ForumNavigationContract, forumId: string): ForumContract | undefined {
   return navigation.groups.flatMap((group) => group.forums).find((forum) => forum.id === forumId);
+}
+
+function PlaceForumHeader({ place }: { place: PlaceContract }) {
+  return (
+    <header className="place-forum-header">
+      <div className="place-forum-identity">
+        <span className="place-forum-mark" aria-hidden="true">{initials(place.name)}</span>
+        <div><p className="eyebrow">{place.visibility} community</p><h1>{place.name}</h1><p>{place.description}</p></div>
+      </div>
+      <div className="place-header-actions"><span><Users size={17} aria-hidden="true" /> {place.joinPolicy === "open" ? "Open membership" : "Membership by request"}</span><PlaceMembershipActions place={place} /></div>
+      <nav className="place-forum-nav" aria-label={`${place.name} navigation`}>
+        <Link href={routes.place(place.slug)}>Forums</Link>
+        <Link href={routes.placeMembers(place.slug)}>Members</Link>
+      </nav>
+    </header>
+  );
+}
+
+function ForumPortalRail({ place, topics }: { place: PlaceContract; topics: TopicContract[] }) {
+  const recentTopics = [...topics]
+    .sort((left, right) => Date.parse(right.latestPostAt) - Date.parse(left.latestPostAt))
+    .slice(0, 6);
+  return (
+    <aside className="forum-portal-rail" aria-label="Community activity">
+      <section className="portal-panel">
+        <header><Clock3 size={17} aria-hidden="true" /><h2>Recent activity</h2></header>
+        {recentTopics.length ? <div className="portal-activity-list">{recentTopics.map((topic) => (
+          <article key={topic.id}>
+            <Link href={routes.topic(place.slug, topic.id)}>{topic.title}</Link>
+            <p>{topic.replyCount} {topic.replyCount === 1 ? "reply" : "replies"} · <time dateTime={topic.latestPostAt}>{formatRelativeDate(topic.latestPostAt)}</time></p>
+          </article>
+        ))}</div> : <p className="portal-panel-empty">No recent conversations.</p>}
+      </section>
+      <ForumMemberPreview placeId={place.id} placeName={place.name} placeSlug={place.slug} />
+    </aside>
+  );
 }
 
 function ForumNavigation({ navigation, placeSlug }: { navigation: ForumNavigationContract; placeSlug: string }) {
@@ -272,6 +309,16 @@ function formatCount(value: number): string {
 
 function formatPublicDate(value: string): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value));
+}
+
+function formatRelativeDate(value: string): string {
+  const elapsed = Date.now() - Date.parse(value);
+  const hours = Math.floor(elapsed / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatPublicDate(value);
 }
 
 function initials(value: string): string {
