@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AssetsModule } from './assets/assets.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ConfigurationModule } from './config/configuration.module.js';
 import { DatabaseModule } from './database/database.module.js';
@@ -14,6 +15,7 @@ import { PlatformModule } from './platform/platform.module.js';
     PlatformModule,
     AuthModule,
     PlacesModule,
+    AssetsModule,
     ForumsModule,
     HealthModule,
   ],

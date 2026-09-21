@@ -10,7 +10,10 @@ import {
 import { AuthService } from '../auth/auth.service.js';
 import { CLOCK, type Clock } from '../platform/clock/clock.js';
 import { CursorCodecService } from '../platform/pagination/cursor-codec.service.js';
-import { PlacesRepository, type PlaceAuthorizationRecord } from '../places/places.repository.js';
+import {
+  PlacesRepository,
+  type PlaceAuthorizationRecord,
+} from '../places/places.repository.js';
 import type { PlacePermission } from '../places/place-permissions.js';
 import {
   type CreateForumDto,
@@ -34,7 +37,9 @@ import {
 import { RichTextService } from './rich-text.service.js';
 import { TopicViewCounterService } from './topic-view-counter.service.js';
 
-type ForumRecord = NonNullable<Awaited<ReturnType<ForumsRepository['findForum']>>>;
+type ForumRecord = NonNullable<
+  Awaited<ReturnType<ForumsRepository['findForum']>>
+>;
 
 @Injectable()
 export class ForumsService {
@@ -49,25 +54,36 @@ export class ForumsService {
   ) {}
 
   async navigation(identifier: string, userId?: string) {
-    const { authorization, placeId } = await this.readContext(identifier, userId);
+    const { authorization, placeId } = await this.readContext(
+      identifier,
+      userId,
+    );
     const navigation = await this.forums.navigation(placeId);
     const readableForums = navigation.forums.filter((forum) =>
       this.canReadForum(forum, authorization),
     );
-    const readableGroupIds = new Set(readableForums.map((forum) => forum.groupId));
+    const readableGroupIds = new Set(
+      readableForums.map((forum) => forum.groupId),
+    );
     const visibleGroups = authorization?.permissions.has('forum.manage')
       ? navigation.groups
       : navigation.groups.filter((group) => readableGroupIds.has(group.id));
     return {
-      groups: visibleGroups.map((group) => this.toGroup(
+      groups: visibleGroups.map((group) =>
+        this.toGroup(
           group,
           readableForums.filter((forum) => forum.groupId === group.id),
-        )),
+        ),
+      ),
       tags: navigation.tags.map((tag) => this.toTag(tag)),
     };
   }
 
-  async createGroup(placeId: string, userId: string, input: CreateForumGroupDto) {
+  async createGroup(
+    placeId: string,
+    userId: string,
+    input: CreateForumGroupDto,
+  ) {
     await this.requireVerified(userId);
     try {
       const group = await this.forums.createGroup(placeId, userId, input);
@@ -80,10 +96,21 @@ export class ForumsService {
     }
   }
 
-  async updateGroup(placeId: string, groupId: string, userId: string, input: UpdateForumGroupDto) {
+  async updateGroup(
+    placeId: string,
+    groupId: string,
+    userId: string,
+    input: UpdateForumGroupDto,
+  ) {
     await this.requireVerified(userId);
     try {
-      const result = await this.forums.updateGroup(placeId, groupId, userId, input, this.clock.now());
+      const result = await this.forums.updateGroup(
+        placeId,
+        groupId,
+        userId,
+        input,
+        this.clock.now(),
+      );
       if (!result) throw new NotFoundException('Forum group was not found.');
       return this.groupResponse(placeId, result);
     } catch (error) {
@@ -97,9 +124,12 @@ export class ForumsService {
   async deleteGroup(placeId: string, groupId: string, userId: string) {
     await this.requireVerified(userId);
     const result = await this.forums.deleteGroup(placeId, groupId, userId);
-    if (result === 'missing') throw new NotFoundException('Forum group was not found.');
+    if (result === 'missing')
+      throw new NotFoundException('Forum group was not found.');
     if (result === 'not-empty') {
-      throw new ConflictException('Delete is unavailable while the group contains forums.');
+      throw new ConflictException(
+        'Delete is unavailable while the group contains forums.',
+      );
     }
   }
 
@@ -111,21 +141,37 @@ export class ForumsService {
       return this.toForum(result);
     } catch (error) {
       if (this.isUniqueViolation(error)) {
-        throw new ConflictException('Forum name is already in use in this group.');
+        throw new ConflictException(
+          'Forum name is already in use in this group.',
+        );
       }
       throw error;
     }
   }
 
-  async updateForum(placeId: string, forumId: string, userId: string, input: UpdateForumDto) {
+  async updateForum(
+    placeId: string,
+    forumId: string,
+    userId: string,
+    input: UpdateForumDto,
+  ) {
     await this.requireVerified(userId);
     try {
-      const result = await this.forums.updateForum(placeId, forumId, userId, input, this.clock.now());
-      if (!result) throw new NotFoundException('Forum or forum group was not found.');
+      const result = await this.forums.updateForum(
+        placeId,
+        forumId,
+        userId,
+        input,
+        this.clock.now(),
+      );
+      if (!result)
+        throw new NotFoundException('Forum or forum group was not found.');
       return this.toForum(result);
     } catch (error) {
       if (this.isUniqueViolation(error)) {
-        throw new ConflictException('Forum name is already in use in this group.');
+        throw new ConflictException(
+          'Forum name is already in use in this group.',
+        );
       }
       throw error;
     }
@@ -133,7 +179,12 @@ export class ForumsService {
 
   async archiveForum(placeId: string, forumId: string, userId: string) {
     await this.requireVerified(userId);
-    const result = await this.forums.archiveForum(placeId, forumId, userId, this.clock.now());
+    const result = await this.forums.archiveForum(
+      placeId,
+      forumId,
+      userId,
+      this.clock.now(),
+    );
     if (!result) throw new NotFoundException('Forum was not found.');
   }
 
@@ -142,7 +193,8 @@ export class ForumsService {
     try {
       return this.toTag(await this.forums.createTag(placeId, userId, input));
     } catch (error) {
-      if (this.isUniqueViolation(error)) throw new ConflictException('Tag slug is already in use.');
+      if (this.isUniqueViolation(error))
+        throw new ConflictException('Tag slug is already in use.');
       throw error;
     }
   }
@@ -186,17 +238,32 @@ export class ForumsService {
       userId,
       input.title.trim(),
       input.tagIds,
-      { document: content.document, html: content.html, mentions: content.mentions, text: content.text },
+      {
+        assetIds: content.assetIds,
+        document: content.document,
+        html: content.html,
+        mentions: content.mentions,
+        text: content.text,
+      },
       idempotency,
       now,
     );
     return result;
   }
 
-  async listTopics(identifier: string, userId: string | undefined, query: TopicQueryDto) {
-    const { authorization, placeId } = await this.readContext(identifier, userId);
+  async listTopics(
+    identifier: string,
+    userId: string | undefined,
+    query: TopicQueryDto,
+  ) {
+    const { authorization, placeId } = await this.readContext(
+      identifier,
+      userId,
+    );
     if (query.feed === 'following' && !authorization) {
-      throw new ForbiddenException('Membership is required for the following feed.');
+      throw new ForbiddenException(
+        'Membership is required for the following feed.',
+      );
     }
     const navigation = await this.forums.navigation(placeId);
     const forumIds = navigation.forums
@@ -207,7 +274,9 @@ export class ForumsService {
       throw new NotFoundException('Forum was not found.');
     }
     const records = await this.forums.listTopics({
-      cursor: query.cursor ? this.decodeTopicCursor(query.cursor, query.feed) : undefined,
+      cursor: query.cursor
+        ? this.decodeTopicCursor(query.cursor, query.feed)
+        : undefined,
       feed: query.feed,
       forumIds,
       limit: query.limit,
@@ -221,28 +290,46 @@ export class ForumsService {
     const last = pageRecords.at(-1);
     return {
       items,
-      nextCursor: hasMore && last
-        ? this.cursors.encode({
-            id: last.id,
-            ...(query.feed !== 'popular' ? { isPinned: last.isPinned } : {}),
-            latestPostAt: last.latestPostAt.toISOString(),
-            ...(query.feed === 'popular' ? { replyCount: last.replyCount } : {}),
-          })
-        : undefined,
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              id: last.id,
+              ...(query.feed !== 'popular' ? { isPinned: last.isPinned } : {}),
+              latestPostAt: last.latestPostAt.toISOString(),
+              ...(query.feed === 'popular'
+                ? { replyCount: last.replyCount }
+                : {}),
+            })
+          : undefined,
     };
   }
 
   async getTopic(identifier: string, topicId: string, userId?: string) {
-    const { authorization, placeId } = await this.readContext(identifier, userId);
+    const { authorization, placeId } = await this.readContext(
+      identifier,
+      userId,
+    );
     const topic = await this.requireTopic(placeId, topicId);
-    const forum = await this.requireReadableForum(placeId, topic.forumId, authorization);
+    const forum = await this.requireReadableForum(
+      placeId,
+      topic.forumId,
+      authorization,
+    );
     void forum;
     void this.views.record(topicId);
     return this.toTopic(topic);
   }
 
-  async listPosts(identifier: string, topicId: string, userId: string | undefined, query: ForumCursorQueryDto) {
-    const { authorization, placeId } = await this.readContext(identifier, userId);
+  async listPosts(
+    identifier: string,
+    topicId: string,
+    userId: string | undefined,
+    query: ForumCursorQueryDto,
+  ) {
+    const { authorization, placeId } = await this.readContext(
+      identifier,
+      userId,
+    );
     const topic = await this.requireTopic(placeId, topicId);
     await this.requireReadableForum(placeId, topic.forumId, authorization);
     const records = await this.forums.listPosts(
@@ -267,9 +354,13 @@ export class ForumsService {
     const last = pageRecords.at(-1);
     return {
       items,
-      nextCursor: hasMore && last
-        ? this.cursors.encode({ createdAt: last.createdAt.toISOString(), id: last.id })
-        : undefined,
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              createdAt: last.createdAt.toISOString(),
+              id: last.id,
+            })
+          : undefined,
     };
   }
 
@@ -287,7 +378,13 @@ export class ForumsService {
       key: idempotencyKey,
       requestHash: this.requestHash({ document: content.document }),
     };
-    const replay = await this.forums.replayReply(placeId, topicId, userId, idempotency, now);
+    const replay = await this.forums.replayReply(
+      placeId,
+      topicId,
+      userId,
+      idempotency,
+      now,
+    );
     if (replay !== undefined) return replay;
     const topic = await this.requireTopic(placeId, topicId);
     await this.requireWrite(placeId, topic.forumId, userId, 'post.create');
@@ -295,15 +392,30 @@ export class ForumsService {
       placeId,
       topicId,
       userId,
-      { document: content.document, html: content.html, mentions: content.mentions, text: content.text },
+      {
+        assetIds: content.assetIds,
+        document: content.document,
+        html: content.html,
+        mentions: content.mentions,
+        text: content.text,
+      },
       idempotency,
       now,
     );
     return result;
   }
 
-  async updateTopic(placeId: string, topicId: string, userId: string, input: UpdateTopicDto) {
-    const { authorization, topic } = await this.authorOrModerator(placeId, topicId, userId);
+  async updateTopic(
+    placeId: string,
+    topicId: string,
+    userId: string,
+    input: UpdateTopicDto,
+  ) {
+    const { authorization, topic } = await this.authorOrModerator(
+      placeId,
+      topicId,
+      userId,
+    );
     const result = await this.forums.updateTopic(
       placeId,
       topicId,
@@ -312,13 +424,23 @@ export class ForumsService {
       input,
       this.clock.now(),
     );
-    if (!result) throw new BadRequestException('One or more tag IDs are invalid.');
+    if (!result)
+      throw new BadRequestException('One or more tag IDs are invalid.');
     return this.toTopic(await this.requireTopic(placeId, topic.id));
   }
 
-  async editPost(placeId: string, postId: string, userId: string, input: EditPostDto) {
+  async editPost(
+    placeId: string,
+    postId: string,
+    userId: string,
+    input: EditPostDto,
+  ) {
     const post = await this.requirePost(placeId, postId);
-    const { authorization } = await this.requirePostMutation(placeId, post, userId);
+    const { authorization } = await this.requirePostMutation(
+      placeId,
+      post,
+      userId,
+    );
     const content = this.richText.render(input.document);
     const result = await this.forums.editPost(
       placeId,
@@ -327,7 +449,13 @@ export class ForumsService {
       userId,
       authorization.permissions.has('forum.manage'),
       input.expectedVersion,
-      { document: content.document, html: content.html, mentions: content.mentions, text: content.text },
+      {
+        assetIds: content.assetIds,
+        document: content.document,
+        html: content.html,
+        mentions: content.mentions,
+        text: content.text,
+      },
       this.clock.now(),
     );
     return this.postResponse(placeId, result, userId);
@@ -335,7 +463,11 @@ export class ForumsService {
 
   async deletePost(placeId: string, postId: string, userId: string) {
     const post = await this.requirePost(placeId, postId);
-    const { authorization } = await this.requirePostMutation(placeId, post, userId);
+    const { authorization } = await this.requirePostMutation(
+      placeId,
+      post,
+      userId,
+    );
     const result = await this.forums.deletePost(
       placeId,
       postId,
@@ -348,7 +480,11 @@ export class ForumsService {
   }
 
   async deleteTopic(placeId: string, topicId: string, userId: string) {
-    const { authorization } = await this.authorOrModerator(placeId, topicId, userId);
+    const { authorization } = await this.authorOrModerator(
+      placeId,
+      topicId,
+      userId,
+    );
     const result = await this.forums.deleteTopic(
       placeId,
       topicId,
@@ -366,12 +502,24 @@ export class ForumsService {
     values: { isPinned?: boolean; status?: 'open' | 'locked' },
   ) {
     await this.requirePermission(placeId, userId, 'forum.manage');
-    const result = await this.forums.setTopicModeration(placeId, topicId, userId, values, this.clock.now());
+    const result = await this.forums.setTopicModeration(
+      placeId,
+      topicId,
+      userId,
+      values,
+      this.clock.now(),
+    );
     if (!result) throw new NotFoundException('Topic was not found.');
     return this.toTopic(await this.requireTopic(placeId, topicId));
   }
 
-  async setReaction(placeId: string, postId: string, userId: string, reaction: string, enabled: boolean) {
+  async setReaction(
+    placeId: string,
+    postId: string,
+    userId: string,
+    reaction: string,
+    enabled: boolean,
+  ) {
     if (!/^[a-z0-9_+-]{1,40}$/.test(reaction)) {
       throw new BadRequestException('Reaction is invalid.');
     }
@@ -382,17 +530,44 @@ export class ForumsService {
     await this.forums.setReaction(placeId, postId, userId, reaction, enabled);
   }
 
-  async setFollow(placeId: string, topicId: string, userId: string, enabled: boolean) {
+  async setFollow(
+    placeId: string,
+    topicId: string,
+    userId: string,
+    enabled: boolean,
+  ) {
     await this.requireTopicRead(placeId, topicId, userId);
-    await this.forums.setTopicRelationship('follow', placeId, topicId, userId, enabled);
+    await this.forums.setTopicRelationship(
+      'follow',
+      placeId,
+      topicId,
+      userId,
+      enabled,
+    );
   }
 
-  async setTopicSaved(placeId: string, topicId: string, userId: string, enabled: boolean) {
+  async setTopicSaved(
+    placeId: string,
+    topicId: string,
+    userId: string,
+    enabled: boolean,
+  ) {
     await this.requireTopicRead(placeId, topicId, userId);
-    await this.forums.setTopicRelationship('save', placeId, topicId, userId, enabled);
+    await this.forums.setTopicRelationship(
+      'save',
+      placeId,
+      topicId,
+      userId,
+      enabled,
+    );
   }
 
-  async setPostSaved(placeId: string, postId: string, userId: string, enabled: boolean) {
+  async setPostSaved(
+    placeId: string,
+    postId: string,
+    userId: string,
+    enabled: boolean,
+  ) {
     const post = await this.requirePost(placeId, postId);
     if (post.deletedAt) throw new NotFoundException('Post was not found.');
     await this.requireTopicRead(placeId, post.topicId, userId);
@@ -401,7 +576,11 @@ export class ForumsService {
 
   async listSavedTopics(userId: string, query: ForumCursorQueryDto) {
     await this.requireVerified(userId);
-    const records = await this.forums.listSavedTopics(userId, query.cursor ? this.decodeSavedCursor(query.cursor) : undefined, query.limit);
+    const records = await this.forums.listSavedTopics(
+      userId,
+      query.cursor ? this.decodeSavedCursor(query.cursor) : undefined,
+      query.limit,
+    );
     const hasMore = records.length > query.limit;
     const page = records.slice(0, query.limit);
     const readable = [];
@@ -415,26 +594,44 @@ export class ForumsService {
     }
     const last = page.at(-1);
     return {
-      items: await Promise.all(readable.map(async (record) => ({
-        placeId: record.placeId,
-        placeName: record.placeName,
-        placeSlug: record.placeSlug,
-        savedAt: record.savedAt,
-        topic: this.toTopic((await this.forums.findTopic(record.placeId, record.topic.id))!),
-      }))),
-      nextCursor: hasMore && last ? this.cursors.encode({ id: last.topic.id, savedAt: last.savedAt.toISOString() }) : undefined,
+      items: await Promise.all(
+        readable.map(async (record) => ({
+          placeId: record.placeId,
+          placeName: record.placeName,
+          placeSlug: record.placeSlug,
+          savedAt: record.savedAt,
+          topic: this.toTopic(
+            (await this.forums.findTopic(record.placeId, record.topic.id))!,
+          ),
+        })),
+      ),
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              id: last.topic.id,
+              savedAt: last.savedAt.toISOString(),
+            })
+          : undefined,
     };
   }
 
   async listSavedPosts(userId: string, query: ForumCursorQueryDto) {
     await this.requireVerified(userId);
-    const records = await this.forums.listSavedPosts(userId, query.cursor ? this.decodeSavedCursor(query.cursor) : undefined, query.limit);
+    const records = await this.forums.listSavedPosts(
+      userId,
+      query.cursor ? this.decodeSavedCursor(query.cursor) : undefined,
+      query.limit,
+    );
     const hasMore = records.length > query.limit;
     const page = records.slice(0, query.limit);
     const readable = [];
     for (const record of page) {
       try {
-        await this.requireTopicRead(record.placeId, record.post.topicId, userId);
+        await this.requireTopicRead(
+          record.placeId,
+          record.post.topicId,
+          userId,
+        );
         readable.push(record);
       } catch {
         // Saves remain private and hidden if the viewer loses access.
@@ -442,29 +639,66 @@ export class ForumsService {
     }
     const postIdsByPlace = new Map<string, string[]>();
     for (const record of readable) {
-      postIdsByPlace.set(record.placeId, [...(postIdsByPlace.get(record.placeId) ?? []), record.post.id]);
+      postIdsByPlace.set(record.placeId, [
+        ...(postIdsByPlace.get(record.placeId) ?? []),
+        record.post.id,
+      ]);
     }
-    const reactions = (await Promise.all(
-      [...postIdsByPlace].map(([placeId, postIds]) => this.forums.listReactionSummaries(placeId, postIds, userId)),
-    )).flat();
+    const reactions = (
+      await Promise.all(
+        [...postIdsByPlace].map(([placeId, postIds]) =>
+          this.forums.listReactionSummaries(placeId, postIds, userId),
+        ),
+      )
+    ).flat();
     const last = page.at(-1);
     return {
       items: readable.map((record) => ({
         placeId: record.placeId,
         placeName: record.placeName,
         placeSlug: record.placeSlug,
-        post: { ...this.toPost(record.post), reactions: reactions.filter((item) => item.postId === record.post.id).map(({ count, reacted, reaction }) => ({ count, reacted, reaction })) },
+        post: {
+          ...this.toPost(record.post),
+          reactions: reactions
+            .filter((item) => item.postId === record.post.id)
+            .map(({ count, reacted, reaction }) => ({
+              count,
+              reacted,
+              reaction,
+            })),
+        },
         savedAt: record.savedAt,
         topicTitle: record.topicTitle,
       })),
-      nextCursor: hasMore && last ? this.cursors.encode({ id: last.post.id, savedAt: last.savedAt.toISOString() }) : undefined,
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              id: last.post.id,
+              savedAt: last.savedAt.toISOString(),
+            })
+          : undefined,
     };
   }
 
-  async markRead(placeId: string, topicId: string, userId: string, input: MarkTopicReadDto) {
+  async markRead(
+    placeId: string,
+    topicId: string,
+    userId: string,
+    input: MarkTopicReadDto,
+  ) {
     await this.requireTopicRead(placeId, topicId, userId);
-    if (!(await this.forums.markRead(placeId, topicId, userId, input.lastReadPostId, this.clock.now()))) {
-      throw new BadRequestException('The last-read post does not belong to this topic.');
+    if (
+      !(await this.forums.markRead(
+        placeId,
+        topicId,
+        userId,
+        input.lastReadPostId,
+        this.clock.now(),
+      ))
+    ) {
+      throw new BadRequestException(
+        'The last-read post does not belong to this topic.',
+      );
     }
   }
 
@@ -489,7 +723,11 @@ export class ForumsService {
     }));
   }
 
-  private async requireTopicRead(placeId: string, topicId: string, userId: string) {
+  private async requireTopicRead(
+    placeId: string,
+    topicId: string,
+    userId: string,
+  ) {
     await this.requireVerified(userId);
     const authorization = await this.requireAuthorization(placeId, userId);
     const topic = await this.requireTopic(placeId, topicId);
@@ -497,22 +735,40 @@ export class ForumsService {
     return topic;
   }
 
-  private async authorOrModerator(placeId: string, topicId: string, userId: string) {
+  private async authorOrModerator(
+    placeId: string,
+    topicId: string,
+    userId: string,
+  ) {
     await this.requireVerified(userId);
     const topic = await this.requireTopic(placeId, topicId);
     const authorization = await this.requireAuthorization(placeId, userId);
-    const forum = await this.requireReadableForum(placeId, topic.forumId, authorization);
-    if (topic.authorUserId !== userId && !authorization.permissions.has('forum.manage')) {
-      throw new ForbiddenException('Only the author or a forum manager can change this topic.');
+    const forum = await this.requireReadableForum(
+      placeId,
+      topic.forumId,
+      authorization,
+    );
+    if (
+      topic.authorUserId !== userId &&
+      !authorization.permissions.has('forum.manage')
+    ) {
+      throw new ForbiddenException(
+        'Only the author or a forum manager can change this topic.',
+      );
     }
     if (
       !authorization.permissions.has('forum.manage') &&
       forum.writePermission &&
       !authorization.permissions.has(forum.writePermission)
     ) {
-      throw new ForbiddenException('This forum has an additional write restriction.');
+      throw new ForbiddenException(
+        'This forum has an additional write restriction.',
+      );
     }
-    if (topic.status === 'locked' && !authorization.permissions.has('forum.manage')) {
+    if (
+      topic.status === 'locked' &&
+      !authorization.permissions.has('forum.manage')
+    ) {
       throw new ConflictException('Topic is locked.');
     }
     return { authorization, topic };
@@ -526,32 +782,60 @@ export class ForumsService {
     await this.requireVerified(userId);
     const topic = await this.requireTopic(placeId, post.topicId);
     const authorization = await this.requireAuthorization(placeId, userId);
-    const forum = await this.requireReadableForum(placeId, topic.forumId, authorization);
-    if (post.authorUserId !== userId && !authorization.permissions.has('forum.manage')) {
-      throw new ForbiddenException('Only the author or a forum manager can change this post.');
+    const forum = await this.requireReadableForum(
+      placeId,
+      topic.forumId,
+      authorization,
+    );
+    if (
+      post.authorUserId !== userId &&
+      !authorization.permissions.has('forum.manage')
+    ) {
+      throw new ForbiddenException(
+        'Only the author or a forum manager can change this post.',
+      );
     }
     if (
       !authorization.permissions.has('forum.manage') &&
       forum.writePermission &&
       !authorization.permissions.has(forum.writePermission)
     ) {
-      throw new ForbiddenException('This forum has an additional write restriction.');
+      throw new ForbiddenException(
+        'This forum has an additional write restriction.',
+      );
     }
-    if (topic.status === 'locked' && !authorization.permissions.has('forum.manage')) {
+    if (
+      topic.status === 'locked' &&
+      !authorization.permissions.has('forum.manage')
+    ) {
       throw new ConflictException('Topic is locked.');
     }
     return { authorization, topic };
   }
 
-  private async requireWrite(placeId: string, forumId: string, userId: string, permission: PlacePermission) {
+  private async requireWrite(
+    placeId: string,
+    forumId: string,
+    userId: string,
+    permission: PlacePermission,
+  ) {
     await this.requireVerified(userId);
     const authorization = await this.requireAuthorization(placeId, userId);
-    const forum = await this.requireReadableForum(placeId, forumId, authorization);
+    const forum = await this.requireReadableForum(
+      placeId,
+      forumId,
+      authorization,
+    );
     if (!authorization.permissions.has(permission)) {
       throw new ForbiddenException('Required forum permission is missing.');
     }
-    if (forum.writePermission && !authorization.permissions.has(forum.writePermission)) {
-      throw new ForbiddenException('This forum has an additional write restriction.');
+    if (
+      forum.writePermission &&
+      !authorization.permissions.has(forum.writePermission)
+    ) {
+      throw new ForbiddenException(
+        'This forum has an additional write restriction.',
+      );
     }
     return authorization;
   }
@@ -568,15 +852,25 @@ export class ForumsService {
     return forum;
   }
 
-  private canReadForum(forum: ForumRecord, authorization?: PlaceAuthorizationRecord): boolean {
-    if (!authorization) return forum.visibility === 'public' && !forum.readPermission;
-    return !forum.readPermission || authorization.permissions.has(forum.readPermission);
+  private canReadForum(
+    forum: ForumRecord,
+    authorization?: PlaceAuthorizationRecord,
+  ): boolean {
+    if (!authorization)
+      return forum.visibility === 'public' && !forum.readPermission;
+    return (
+      !forum.readPermission ||
+      authorization.permissions.has(forum.readPermission)
+    );
   }
 
   private async readContext(identifier: string, userId?: string) {
     const place = await this.places.findByIdentifier(identifier);
-    if (!place || place.archivedAt) throw new NotFoundException('Place was not found.');
-    const authorization = userId ? await this.places.getAuthorization(place.id, userId) : undefined;
+    if (!place || place.archivedAt)
+      throw new NotFoundException('Place was not found.');
+    const authorization = userId
+      ? await this.places.getAuthorization(place.id, userId)
+      : undefined;
     if (place.visibility !== 'public' && !authorization) {
       throw new NotFoundException('Place was not found.');
     }
@@ -585,11 +879,16 @@ export class ForumsService {
 
   private async requireAuthorization(placeId: string, userId: string) {
     const authorization = await this.places.getAuthorization(placeId, userId);
-    if (!authorization) throw new ForbiddenException('Active place membership is required.');
+    if (!authorization)
+      throw new ForbiddenException('Active place membership is required.');
     return authorization;
   }
 
-  private async requirePermission(placeId: string, userId: string, permission: PlacePermission) {
+  private async requirePermission(
+    placeId: string,
+    userId: string,
+    permission: PlacePermission,
+  ) {
     await this.requireVerified(userId);
     const authorization = await this.requireAuthorization(placeId, userId);
     if (!authorization.permissions.has(permission)) {
@@ -600,7 +899,8 @@ export class ForumsService {
 
   private async requireVerified(userId: string): Promise<void> {
     const profile = await this.auth.getProfile(userId);
-    if (!profile.emailVerified) throw new ForbiddenException('Email verification is required.');
+    if (!profile.emailVerified)
+      throw new ForbiddenException('Email verification is required.');
   }
 
   private async requireTopic(placeId: string, topicId: string) {
@@ -628,9 +928,11 @@ export class ForumsService {
     }
     return {
       id: cursor.id,
-      isPinned: typeof cursor.isPinned === 'boolean' ? cursor.isPinned : undefined,
+      isPinned:
+        typeof cursor.isPinned === 'boolean' ? cursor.isPinned : undefined,
       latestPostAt: new Date(cursor.latestPostAt),
-      replyCount: typeof cursor.replyCount === 'number' ? cursor.replyCount : undefined,
+      replyCount:
+        typeof cursor.replyCount === 'number' ? cursor.replyCount : undefined,
     };
   }
 
@@ -648,7 +950,11 @@ export class ForumsService {
 
   private decodeSavedCursor(value: string): SavedItemCursor {
     const cursor = this.cursors.decode<Record<string, unknown>>(value);
-    if (typeof cursor.id !== 'string' || typeof cursor.savedAt !== 'string' || Number.isNaN(Date.parse(cursor.savedAt))) {
+    if (
+      typeof cursor.id !== 'string' ||
+      typeof cursor.savedAt !== 'string' ||
+      Number.isNaN(Date.parse(cursor.savedAt))
+    ) {
       throw new BadRequestException('Saved-item cursor is invalid.');
     }
     return { id: cursor.id, savedAt: new Date(cursor.savedAt) };
@@ -682,7 +988,10 @@ export class ForumsService {
     };
   }
 
-  private async groupResponse<T extends { id: string }>(placeId: string, group: T) {
+  private async groupResponse<T extends { id: string }>(
+    placeId: string,
+    group: T,
+  ) {
     const navigation = await this.forums.navigation(placeId);
     return this.toGroup(
       group as T & { description: string; name: string; position: number },
@@ -691,7 +1000,12 @@ export class ForumsService {
   }
 
   private toGroup<
-    T extends { description: string; id: string; name: string; position: number },
+    T extends {
+      description: string;
+      id: string;
+      name: string;
+      position: number;
+    },
     F extends Parameters<ForumsService['toForum']>[0],
   >(group: T, forums: F[]) {
     return {
@@ -703,16 +1017,18 @@ export class ForumsService {
     };
   }
 
-  private toForum<T extends {
-    description: string;
-    groupId: string;
-    id: string;
-    name: string;
-    position: number;
-    readPermission: string | null;
-    visibility: 'members' | 'public';
-    writePermission: string | null;
-  }>(forum: T) {
+  private toForum<
+    T extends {
+      description: string;
+      groupId: string;
+      id: string;
+      name: string;
+      position: number;
+      readPermission: string | null;
+      visibility: 'members' | 'public';
+      writePermission: string | null;
+    },
+  >(forum: T) {
     return {
       description: forum.description,
       groupId: forum.groupId,
@@ -725,23 +1041,32 @@ export class ForumsService {
     };
   }
 
-  private toTag<T extends { color: string | null; id: string; name: string; slug: string }>(tag: T) {
+  private toTag<
+    T extends { color: string | null; id: string; name: string; slug: string },
+  >(tag: T) {
     return { color: tag.color, id: tag.id, name: tag.name, slug: tag.slug };
   }
 
-  private toTopic<T extends {
-    authorUserId: string;
-    createdAt: Date;
-    forumId: string;
-    id: string;
-    isPinned: boolean;
-    latestPostAt: Date;
-    replyCount: number;
-    status: 'locked' | 'open';
-    tags: Array<{ color: string | null; id: string; name: string; slug: string }>;
-    title: string;
-    viewCount: number;
-  }>(topic: T) {
+  private toTopic<
+    T extends {
+      authorUserId: string;
+      createdAt: Date;
+      forumId: string;
+      id: string;
+      isPinned: boolean;
+      latestPostAt: Date;
+      replyCount: number;
+      status: 'locked' | 'open';
+      tags: Array<{
+        color: string | null;
+        id: string;
+        name: string;
+        slug: string;
+      }>;
+      title: string;
+      viewCount: number;
+    },
+  >(topic: T) {
     return {
       authorUserId: topic.authorUserId,
       createdAt: topic.createdAt,
@@ -771,10 +1096,18 @@ export class ForumsService {
       version: number;
     },
   >(placeId: string, post: T, userId: string) {
-    const reactions = await this.forums.listReactionSummaries(placeId, [post.id], userId);
+    const reactions = await this.forums.listReactionSummaries(
+      placeId,
+      [post.id],
+      userId,
+    );
     return {
       ...this.toPost(post),
-      reactions: reactions.map(({ count, reacted, reaction }) => ({ count, reacted, reaction })),
+      reactions: reactions.map(({ count, reacted, reaction }) => ({
+        count,
+        reacted,
+        reaction,
+      })),
     };
   }
 
@@ -783,7 +1116,8 @@ export class ForumsService {
   }
 
   private canonicalJson(value: unknown): string {
-    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (value === null || typeof value !== 'object')
+      return JSON.stringify(value);
     if (Array.isArray(value)) {
       return `[${value.map((item) => this.canonicalJson(item)).join(',')}]`;
     }
@@ -797,7 +1131,11 @@ export class ForumsService {
   private isUniqueViolation(error: unknown): boolean {
     let current = error;
     const seen = new Set<unknown>();
-    while (typeof current === 'object' && current !== null && !seen.has(current)) {
+    while (
+      typeof current === 'object' &&
+      current !== null &&
+      !seen.has(current)
+    ) {
       if ('code' in current && current.code === '23505') return true;
       seen.add(current);
       current = 'cause' in current ? current.cause : undefined;

@@ -1,0 +1,2 @@
+CREATE INDEX "asset_variants_place_asset_id_idx" ON "asset_variants" USING btree ("place_id","asset_id");--> statement-breakpoint
+CREATE INDEX "assets_place_upload_intent_id_idx" ON "assets" USING btree ("place_id","upload_intent_id");

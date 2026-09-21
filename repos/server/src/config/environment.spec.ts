@@ -15,6 +15,7 @@ describe('validateEnvironment', () => {
     ]);
     expect(environment.SINGLE_PLACE_MODE).toBe(true);
     expect(environment.TRUST_PROXY).toEqual(['loopback', '10.0.0.0/8']);
+    expect(environment.UPLOAD_ALLOWED_MIME_TYPES).toContain('image/png');
   });
 
   it('rejects development secrets in production', () => {
@@ -39,6 +40,12 @@ describe('validateEnvironment', () => {
     expect(() =>
       validateEnvironment({ OIDC_ISSUER_URL: 'https://identity.example' }),
     ).toThrow(/All OIDC settings are required/);
+  });
+
+  it('requires a configured scanner when malware scanning is mandatory', () => {
+    expect(() =>
+      validateEnvironment({ MALWARE_SCANNER_REQUIRED: 'true' }),
+    ).toThrow(/MALWARE_SCANNER_URL is required/);
   });
 
   it('rejects incompatible service URLs and non-origin CORS values', () => {

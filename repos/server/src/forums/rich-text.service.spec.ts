@@ -28,6 +28,7 @@ describe('RichTextService', () => {
         ],
       }),
     ).toEqual({
+      assetIds: [],
       document: expect.any(Object),
       html: '<p><strong>&lt;hello&gt;</strong> <span data-mention="parker_1">@parker_1</span><a href="https://example.test/a%20b" rel="nofollow noreferrer"> link</a></p>',
       mentions: ['parker_1'],
@@ -35,10 +36,27 @@ describe('RichTextService', () => {
     });
   });
 
+  it('renders images by asset ID without accepting storage keys', () => {
+    const assetId = '01997a4e-a200-7000-8000-000000000003';
+    expect(
+      service.render({
+        content: [{ attrs: { alt: 'A skyline', assetId }, type: 'image' }],
+        type: 'doc',
+        version: 1,
+      }),
+    ).toMatchObject({
+      assetIds: [assetId],
+      html: `<img data-asset-id="${assetId}" alt="A skyline">`,
+      text: 'A skyline',
+    });
+  });
+
   it.each([
     { content: [], type: 'doc', version: 1 },
     {
-      content: [{ content: [{ text: 'bad', type: 'script' }], type: 'paragraph' }],
+      content: [
+        { content: [{ text: 'bad', type: 'script' }], type: 'paragraph' },
+      ],
       type: 'doc',
       version: 1,
     },
@@ -59,17 +77,39 @@ describe('RichTextService', () => {
       version: 1,
     },
     {
-      content: [{ content: [{ text: 'not a list item', type: 'text' }], type: 'bulletList' }],
+      content: [
+        {
+          content: [{ text: 'not a list item', type: 'text' }],
+          type: 'bulletList',
+        },
+      ],
       type: 'doc',
       version: 1,
     },
     {
-      content: [{ attrs: { onclick: 'bad' }, content: [{ text: 'bad', type: 'text' }], type: 'paragraph' }],
+      content: [
+        {
+          attrs: { onclick: 'bad' },
+          content: [{ text: 'bad', type: 'text' }],
+          type: 'paragraph',
+        },
+      ],
       type: 'doc',
       version: 1,
     },
     {
-      content: [{ content: [{ marks: [{ attrs: { extra: true }, type: 'bold' }], text: 'bad', type: 'text' }], type: 'paragraph' }],
+      content: [
+        {
+          content: [
+            {
+              marks: [{ attrs: { extra: true }, type: 'bold' }],
+              text: 'bad',
+              type: 'text',
+            },
+          ],
+          type: 'paragraph',
+        },
+      ],
       type: 'doc',
       version: 1,
     },

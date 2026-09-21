@@ -5,6 +5,7 @@ import type {
 } from '../database/schema/forums.js';
 
 export interface RenderedRichText {
+  assetIds: string[];
   document: RichTextDocument;
   html: string;
   mentions: string[];
@@ -26,6 +27,7 @@ const BLOCK_CHILDREN = new Set([
   'bulletList',
   'codeBlock',
   'heading',
+  'image',
   'orderedList',
   'paragraph',
 ]);
@@ -33,6 +35,8 @@ const INLINE_CHILDREN = new Set(['hardBreak', 'mention', 'text']);
 const LIST_CHILDREN = new Set(['listItem']);
 const LIST_ITEM_CHILDREN = new Set(BLOCK_CHILDREN);
 const CODE_CHILDREN = new Set(['text']);
+const UUID_V7_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class RichTextService {
@@ -45,8 +49,9 @@ export class RichTextService {
       throw this.invalid();
     }
     this.validateNode(document, undefined, 0);
+    const assetIds = new Set<string>();
     const mentions = new Set<string>();
-    const rendered = this.renderNode(document, mentions, 0);
+    const rendered = this.renderNode(document, mentions, assetIds, 0);
     const text = rendered.text.trim();
     if (text.length === 0 || text.length > 50_000) {
       throw new BadRequestException(
@@ -54,6 +59,7 @@ export class RichTextService {
       );
     }
     return {
+      assetIds: [...assetIds],
       document,
       html: rendered.html,
       mentions: [...mentions],
@@ -61,7 +67,11 @@ export class RichTextService {
     };
   }
 
-  private validateNode(node: unknown, parentType: string | undefined, depth: number): void {
+  private validateNode(
+    node: unknown,
+    parentType: string | undefined,
+    depth: number,
+  ): void {
     if (!this.isRecord(node) || typeof node.type !== 'string' || depth > 32) {
       throw this.invalid();
     }
@@ -88,7 +98,26 @@ export class RichTextService {
         if (!this.isRecord(node.attrs)) throw this.invalid();
         this.requireKeys(node.attrs, ['handle']);
         const handle = node.attrs.handle;
-        if (typeof handle !== 'string' || !HANDLE_PATTERN.test(handle.toLowerCase())) {
+        if (
+          typeof handle !== 'string' ||
+          !HANDLE_PATTERN.test(handle.toLowerCase())
+        ) {
+          throw this.invalid();
+        }
+        return;
+      }
+      case 'image': {
+        this.requireKeys(node, ['attrs', 'type']);
+        if (!this.isRecord(node.attrs)) throw this.invalid();
+        this.requireKeys(node.attrs, ['alt', 'assetId']);
+        const assetId = node.attrs.assetId;
+        const alt = node.attrs.alt;
+        if (
+          typeof assetId !== 'string' ||
+          !UUID_V7_PATTERN.test(assetId) ||
+          typeof alt !== 'string' ||
+          alt.length > 500
+        ) {
           throw this.invalid();
         }
         return;
@@ -97,7 +126,8 @@ export class RichTextService {
         this.requireKeys(node, ['attrs', 'content', 'type']);
         if (!this.isRecord(node.attrs)) throw this.invalid();
         this.requireKeys(node.attrs, ['level']);
-        if (![1, 2, 3].includes(node.attrs.level as number)) throw this.invalid();
+        if (![1, 2, 3].includes(node.attrs.level as number))
+          throw this.invalid();
         this.validateChildren(node, INLINE_CHILDREN, depth);
         return;
       case 'paragraph':
@@ -120,7 +150,10 @@ export class RichTextService {
       case 'listItem':
         this.requireKeys(node, ['content', 'type']);
         this.validateChildren(node, LIST_ITEM_CHILDREN, depth, true);
-        if (!Array.isArray(node.content) || node.content[0]?.type !== 'paragraph') {
+        if (
+          !Array.isArray(node.content) ||
+          node.content[0]?.type !== 'paragraph'
+        ) {
           throw this.invalid();
         }
         return;
@@ -135,11 +168,18 @@ export class RichTextService {
     depth: number,
     requireContent = false,
   ): void {
-    if (!Array.isArray(node.content) || (requireContent && node.content.length === 0)) {
+    if (
+      !Array.isArray(node.content) ||
+      (requireContent && node.content.length === 0)
+    ) {
       throw this.invalid();
     }
     for (const child of node.content) {
-      if (!this.isRecord(child) || typeof child.type !== 'string' || !allowed.has(child.type)) {
+      if (
+        !this.isRecord(child) ||
+        typeof child.type !== 'string' ||
+        !allowed.has(child.type)
+      ) {
         throw this.invalid();
       }
       this.validateNode(child, node.type as string, depth + 1);
@@ -151,11 +191,19 @@ export class RichTextService {
     if (!Array.isArray(value) || codeBlock) throw this.invalid();
     const seen = new Set<string>();
     for (const mark of value) {
-      if (!this.isRecord(mark) || typeof mark.type !== 'string' || !MARKS.has(mark.type) || seen.has(mark.type)) {
+      if (
+        !this.isRecord(mark) ||
+        typeof mark.type !== 'string' ||
+        !MARKS.has(mark.type) ||
+        seen.has(mark.type)
+      ) {
         throw this.invalid();
       }
       seen.add(mark.type);
-      this.requireKeys(mark, mark.type === 'link' ? ['attrs', 'type'] : ['type']);
+      this.requireKeys(
+        mark,
+        mark.type === 'link' ? ['attrs', 'type'] : ['type'],
+      );
       if (mark.type === 'link') {
         if (!this.isRecord(mark.attrs)) throw this.invalid();
         this.requireKeys(mark.attrs, ['href']);
@@ -184,7 +232,10 @@ export class RichTextService {
     }
   }
 
-  private requireKeys(value: Record<string, unknown>, allowed: readonly string[]): void {
+  private requireKeys(
+    value: Record<string, unknown>,
+    allowed: readonly string[],
+  ): void {
     if (Object.keys(value).some((key) => !allowed.includes(key))) {
       throw this.invalid();
     }
@@ -193,6 +244,7 @@ export class RichTextService {
   private renderNode(
     node: RichTextNode,
     mentions: Set<string>,
+    assetIds: Set<string>,
     depth: number,
   ): { html: string; text: string } {
     if (!this.isRecord(node) || typeof node.type !== 'string' || depth > 32) {
@@ -217,6 +269,19 @@ export class RichTextService {
         text: `@${handle}`,
       };
     }
+    if (node.type === 'image') {
+      this.requireLeaf(node);
+      const assetId = this.stringAttribute(node, 'assetId');
+      const alt = this.stringAttribute(node, 'alt');
+      if (!UUID_V7_PATTERN.test(assetId) || alt.length > 500) {
+        throw this.invalid();
+      }
+      assetIds.add(assetId);
+      return {
+        html: `<img data-asset-id="${assetId}" alt="${this.escape(alt)}">`,
+        text: alt,
+      };
+    }
     if (!CONTAINER_NODES.has(node.type) && !BLOCK_NODES.has(node.type)) {
       throw this.invalid();
     }
@@ -224,7 +289,7 @@ export class RichTextService {
       throw this.invalid();
     }
     const children = node.content.map((child) =>
-      this.renderNode(child, mentions, depth + 1),
+      this.renderNode(child, mentions, assetIds, depth + 1),
     );
     const html = children.map((child) => child.html).join('');
     const text = children.map((child) => child.text).join('');
@@ -264,7 +329,11 @@ export class RichTextService {
     }
     let html = this.escape(node.text);
     for (const mark of node.marks ?? []) {
-      if (!this.isRecord(mark) || typeof mark.type !== 'string' || !MARKS.has(mark.type)) {
+      if (
+        !this.isRecord(mark) ||
+        typeof mark.type !== 'string' ||
+        !MARKS.has(mark.type)
+      ) {
         throw this.invalid();
       }
       switch (mark.type) {
@@ -307,7 +376,11 @@ export class RichTextService {
   }
 
   private requireLeaf(node: RichTextNode): void {
-    if (node.content !== undefined || node.text !== undefined || node.marks !== undefined) {
+    if (
+      node.content !== undefined ||
+      node.text !== undefined ||
+      node.marks !== undefined
+    ) {
       throw this.invalid();
     }
   }

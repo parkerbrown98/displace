@@ -83,6 +83,13 @@ describe('application foundation (e2e)', () => {
         },
       },
       paths: {
+        '/api/v1/places/{placeId}/assets/{assetId}': {},
+        '/api/v1/places/{placeId}/assets/{assetId}/download': {},
+        '/api/v1/places/{placeId}/assets/place-images/{kind}': {},
+        '/api/v1/places/{placeId}/assets/profile-images/{kind}': {},
+        '/api/v1/places/{placeId}/assets/upload-intents': {},
+        '/api/v1/places/{placeId}/assets/upload-intents/{intentId}/complete':
+          {},
         '/api/v1/health/live': {},
         '/api/v1/health/ready': {},
       },

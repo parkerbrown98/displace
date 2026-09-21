@@ -60,6 +60,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 6: Uploads and Media
 
+**Status:** Complete as of 2026-09-21.
+
 6. Implement S3-compatible upload lifecycle. *Parallel with step 5 after step 4.*
    - Add `assets` and `upload_intents`, per-place/user quotas, MIME/size allowlists, short-lived presigned upload URLs, completion verification against object metadata, orphan cleanup, and authorization-aware download URLs.
    - Process images in a worker using content sniffing rather than extensions, strip unsafe metadata, generate bounded variants, and keep objects private unless attached to public content.

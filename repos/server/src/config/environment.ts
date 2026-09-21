@@ -66,6 +66,65 @@ const environmentSchema = z
       .min(1_024)
       .max(100 * 1_024 * 1_024)
       .default(26_214_400),
+    UPLOAD_USER_QUOTA_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1_024)
+      .max(Number.MAX_SAFE_INTEGER)
+      .default(1_073_741_824),
+    UPLOAD_PLACE_QUOTA_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1_024)
+      .max(Number.MAX_SAFE_INTEGER)
+      .default(21_474_836_480),
+    UPLOAD_ALLOWED_MIME_TYPES: z
+      .string()
+      .default('image/jpeg,image/png,image/webp,application/pdf,text/plain')
+      .transform((value, context) => {
+        const mimeTypes = [
+          ...new Set(
+            value
+              .split(',')
+              .map((item) => item.trim().toLowerCase())
+              .filter(Boolean),
+          ),
+        ];
+        if (
+          mimeTypes.length === 0 ||
+          mimeTypes.some(
+            (item) =>
+              !/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/.test(
+                item,
+              ),
+          )
+        ) {
+          context.addIssue({
+            code: 'custom',
+            message:
+              'Upload MIME types must be a comma-separated MIME type list.',
+          });
+        }
+        return mimeTypes;
+      }),
+    UPLOAD_URL_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(60)
+      .max(3_600)
+      .default(900),
+    ASSET_DOWNLOAD_URL_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(30)
+      .max(3_600)
+      .default(300),
+    IMAGE_MAX_PIXELS: z.coerce
+      .number()
+      .int()
+      .min(1_000_000)
+      .max(100_000_000)
+      .default(40_000_000),
     CORS_ORIGINS: z
       .string()
       .default('http://localhost:3000')
@@ -148,9 +207,16 @@ const environmentSchema = z
     S3_ENDPOINT: serviceUrl(['http:', 'https:']).default(
       'http://localhost:9000',
     ),
+    S3_PUBLIC_ENDPOINT: serviceUrl(['http:', 'https:']).default(
+      'http://localhost:9000',
+    ),
     S3_ACCESS_KEY: z.string().min(1).default('displace'),
     S3_SECRET_KEY: z.string().min(1).default('displace_dev_secret'),
     S3_BUCKET: z.string().min(1).default('displace'),
+    S3_REGION: z.string().min(1).default('us-east-1'),
+    S3_FORCE_PATH_STYLE: booleanValue.default(true),
+    MALWARE_SCANNER_URL: optionalUrl,
+    MALWARE_SCANNER_REQUIRED: booleanValue.default(false),
     MEILISEARCH_HOST: serviceUrl(['http:', 'https:']).default(
       'http://localhost:7700',
     ),
@@ -232,6 +298,18 @@ const environmentSchema = z
       });
     }
 
+    if (
+      environment.MALWARE_SCANNER_REQUIRED &&
+      !environment.MALWARE_SCANNER_URL
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['MALWARE_SCANNER_URL'],
+        message:
+          'MALWARE_SCANNER_URL is required when malware scanning is required.',
+      });
+    }
+
     if (environment.NODE_ENV !== 'production') {
       return;
     }
@@ -249,6 +327,14 @@ const environmentSchema = z
         code: 'custom',
         path: ['PUBLIC_URL'],
         message: 'PUBLIC_URL must use HTTPS in production.',
+      });
+    }
+
+    if (new URL(environment.S3_PUBLIC_ENDPOINT).protocol !== 'https:') {
+      context.addIssue({
+        code: 'custom',
+        path: ['S3_PUBLIC_ENDPOINT'],
+        message: 'S3_PUBLIC_ENDPOINT must use HTTPS in production.',
       });
     }
 

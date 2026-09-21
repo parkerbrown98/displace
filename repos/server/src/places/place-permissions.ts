@@ -9,6 +9,7 @@ export const PLACE_PERMISSIONS = [
   'chat.send',
   'voice.manage',
   'voice.join',
+  'upload.read',
   'upload.create',
   'moderation.manage',
 ] as const;
@@ -42,6 +43,7 @@ export const DEFAULT_PLACE_ROLES = [
       'chat.send',
       'voice.manage',
       'voice.join',
+      'upload.read',
       'upload.create',
       'moderation.manage',
     ] satisfies PlacePermission[],
@@ -55,6 +57,7 @@ export const DEFAULT_PLACE_ROLES = [
       'post.create',
       'chat.send',
       'voice.join',
+      'upload.read',
       'upload.create',
     ] satisfies PlacePermission[],
     position: 10,

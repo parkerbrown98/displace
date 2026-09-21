@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import {
   and,
   asc,
@@ -12,15 +17,20 @@ import {
   sql,
 } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
-import type { Database, DatabaseTransaction } from '../database/database.types.js';
+import type {
+  Database,
+  DatabaseTransaction,
+} from '../database/database.types.js';
 import {
   auditLog,
+  assets,
   forumGroups,
   forums,
   forumTags,
   idempotencyKeys,
   outboxEvents,
   postMentions,
+  postAssets,
   postReactions,
   postRevisions,
   posts,
@@ -45,6 +55,7 @@ import type {
 } from './forums.dto.js';
 
 export interface ForumContentInput {
+  assetIds: string[];
   document: RichTextDocument;
   html: string;
   mentions: string[];
@@ -161,7 +172,13 @@ export class ForumsRepository {
         })
         .returning();
       if (!record) throw new Error('Forum group creation returned no record.');
-      await this.audit(transaction, placeId, actorUserId, 'forum_group.created', record.id);
+      await this.audit(
+        transaction,
+        placeId,
+        actorUserId,
+        'forum_group.created',
+        record.id,
+      );
       return record;
     });
   }
@@ -182,10 +199,18 @@ export class ForumsRepository {
           position: input.position,
           updatedAt: now,
         })
-        .where(and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, groupId)))
+        .where(
+          and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, groupId)),
+        )
         .returning();
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'forum_group.updated', groupId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'forum_group.updated',
+          groupId,
+        );
       }
       return record;
     });
@@ -197,10 +222,7 @@ export class ForumsRepository {
         .select({ id: forumGroups.id })
         .from(forumGroups)
         .where(
-          and(
-            eq(forumGroups.placeId, placeId),
-            eq(forumGroups.id, groupId),
-          ),
+          and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, groupId)),
         )
         .limit(1)
         .for('update');
@@ -208,31 +230,43 @@ export class ForumsRepository {
       const [child] = await transaction
         .select({ id: forums.id })
         .from(forums)
-        .where(
-          and(
-            eq(forums.placeId, placeId),
-            eq(forums.groupId, groupId),
-          ),
-        )
+        .where(and(eq(forums.placeId, placeId), eq(forums.groupId, groupId)))
         .limit(1);
       if (child) return 'not-empty' as const;
       const [record] = await transaction
         .delete(forumGroups)
-        .where(and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, groupId)))
+        .where(
+          and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, groupId)),
+        )
         .returning({ id: forumGroups.id });
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'forum_group.deleted', groupId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'forum_group.deleted',
+          groupId,
+        );
       }
       return record ? ('deleted' as const) : ('missing' as const);
     });
   }
 
-  async createForum(placeId: string, actorUserId: string, input: CreateForumDto) {
+  async createForum(
+    placeId: string,
+    actorUserId: string,
+    input: CreateForumDto,
+  ) {
     return this.database.transaction(async (transaction) => {
       const [group] = await transaction
         .select({ id: forumGroups.id })
         .from(forumGroups)
-        .where(and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, input.groupId)))
+        .where(
+          and(
+            eq(forumGroups.placeId, placeId),
+            eq(forumGroups.id, input.groupId),
+          ),
+        )
         .limit(1);
       if (!group) return undefined;
       const [record] = await transaction
@@ -249,7 +283,13 @@ export class ForumsRepository {
         })
         .returning();
       if (!record) throw new Error('Forum creation returned no record.');
-      await this.audit(transaction, placeId, actorUserId, 'forum.created', record.id);
+      await this.audit(
+        transaction,
+        placeId,
+        actorUserId,
+        'forum.created',
+        record.id,
+      );
       return record;
     });
   }
@@ -266,7 +306,12 @@ export class ForumsRepository {
         const [group] = await transaction
           .select({ id: forumGroups.id })
           .from(forumGroups)
-          .where(and(eq(forumGroups.placeId, placeId), eq(forumGroups.id, input.groupId)))
+          .where(
+            and(
+              eq(forumGroups.placeId, placeId),
+              eq(forumGroups.id, input.groupId),
+            ),
+          )
           .limit(1);
         if (!group) return undefined;
       }
@@ -282,30 +327,63 @@ export class ForumsRepository {
           visibility: input.visibility,
           writePermission: input.writePermission,
         })
-        .where(and(eq(forums.placeId, placeId), eq(forums.id, forumId), isNull(forums.archivedAt)))
+        .where(
+          and(
+            eq(forums.placeId, placeId),
+            eq(forums.id, forumId),
+            isNull(forums.archivedAt),
+          ),
+        )
         .returning();
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'forum.updated', forumId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'forum.updated',
+          forumId,
+        );
       }
       return record;
     });
   }
 
-  async archiveForum(placeId: string, forumId: string, actorUserId: string, now: Date) {
+  async archiveForum(
+    placeId: string,
+    forumId: string,
+    actorUserId: string,
+    now: Date,
+  ) {
     return this.database.transaction(async (transaction) => {
       const [record] = await transaction
         .update(forums)
         .set({ archivedAt: now, updatedAt: now })
-        .where(and(eq(forums.placeId, placeId), eq(forums.id, forumId), isNull(forums.archivedAt)))
+        .where(
+          and(
+            eq(forums.placeId, placeId),
+            eq(forums.id, forumId),
+            isNull(forums.archivedAt),
+          ),
+        )
         .returning({ id: forums.id });
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'forum.archived', forumId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'forum.archived',
+          forumId,
+        );
       }
       return record;
     });
   }
 
-  async createTag(placeId: string, actorUserId: string, input: CreateForumTagDto) {
+  async createTag(
+    placeId: string,
+    actorUserId: string,
+    input: CreateForumTagDto,
+  ) {
     return this.database.transaction(async (transaction) => {
       const [record] = await transaction
         .insert(forumTags)
@@ -317,7 +395,13 @@ export class ForumsRepository {
         })
         .returning();
       if (!record) throw new Error('Forum tag creation returned no record.');
-      await this.audit(transaction, placeId, actorUserId, 'forum_tag.created', record.id);
+      await this.audit(
+        transaction,
+        placeId,
+        actorUserId,
+        'forum_tag.created',
+        record.id,
+      );
       return record;
     });
   }
@@ -329,7 +413,13 @@ export class ForumsRepository {
         .where(and(eq(forumTags.placeId, placeId), eq(forumTags.id, tagId)))
         .returning({ id: forumTags.id });
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'forum_tag.deleted', tagId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'forum_tag.deleted',
+          tagId,
+        );
       }
       return record;
     });
@@ -365,20 +455,44 @@ export class ForumsRepository {
         .values({ authorUserId, forumId, latestPostAt: now, placeId, title })
         .returning();
       if (!topic) throw new Error('Topic creation returned no record.');
-      await this.insertPost(transaction, placeId, topic.id, authorUserId, content, now);
+      await this.insertPost(
+        transaction,
+        placeId,
+        topic.id,
+        authorUserId,
+        content,
+        now,
+      );
       if (tagIds.length > 0) {
-        await transaction.insert(topicTags).values(
-          tagIds.map((tagId) => ({ placeId, tagId, topicId: topic.id })),
-        );
+        await transaction
+          .insert(topicTags)
+          .values(
+            tagIds.map((tagId) => ({ placeId, tagId, topicId: topic.id })),
+          );
       }
-      await this.emit(transaction, 'topic.created', topic.id, { placeId, forumId });
-      await this.audit(transaction, placeId, authorUserId, 'topic.created', topic.id);
-      const tagRecords = tagIds.length > 0
-        ? await transaction
-            .select()
-            .from(forumTags)
-            .where(and(eq(forumTags.placeId, placeId), inArray(forumTags.id, tagIds)))
-        : [];
+      await this.emit(transaction, 'topic.created', topic.id, {
+        placeId,
+        forumId,
+      });
+      await this.audit(
+        transaction,
+        placeId,
+        authorUserId,
+        'topic.created',
+        topic.id,
+      );
+      const tagRecords =
+        tagIds.length > 0
+          ? await transaction
+              .select()
+              .from(forumTags)
+              .where(
+                and(
+                  eq(forumTags.placeId, placeId),
+                  inArray(forumTags.id, tagIds),
+                ),
+              )
+          : [];
       const response = {
         authorUserId: topic.authorUserId,
         createdAt: topic.createdAt,
@@ -427,9 +541,7 @@ export class ForumsRepository {
             ),
           )
         : or(
-            options.cursor.isPinned
-              ? eq(topics.isPinned, false)
-              : undefined,
+            options.cursor.isPinned ? eq(topics.isPinned, false) : undefined,
             and(
               eq(topics.isPinned, options.cursor.isPinned ?? false),
               or(
@@ -461,8 +573,16 @@ export class ForumsRepository {
       )
       .orderBy(
         ...(options.feed === 'popular'
-          ? [desc(topics.replyCount), desc(topics.latestPostAt), desc(topics.id)]
-          : [desc(topics.isPinned), desc(topics.latestPostAt), desc(topics.id)]),
+          ? [
+              desc(topics.replyCount),
+              desc(topics.latestPostAt),
+              desc(topics.id),
+            ]
+          : [
+              desc(topics.isPinned),
+              desc(topics.latestPostAt),
+              desc(topics.id),
+            ]),
       )
       .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
     return this.attachTags(options.placeId, records);
@@ -472,47 +592,114 @@ export class ForumsRepository {
     const [record] = await this.database
       .select()
       .from(topics)
-      .where(and(eq(topics.placeId, placeId), eq(topics.id, topicId), isNull(topics.deletedAt)))
+      .where(
+        and(
+          eq(topics.placeId, placeId),
+          eq(topics.id, topicId),
+          isNull(topics.deletedAt),
+        ),
+      )
       .limit(1);
     if (!record) return undefined;
     return (await this.attachTags(placeId, [record]))[0];
   }
 
-  async listSavedTopics(userId: string, cursor: SavedItemCursor | undefined, limit: number) {
+  async listSavedTopics(
+    userId: string,
+    cursor: SavedItemCursor | undefined,
+    limit: number,
+  ) {
     return this.database
-      .select({ placeId: places.id, placeName: places.name, placeSlug: places.slug, savedAt: savedTopics.createdAt, topic: topics })
+      .select({
+        placeId: places.id,
+        placeName: places.name,
+        placeSlug: places.slug,
+        savedAt: savedTopics.createdAt,
+        topic: topics,
+      })
       .from(savedTopics)
-      .innerJoin(topics, and(eq(topics.placeId, savedTopics.placeId), eq(topics.id, savedTopics.topicId)))
+      .innerJoin(
+        topics,
+        and(
+          eq(topics.placeId, savedTopics.placeId),
+          eq(topics.id, savedTopics.topicId),
+        ),
+      )
       .innerJoin(places, eq(places.id, savedTopics.placeId))
-      .where(and(
-        eq(savedTopics.userId, userId),
-        isNull(topics.deletedAt),
-        isNull(places.archivedAt),
-        cursor ? or(lt(savedTopics.createdAt, cursor.savedAt), and(eq(savedTopics.createdAt, cursor.savedAt), lt(topics.id, cursor.id))) : undefined,
-      ))
+      .where(
+        and(
+          eq(savedTopics.userId, userId),
+          isNull(topics.deletedAt),
+          isNull(places.archivedAt),
+          cursor
+            ? or(
+                lt(savedTopics.createdAt, cursor.savedAt),
+                and(
+                  eq(savedTopics.createdAt, cursor.savedAt),
+                  lt(topics.id, cursor.id),
+                ),
+              )
+            : undefined,
+        ),
+      )
       .orderBy(desc(savedTopics.createdAt), desc(topics.id))
       .limit(Math.min(Math.max(limit, 1), 100) + 1);
   }
 
-  async listSavedPosts(userId: string, cursor: SavedItemCursor | undefined, limit: number) {
+  async listSavedPosts(
+    userId: string,
+    cursor: SavedItemCursor | undefined,
+    limit: number,
+  ) {
     return this.database
-      .select({ placeId: places.id, placeName: places.name, placeSlug: places.slug, post: posts, savedAt: savedPosts.createdAt, topicTitle: topics.title })
+      .select({
+        placeId: places.id,
+        placeName: places.name,
+        placeSlug: places.slug,
+        post: posts,
+        savedAt: savedPosts.createdAt,
+        topicTitle: topics.title,
+      })
       .from(savedPosts)
-      .innerJoin(posts, and(eq(posts.placeId, savedPosts.placeId), eq(posts.id, savedPosts.postId)))
-      .innerJoin(topics, and(eq(topics.placeId, posts.placeId), eq(topics.id, posts.topicId)))
+      .innerJoin(
+        posts,
+        and(
+          eq(posts.placeId, savedPosts.placeId),
+          eq(posts.id, savedPosts.postId),
+        ),
+      )
+      .innerJoin(
+        topics,
+        and(eq(topics.placeId, posts.placeId), eq(topics.id, posts.topicId)),
+      )
       .innerJoin(places, eq(places.id, savedPosts.placeId))
-      .where(and(
-        eq(savedPosts.userId, userId),
-        isNull(posts.deletedAt),
-        isNull(topics.deletedAt),
-        isNull(places.archivedAt),
-        cursor ? or(lt(savedPosts.createdAt, cursor.savedAt), and(eq(savedPosts.createdAt, cursor.savedAt), lt(posts.id, cursor.id))) : undefined,
-      ))
+      .where(
+        and(
+          eq(savedPosts.userId, userId),
+          isNull(posts.deletedAt),
+          isNull(topics.deletedAt),
+          isNull(places.archivedAt),
+          cursor
+            ? or(
+                lt(savedPosts.createdAt, cursor.savedAt),
+                and(
+                  eq(savedPosts.createdAt, cursor.savedAt),
+                  lt(posts.id, cursor.id),
+                ),
+              )
+            : undefined,
+        ),
+      )
       .orderBy(desc(savedPosts.createdAt), desc(posts.id))
       .limit(Math.min(Math.max(limit, 1), 100) + 1);
   }
 
-  async listPosts(placeId: string, topicId: string, cursor: PostCursor | undefined, limit: number) {
+  async listPosts(
+    placeId: string,
+    topicId: string,
+    cursor: PostCursor | undefined,
+    limit: number,
+  ) {
     return this.database
       .select()
       .from(posts)
@@ -523,7 +710,10 @@ export class ForumsRepository {
           cursor
             ? or(
                 sql`${posts.createdAt} > ${cursor.createdAt}`,
-                and(eq(posts.createdAt, cursor.createdAt), sql`${posts.id} > ${cursor.id}`),
+                and(
+                  eq(posts.createdAt, cursor.createdAt),
+                  sql`${posts.id} > ${cursor.id}`,
+                ),
               )
             : undefined,
         ),
@@ -565,8 +755,16 @@ export class ForumsRepository {
         )
         .limit(1)
         .for('update');
-      if (!topic) throw new ConflictException('Topic is locked or unavailable.');
-      const post = await this.insertPost(transaction, placeId, topicId, authorUserId, content, now);
+      if (!topic)
+        throw new ConflictException('Topic is locked or unavailable.');
+      const post = await this.insertPost(
+        transaction,
+        placeId,
+        topicId,
+        authorUserId,
+        content,
+        now,
+      );
       await transaction
         .update(topics)
         .set({
@@ -575,7 +773,10 @@ export class ForumsRepository {
           updatedAt: now,
         })
         .where(and(eq(topics.placeId, placeId), eq(topics.id, topicId)));
-      await this.emit(transaction, 'post.created', post.id, { placeId, topicId });
+      await this.emit(transaction, 'post.created', post.id, {
+        placeId,
+        topicId,
+      });
       const response = {
         authorUserId: post.authorUserId,
         createdAt: post.createdAt,
@@ -603,27 +804,51 @@ export class ForumsRepository {
     now: Date,
   ) {
     return this.database.transaction(async (transaction) => {
-      await this.lockTopicForMutation(transaction, placeId, topicId, allowLocked);
-      if (values.tagIds && !(await this.tagsExist(transaction, placeId, values.tagIds))) {
+      await this.lockTopicForMutation(
+        transaction,
+        placeId,
+        topicId,
+        allowLocked,
+      );
+      if (
+        values.tagIds &&
+        !(await this.tagsExist(transaction, placeId, values.tagIds))
+      ) {
         return undefined;
       }
       const [record] = await transaction
         .update(topics)
         .set({ title: values.title, updatedAt: now })
-        .where(and(eq(topics.placeId, placeId), eq(topics.id, topicId), isNull(topics.deletedAt)))
+        .where(
+          and(
+            eq(topics.placeId, placeId),
+            eq(topics.id, topicId),
+            isNull(topics.deletedAt),
+          ),
+        )
         .returning();
       if (!record) return undefined;
       if (values.tagIds) {
-        await transaction.delete(topicTags).where(
-          and(eq(topicTags.placeId, placeId), eq(topicTags.topicId, topicId)),
-        );
-        if (values.tagIds.length > 0) {
-          await transaction.insert(topicTags).values(
-            values.tagIds.map((tagId) => ({ placeId, tagId, topicId })),
+        await transaction
+          .delete(topicTags)
+          .where(
+            and(eq(topicTags.placeId, placeId), eq(topicTags.topicId, topicId)),
           );
+        if (values.tagIds.length > 0) {
+          await transaction
+            .insert(topicTags)
+            .values(
+              values.tagIds.map((tagId) => ({ placeId, tagId, topicId })),
+            );
         }
       }
-      await this.audit(transaction, placeId, actorUserId, 'topic.updated', topicId);
+      await this.audit(
+        transaction,
+        placeId,
+        actorUserId,
+        'topic.updated',
+        topicId,
+      );
       await this.emit(transaction, 'topic.updated', topicId, { placeId });
       return record;
     });
@@ -640,7 +865,12 @@ export class ForumsRepository {
     now: Date,
   ) {
     return this.database.transaction(async (transaction) => {
-      await this.lockTopicForMutation(transaction, placeId, topicId, allowLocked);
+      await this.lockTopicForMutation(
+        transaction,
+        placeId,
+        topicId,
+        allowLocked,
+      );
       const nextVersion = expectedVersion + 1;
       const [record] = await transaction
         .update(posts)
@@ -670,9 +900,24 @@ export class ForumsRepository {
         sanitizedHtml: content.html,
         version: nextVersion,
       });
-      await this.replaceMentions(transaction, placeId, postId, content.mentions);
-      await this.audit(transaction, placeId, editorUserId, 'post.edited', postId);
-      await this.emit(transaction, 'post.updated', postId, { placeId, topicId: record.topicId });
+      await this.replaceMentions(
+        transaction,
+        placeId,
+        postId,
+        content.mentions,
+      );
+      await this.replaceAssets(transaction, placeId, postId, content.assetIds);
+      await this.audit(
+        transaction,
+        placeId,
+        editorUserId,
+        'post.edited',
+        postId,
+      );
+      await this.emit(transaction, 'post.updated', postId, {
+        placeId,
+        topicId: record.topicId,
+      });
       return record;
     });
   }
@@ -686,7 +931,11 @@ export class ForumsRepository {
     return record;
   }
 
-  async listReactionSummaries(placeId: string, postIds: string[], userId?: string) {
+  async listReactionSummaries(
+    placeId: string,
+    postIds: string[],
+    userId?: string,
+  ) {
     if (postIds.length === 0) return [];
     const [totals, own] = await Promise.all([
       this.database
@@ -719,7 +968,9 @@ export class ForumsRepository {
             )
         : Promise.resolve([]),
     ]);
-    const ownKeys = new Set(own.map((item) => `${item.postId}:${item.reaction}`));
+    const ownKeys = new Set(
+      own.map((item) => `${item.postId}:${item.reaction}`),
+    );
     return totals.map((item) => ({
       ...item,
       reacted: ownKeys.has(`${item.postId}:${item.reaction}`),
@@ -735,15 +986,35 @@ export class ForumsRepository {
     now: Date,
   ) {
     return this.database.transaction(async (transaction) => {
-      await this.lockTopicForMutation(transaction, placeId, topicId, allowLocked);
+      await this.lockTopicForMutation(
+        transaction,
+        placeId,
+        topicId,
+        allowLocked,
+      );
       const [record] = await transaction
         .update(posts)
         .set({ deletedAt: now, deletedByUserId: actorUserId, updatedAt: now })
-        .where(and(eq(posts.placeId, placeId), eq(posts.id, postId), isNull(posts.deletedAt)))
+        .where(
+          and(
+            eq(posts.placeId, placeId),
+            eq(posts.id, postId),
+            isNull(posts.deletedAt),
+          ),
+        )
         .returning();
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'post.deleted', postId);
-        await this.emit(transaction, 'post.deleted', postId, { placeId, topicId: record.topicId });
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'post.deleted',
+          postId,
+        );
+        await this.emit(transaction, 'post.deleted', postId, {
+          placeId,
+          topicId: record.topicId,
+        });
       }
       return record;
     });
@@ -757,14 +1028,31 @@ export class ForumsRepository {
     now: Date,
   ) {
     return this.database.transaction(async (transaction) => {
-      await this.lockTopicForMutation(transaction, placeId, topicId, allowLocked);
+      await this.lockTopicForMutation(
+        transaction,
+        placeId,
+        topicId,
+        allowLocked,
+      );
       const [record] = await transaction
         .update(topics)
         .set({ deletedAt: now, updatedAt: now })
-        .where(and(eq(topics.placeId, placeId), eq(topics.id, topicId), isNull(topics.deletedAt)))
+        .where(
+          and(
+            eq(topics.placeId, placeId),
+            eq(topics.id, topicId),
+            isNull(topics.deletedAt),
+          ),
+        )
         .returning();
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'topic.deleted', topicId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'topic.deleted',
+          topicId,
+        );
         await this.emit(transaction, 'topic.deleted', topicId, { placeId });
       }
       return record;
@@ -782,17 +1070,35 @@ export class ForumsRepository {
       const [record] = await transaction
         .update(topics)
         .set({ ...values, updatedAt: now })
-        .where(and(eq(topics.placeId, placeId), eq(topics.id, topicId), isNull(topics.deletedAt)))
+        .where(
+          and(
+            eq(topics.placeId, placeId),
+            eq(topics.id, topicId),
+            isNull(topics.deletedAt),
+          ),
+        )
         .returning();
       if (record) {
-        await this.audit(transaction, placeId, actorUserId, 'topic.moderated', topicId);
+        await this.audit(
+          transaction,
+          placeId,
+          actorUserId,
+          'topic.moderated',
+          topicId,
+        );
         await this.emit(transaction, 'topic.updated', topicId, { placeId });
       }
       return record;
     });
   }
 
-  async setReaction(placeId: string, postId: string, userId: string, reaction: string, enabled: boolean) {
+  async setReaction(
+    placeId: string,
+    postId: string,
+    userId: string,
+    reaction: string,
+    enabled: boolean,
+  ) {
     if (enabled) {
       await this.database
         .insert(postReactions)
@@ -800,14 +1106,16 @@ export class ForumsRepository {
         .onConflictDoNothing();
       return;
     }
-    await this.database.delete(postReactions).where(
-      and(
-        eq(postReactions.placeId, placeId),
-        eq(postReactions.postId, postId),
-        eq(postReactions.userId, userId),
-        eq(postReactions.reaction, reaction),
-      ),
-    );
+    await this.database
+      .delete(postReactions)
+      .where(
+        and(
+          eq(postReactions.placeId, placeId),
+          eq(postReactions.postId, postId),
+          eq(postReactions.userId, userId),
+          eq(postReactions.reaction, reaction),
+        ),
+      );
   }
 
   async setTopicRelationship(
@@ -819,30 +1127,65 @@ export class ForumsRepository {
   ) {
     const table = relationship === 'follow' ? topicFollows : savedTopics;
     if (enabled) {
-      await this.database.insert(table).values({ placeId, topicId, userId }).onConflictDoNothing();
+      await this.database
+        .insert(table)
+        .values({ placeId, topicId, userId })
+        .onConflictDoNothing();
     } else {
-      await this.database.delete(table).where(
-        and(eq(table.placeId, placeId), eq(table.topicId, topicId), eq(table.userId, userId)),
-      );
+      await this.database
+        .delete(table)
+        .where(
+          and(
+            eq(table.placeId, placeId),
+            eq(table.topicId, topicId),
+            eq(table.userId, userId),
+          ),
+        );
     }
   }
 
-  async setPostSaved(placeId: string, postId: string, userId: string, enabled: boolean) {
+  async setPostSaved(
+    placeId: string,
+    postId: string,
+    userId: string,
+    enabled: boolean,
+  ) {
     if (enabled) {
-      await this.database.insert(savedPosts).values({ placeId, postId, userId }).onConflictDoNothing();
+      await this.database
+        .insert(savedPosts)
+        .values({ placeId, postId, userId })
+        .onConflictDoNothing();
     } else {
-      await this.database.delete(savedPosts).where(
-        and(eq(savedPosts.placeId, placeId), eq(savedPosts.postId, postId), eq(savedPosts.userId, userId)),
-      );
+      await this.database
+        .delete(savedPosts)
+        .where(
+          and(
+            eq(savedPosts.placeId, placeId),
+            eq(savedPosts.postId, postId),
+            eq(savedPosts.userId, userId),
+          ),
+        );
     }
   }
 
-  async markRead(placeId: string, topicId: string, userId: string, lastReadPostId: string | undefined, now: Date) {
+  async markRead(
+    placeId: string,
+    topicId: string,
+    userId: string,
+    lastReadPostId: string | undefined,
+    now: Date,
+  ) {
     if (lastReadPostId) {
       const [post] = await this.database
         .select({ id: posts.id })
         .from(posts)
-        .where(and(eq(posts.placeId, placeId), eq(posts.topicId, topicId), eq(posts.id, lastReadPostId)))
+        .where(
+          and(
+            eq(posts.placeId, placeId),
+            eq(posts.topicId, topicId),
+            eq(posts.id, lastReadPostId),
+          ),
+        )
         .limit(1);
       if (!post) return false;
     }
@@ -850,27 +1193,46 @@ export class ForumsRepository {
       .insert(topicReadState)
       .values({ lastReadPostId, placeId, readAt: now, topicId, userId })
       .onConflictDoUpdate({
-        target: [topicReadState.placeId, topicReadState.topicId, topicReadState.userId],
+        target: [
+          topicReadState.placeId,
+          topicReadState.topicId,
+          topicReadState.userId,
+        ],
         set: { lastReadPostId, readAt: now },
       });
     return true;
   }
 
   async markUnread(placeId: string, topicId: string, userId: string) {
-    await this.database.delete(topicReadState).where(
-      and(eq(topicReadState.placeId, placeId), eq(topicReadState.topicId, topicId), eq(topicReadState.userId, userId)),
-    );
+    await this.database
+      .delete(topicReadState)
+      .where(
+        and(
+          eq(topicReadState.placeId, placeId),
+          eq(topicReadState.topicId, topicId),
+          eq(topicReadState.userId, userId),
+        ),
+      );
   }
 
   async listRevisions(placeId: string, postId: string) {
     return this.database
       .select()
       .from(postRevisions)
-      .where(and(eq(postRevisions.placeId, placeId), eq(postRevisions.postId, postId)))
+      .where(
+        and(
+          eq(postRevisions.placeId, placeId),
+          eq(postRevisions.postId, postId),
+        ),
+      )
       .orderBy(desc(postRevisions.version));
   }
 
-  async flushViews(batchId: string, topicId: string, count: number): Promise<void> {
+  async flushViews(
+    batchId: string,
+    topicId: string,
+    count: number,
+  ): Promise<void> {
     await this.database.transaction(async (transaction) => {
       const [topic] = await transaction
         .select({ id: topics.id })
@@ -929,6 +1291,7 @@ export class ForumsRepository {
       version: 1,
     });
     await this.replaceMentions(transaction, placeId, post.id, content.mentions);
+    await this.replaceAssets(transaction, placeId, post.id, content.assetIds);
     return post;
   }
 
@@ -967,9 +1330,15 @@ export class ForumsRepository {
       )
       .limit(1)
       .for('update');
-    if (!existing) throw new ConflictException('Idempotency request is unavailable.');
-    if (existing.requestHash !== options.requestHash && existing.expiresAt > options.now) {
-      throw new ConflictException('Idempotency-Key was already used with a different request.');
+    if (!existing)
+      throw new ConflictException('Idempotency request is unavailable.');
+    if (
+      existing.requestHash !== options.requestHash &&
+      existing.expiresAt > options.now
+    ) {
+      throw new ConflictException(
+        'Idempotency-Key was already used with a different request.',
+      );
     }
     if (existing.expiresAt <= options.now) {
       await transaction
@@ -989,7 +1358,9 @@ export class ForumsRepository {
       return { id: existing.id };
     }
     if (existing.status !== 'completed' || existing.responseBody === null) {
-      throw new ConflictException('The idempotent request is still being processed.');
+      throw new ConflictException(
+        'The idempotent request is still being processed.',
+      );
     }
     return { id: existing.id, response: existing.responseBody as T };
   }
@@ -1016,14 +1387,20 @@ export class ForumsRepository {
       .limit(1);
     if (!existing || existing.expiresAt <= options.now) return undefined;
     if (existing.requestHash !== options.requestHash) {
-      throw new ConflictException('Idempotency-Key was already used with a different request.');
+      throw new ConflictException(
+        'Idempotency-Key was already used with a different request.',
+      );
     }
     return existing.status === 'completed' && existing.responseBody !== null
-      ? existing.responseBody as T
+      ? (existing.responseBody as T)
       : undefined;
   }
 
-  private topicCreationScope(placeId: string, forumId: string, userId: string): string {
+  private topicCreationScope(
+    placeId: string,
+    forumId: string,
+    userId: string,
+  ): string {
     return `forum.topic.create:${placeId}:${forumId}:${userId}`;
   }
 
@@ -1055,9 +1432,11 @@ export class ForumsRepository {
     postId: string,
     handles: string[],
   ): Promise<void> {
-    await transaction.delete(postMentions).where(
-      and(eq(postMentions.placeId, placeId), eq(postMentions.postId, postId)),
-    );
+    await transaction
+      .delete(postMentions)
+      .where(
+        and(eq(postMentions.placeId, placeId), eq(postMentions.postId, postId)),
+      );
     if (handles.length === 0) return;
     const mentionedUsers = await transaction
       .select({ id: users.id })
@@ -1072,18 +1451,62 @@ export class ForumsRepository {
       )
       .where(and(inArray(users.handle, handles), eq(users.status, 'active')));
     if (mentionedUsers.length > 0) {
-      await transaction.insert(postMentions).values(
-        mentionedUsers.map((user) => ({ mentionedUserId: user.id, placeId, postId })),
-      );
+      await transaction
+        .insert(postMentions)
+        .values(
+          mentionedUsers.map((user) => ({
+            mentionedUserId: user.id,
+            placeId,
+            postId,
+          })),
+        );
     }
   }
 
-  private async tagsExist(transaction: DatabaseTransaction, placeId: string, tagIds: string[]) {
+  private async replaceAssets(
+    transaction: DatabaseTransaction,
+    placeId: string,
+    postId: string,
+    assetIds: string[],
+  ): Promise<void> {
+    await transaction
+      .delete(postAssets)
+      .where(
+        and(eq(postAssets.placeId, placeId), eq(postAssets.postId, postId)),
+      );
+    if (assetIds.length === 0) return;
+    const records = await transaction
+      .select({ id: assets.id })
+      .from(assets)
+      .where(
+        and(
+          eq(assets.placeId, placeId),
+          eq(assets.status, 'ready'),
+          inArray(assets.id, assetIds),
+        ),
+      );
+    if (records.length !== assetIds.length) {
+      throw new BadRequestException(
+        'One or more asset IDs are invalid or not ready.',
+      );
+    }
+    await transaction
+      .insert(postAssets)
+      .values(assetIds.map((assetId) => ({ assetId, placeId, postId })));
+  }
+
+  private async tagsExist(
+    transaction: DatabaseTransaction,
+    placeId: string,
+    tagIds: string[],
+  ) {
     if (tagIds.length === 0) return true;
     const records = await transaction
       .select({ id: forumTags.id })
       .from(forumTags)
-      .where(and(eq(forumTags.placeId, placeId), inArray(forumTags.id, tagIds)));
+      .where(
+        and(eq(forumTags.placeId, placeId), inArray(forumTags.id, tagIds)),
+      );
     return records.length === tagIds.length;
   }
 
@@ -1111,16 +1534,29 @@ export class ForumsRepository {
     }
   }
 
-  private async attachTags<T extends { id: string }>(placeId: string, records: T[]) {
+  private async attachTags<T extends { id: string }>(
+    placeId: string,
+    records: T[],
+  ) {
     if (records.length === 0) return [];
     const links = await this.database
       .select({ tag: forumTags, topicId: topicTags.topicId })
       .from(topicTags)
       .innerJoin(forumTags, eq(forumTags.id, topicTags.tagId))
-      .where(and(eq(topicTags.placeId, placeId), inArray(topicTags.topicId, records.map((record) => record.id))));
+      .where(
+        and(
+          eq(topicTags.placeId, placeId),
+          inArray(
+            topicTags.topicId,
+            records.map((record) => record.id),
+          ),
+        ),
+      );
     return records.map((record) => ({
       ...record,
-      tags: links.filter((link) => link.topicId === record.id).map((link) => link.tag),
+      tags: links
+        .filter((link) => link.topicId === record.id)
+        .map((link) => link.tag),
     }));
   }
 

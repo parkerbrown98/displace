@@ -68,6 +68,14 @@ Post bodies use version 1 ProseMirror-compatible JSON. The API validates exact n
 
 Topic replies and latest-post counters update transactionally. Topic views are buffered in Redis and reconciled to PostgreSQL by the worker every minute. Reconciliation uses idempotent processing batches with a 30-day Redis retry window and a 31-day PostgreSQL deduplication window.
 
+## Uploads And Media
+
+Members with `upload.create` request a short-lived URL from `POST /api/v1/places/:placeId/assets/upload-intents`, upload directly to private S3-compatible storage with the returned required headers, then call `POST /api/v1/places/:placeId/assets/upload-intents/:intentId/complete`. Completion verifies object size, MIME declaration, and intent metadata before creating a quarantined asset and enqueueing processing. Members with `upload.read` can poll `GET /api/v1/places/:placeId/assets/:assetId` for processing status and obtain a short-lived download URL from `GET /api/v1/places/:placeId/assets/:assetId/download` once it is ready.
+
+The worker sniffs file contents, optionally scans them through `MALWARE_SCANNER_URL`, rejects MIME mismatches, re-encodes JPEG/PNG/WebP originals without metadata, and creates bounded 320px and 1280px WebP variants. The scanner receives the object as `application/octet-stream` and returns JSON shaped as `{ "clean": boolean }`; set `MALWARE_SCANNER_REQUIRED=true` to fail startup unless it is configured. Expired upload intents and orphan objects are cleaned hourly. `S3_ENDPOINT` is the internal API/worker endpoint while `S3_PUBLIC_ENDPOINT` is embedded in client-facing signed URLs. The root `.env.example` documents MIME, file-size, per-user, per-place, URL lifetime, image pixel, scanner, and storage settings.
+
+Ready image assets can be assigned to a member profile with `PUT /api/v1/places/:placeId/assets/profile-images/:kind` or to a place with `PUT /api/v1/places/:placeId/assets/place-images/:kind`. Rich-text `image` nodes accept only `{ "assetId": "<uuidv7>", "alt": "..." }`; post writes transactionally reject assets that are not ready or do not belong to the same place. Profile, place, and post references store asset IDs only.
+
 ## Configuration
 
 Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.
@@ -117,7 +125,7 @@ pnpm test:cov
 
 Format source and test files with `pnpm format`.
 
-The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it processes authentication mail and reconciles buffered forum view counters, with the remaining domain queues added in Phase 7.
+The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it processes authentication mail and media, cleans expired upload intents, and reconciles buffered forum view counters, with the remaining domain queues added in Phase 7.
 
 ## Docker Development
 

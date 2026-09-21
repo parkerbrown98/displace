@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",
+    "@aws-sdk/s3-request-presigner": "^3.1136.0",
     "@fastify/compress": "^9.2.0",
     "@fastify/cookie": "^11.1.2",
     "@fastify/helmet": "^13.1.1",
@@ -48,6 +49,7 @@
     "class-validator": "^0.15.1",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.12.4",
+    "file-type": "^22.1.1",
     "ioredis": "^6.0.0",
     "jose": "^6.2.12",
     "livekit-server-sdk": "^2.19.0",
@@ -59,6 +61,7 @@
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.35.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {
