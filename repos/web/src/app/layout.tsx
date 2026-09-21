@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SessionProvider } from "@/features/auth/session-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,8 +21,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <a className="skip-link" href="#main-content">Skip to content</a>
-        {children}
-        {modal}
+        <SessionProvider>
+          {children}
+          {modal}
+        </SessionProvider>
         <div className="toast-region" id="toast-region" aria-live="polite" aria-atomic="true" />
       </body>
     </html>

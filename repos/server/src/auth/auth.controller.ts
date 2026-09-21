@@ -57,6 +57,7 @@ const REFRESH_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 @ApiTags('Authentication')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
+  private readonly applicationUrl: string;
   private readonly secureCookies: boolean;
 
   constructor(
@@ -65,6 +66,7 @@ export class AuthController {
     private readonly oidc: OidcService,
     config: ConfigService<AppEnvironment, true>,
   ) {
+    this.applicationUrl = config.get('CORS_ORIGINS', { infer: true })[0]!;
     this.secureCookies =
       config.get('NODE_ENV', { infer: true }) === 'production';
   }
@@ -294,11 +296,10 @@ export class AuthController {
   @Get('oidc/callback')
   @UseGuards(AuthRateLimitGuard)
   @AuthRateLimit('oidc-callback')
-  @ApiOkResponse({ type: AuthenticationDto })
   async completeOidc(
     @Req() request: FastifyRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<AuthenticationDto> {
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
     const result = await this.oidc.complete(
       new URL(request.url, `${request.protocol}://${request.hostname}`),
       request.cookies[OIDC_COOKIE],
@@ -312,11 +313,12 @@ export class AuthController {
       result.linkUserId,
       result.linkSessionId,
     );
-    return this.deliverAuthentication(
+    this.deliverAuthentication(
       authentication,
       RefreshTokenDelivery.Cookie,
       reply,
     );
+    await reply.redirect(new URL('/auth/callback', this.applicationUrl).toString());
   }
 
   private deliverAuthentication(

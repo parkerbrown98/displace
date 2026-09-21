@@ -17,6 +17,8 @@ Copy `.env.example` to `.env.local` when the API is not available at `http://loc
 
 Public discovery uses deterministic fixtures by default. Set `WEB_DATA_SOURCE=api` to use the server's cacheable public place, forum, topic, and post operations. Public member profiles remain unavailable in API mode until the server publishes an anonymous profile operation.
 
+Authentication and account settings also use deterministic fixtures by default. Set `NEXT_PUBLIC_WEB_DATA_SOURCE=api` to use the browser auth API. Access tokens remain in module memory; the signed refresh cookie is HttpOnly, and the readable CSRF cookie is sent only by the centralized auth transport.
+
 ## Run
 
 ```bash
@@ -36,6 +38,8 @@ pnpm build
 ```
 
 Playwright starts the development server automatically for browser tests. Install its Chromium build with `pnpm exec playwright install chromium` if no compatible browser is available.
+
+Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:e2e`. Playwright uses the same `localhost` origin as Next.js so client hydration resources are not blocked by the development origin policy.
 
 ## Application Structure
 

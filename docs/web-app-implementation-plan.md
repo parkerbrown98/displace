@@ -43,6 +43,8 @@ This plan is intentionally coordinated with, but not serialized behind, the [ser
 
 ### Phase 3: Identity, Session, and Account Settings
 
+**Status:** Complete as of 2026-09-21.
+
 **Server alignment:** Build in parallel with API phase 3 and integrate once its auth endpoints, cookie policy, and CSRF flow are available.
 
 1. Implement registration, sign-in, email verification, password reset, OIDC callback, sign-out, and session-expired screens with deliberate return-to navigation and account-enumeration-safe user messaging.

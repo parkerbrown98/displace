@@ -1,22 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { AuthPage } from "@/features/auth/auth-page";
 import { SignInPanel } from "@/features/auth/sign-in-panel";
-import { routes } from "@/lib/routes";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default function SignInPage() {
-  return (
-    <main className="auth-page" id="main-content">
-      <Link className="brand" href={routes.home} aria-label="Displace home">
-        <span className="brand-mark">D</span>
-        <span>Displace</span>
-      </Link>
-      <section className="auth-panel">
-        <p className="eyebrow">Account</p>
-        <h1>Sign in</h1>
-        <SignInPanel />
-      </section>
-    </main>
-  );
+export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {
+  const query = await searchParams;
+  const returnTo = Array.isArray(query.returnTo) ? query.returnTo[0] : query.returnTo;
+  return <AuthPage eyebrow="Account" title="Sign in"><SignInPanel returnTo={returnTo} /></AuthPage>;
 }

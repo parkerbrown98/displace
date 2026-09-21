@@ -20,7 +20,7 @@ import { routes } from "@/lib/routes";
 import { Avatar } from "@/components/ui/avatar";
 
 interface AppShellProps {
-  activeNavigation?: "discover" | "home" | "saved";
+  activeNavigation?: "discover" | "home" | "saved" | null;
   children: ReactNode;
   fixture: CommunityFixture;
 }

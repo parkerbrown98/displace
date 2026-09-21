@@ -46,7 +46,7 @@ Run the worker alongside the API to deliver verification and password-reset mail
 pnpm worker:dev
 ```
 
-When `SMTP_HOST` is unset, the worker captures messages in structured development logs. Docker Compose configures Mailpit at `http://localhost:8025`. OIDC is enabled only when all `OIDC_*` settings are supplied and uses discovery, authorization code flow, PKCE, state, and nonce validation. Existing local accounts must sign in before linking a provider identity.
+When `SMTP_HOST` is unset, the worker captures messages in structured development logs. Docker Compose configures Mailpit at `http://localhost:8025`. OIDC is enabled only when all `OIDC_*` settings are supplied and uses discovery, authorization code flow, PKCE, state, and nonce validation. Set `OIDC_REDIRECT_URL` to the API callback, such as `http://localhost:3001/api/v1/auth/oidc/callback`. After issuing browser cookies, the callback redirects to `/auth/callback` on the first configured `CORS_ORIGINS` application origin. Existing local accounts must sign in before linking a provider identity.
 
 ## Places And Permissions
 
