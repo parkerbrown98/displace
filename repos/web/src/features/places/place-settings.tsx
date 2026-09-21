@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { StatusPanel } from "@/components/ui/status-panel";
 import { useSession } from "@/features/auth/session-provider";
+import { ForumSettings } from "@/features/forums/forum-settings";
 import { routes } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
 import {
@@ -70,28 +71,31 @@ export function PlaceSettings({ placeId }: { placeId: string }) {
 function PlaceSettingsContent({ context, reload }: { context: PlaceContextContract; reload: () => Promise<void> }) {
   const canManagePlace = context.viewer.permissions.includes("place.manage");
   const canManageRoles = context.viewer.permissions.includes("role.manage");
+  const canManageForums = context.viewer.permissions.includes("forum.manage");
   const [roles, setRoles] = useState<PlaceRoleContract[]>([]);
   const [rolesFailed, setRolesFailed] = useState(false);
 
   useEffect(() => {
+    if (!canManageRoles) return;
     let active = true;
     void listPlaceRoles(context.place.id).then((page) => { if (active) setRoles(page.items); }).catch(() => { if (active) setRolesFailed(true); });
     return () => { active = false; };
-  }, [context.place.id]);
+  }, [canManageRoles, context.place.id]);
 
-  if (!canManagePlace && !canManageRoles) return <StatusPanel title="Settings unavailable" description="Your current roles do not grant place or role management." />;
+  if (!canManagePlace && !canManageRoles && !canManageForums) return <StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, or role management." />;
 
   async function refreshAfterForbidden(error: unknown) {
     if (isForbiddenPlaceError(error)) await reload();
   }
 
   return <main className="settings-main" id="main-content">
-    <header className="settings-heading"><p className="eyebrow">{context.place.name}</p><h1>Place settings</h1><p>Identity, access policy, roles, and ownership-sensitive operations.</p></header>
+    <header className="settings-heading"><p className="eyebrow">{context.place.name}</p><h1>Place settings</h1><p>Identity, discussion structure, access policy, roles, and ownership-sensitive operations.</p></header>
     <div className="settings-layout">
-      <nav aria-label="Place settings sections"><a href="#identity">Identity</a><a href="#preferences">Preferences</a><a href="#roles">Roles</a><a href="#archive">Archive</a></nav>
+      <nav aria-label="Place settings sections">{canManagePlace ? <><a href="#identity">Identity</a><a href="#preferences">Preferences</a></> : null}{canManageForums ? <a href="#forums">Forums</a> : null}{canManageRoles ? <a href="#roles">Roles</a> : null}{canManagePlace ? <a href="#archive">Archive</a> : null}</nav>
       <div className="settings-sections">
         {canManagePlace ? <IdentityForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} /> : null}
         {canManagePlace ? <PreferenceForm context={context} onForbidden={refreshAfterForbidden} /> : null}
+        {canManageForums ? <ForumSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
         {canManageRoles ? <section className="settings-section" id="roles"><p className="eyebrow">Authorization</p><h2>Roles and permissions</h2><p className="settings-muted">Roles can only grant permissions and positions below your own. System roles are read-only.</p>{rolesFailed ? <p className="form-message form-message-error" role="alert">Roles could not be loaded.</p> : <div className="role-list">{roles.map((role) => <RoleEditor key={role.id} onChanged={async () => setRoles((await listPlaceRoles(context.place.id)).items)} onForbidden={refreshAfterForbidden} placeId={context.place.id} role={role} />)}</div>}<NewRoleForm onCreated={(role) => setRoles((items) => [...items, role].sort((a, b) => a.position - b.position))} onForbidden={refreshAfterForbidden} placeId={context.place.id} /></section> : null}
         {canManagePlace ? <ArchiveSection context={context} onForbidden={refreshAfterForbidden} /> : null}
       </div>

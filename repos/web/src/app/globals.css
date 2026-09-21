@@ -1088,6 +1088,95 @@ textarea:focus-visible {
 	border-bottom: 1px solid var(--line);
 }
 
+.forum-admin-list,
+.forum-tag-admin {
+	margin-top: 24px;
+}
+
+.forum-admin-group,
+.forum-admin-create {
+	border-top: 1px solid var(--line);
+}
+
+.forum-admin-list > :last-child,
+.forum-admin-create,
+.forum-tag-admin {
+	border-bottom: 1px solid var(--line);
+}
+
+.forum-admin-group > summary,
+.forum-admin-create > summary,
+.forum-admin-forum > summary {
+	display: flex;
+	min-height: 54px;
+	align-items: center;
+	gap: 9px;
+	padding: 11px 4px;
+	cursor: pointer;
+}
+
+.forum-admin-group > summary > span,
+.forum-admin-forum > summary > span {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.forum-admin-group summary small,
+.forum-admin-forum summary small {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.forum-admin-form {
+	max-width: none;
+	padding: 8px 4px 24px;
+}
+
+.forum-admin-forums {
+	margin: 0 0 20px 18px;
+	padding-left: 18px;
+	border-left: 2px solid var(--teal-soft);
+}
+
+.forum-admin-forum {
+	border-bottom: 1px solid var(--line);
+}
+
+.forum-admin-empty {
+	padding: 0 4px 18px;
+}
+
+.forum-tag-admin h3 {
+	margin: 0 0 12px;
+	font-size: 16px;
+}
+
+.forum-tag-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 0;
+	list-style: none;
+}
+
+.forum-tag-list li {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.forum-tag-form {
+	display: grid;
+	grid-template-columns: 1fr 1fr 72px auto;
+	align-items: end;
+	gap: 12px;
+	max-width: none;
+	padding: 18px 0 24px;
+}
+
 .permission-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1746,7 +1835,19 @@ textarea:focus-visible {
 	gap: 24px;
 }
 
-.public-topic-toolbar a {
+.public-topic-toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 22px;
+}
+
+.forum-authoring-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.public-topic-toolbar nav a {
 	position: relative;
 	padding: 15px 0;
 	color: var(--muted);
@@ -1755,11 +1856,11 @@ textarea:focus-visible {
 	text-transform: capitalize;
 }
 
-.public-topic-toolbar a.active {
+.public-topic-toolbar nav a.active {
 	color: var(--ink);
 }
 
-.public-topic-toolbar a.active::after {
+.public-topic-toolbar nav a.active::after {
 	position: absolute;
 	right: 0;
 	bottom: -1px;
@@ -2210,6 +2311,19 @@ textarea:focus-visible {
 
 	.public-topic-toolbar nav {
 		overflow-x: auto;
+	}
+
+	.public-topic-toolbar-actions {
+		justify-content: space-between;
+	}
+
+	.forum-admin-forums {
+		margin-left: 8px;
+		padding-left: 10px;
+	}
+
+	.forum-tag-form {
+		grid-template-columns: 1fr;
 	}
 
 	.public-topic-row {

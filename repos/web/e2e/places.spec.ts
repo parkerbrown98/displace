@@ -27,9 +27,37 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await page.getByRole("button", { name: "Create place" }).click();
   await expect(page).toHaveURL(new RegExp(`/places/${slug}/settings$`));
   await expect(page.getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
+
+  const groupCreator = page.locator("details.forum-admin-create").filter({ hasText: "Create forum group" });
+  await groupCreator.locator("summary").click();
+  await groupCreator.getByLabel("Group name").fill("General");
+  await groupCreator.getByLabel("Description").fill("Community conversations.");
+  await groupCreator.getByRole("button", { name: "Create group" }).click();
+  await expect(page.getByText("Forum group created.")).toBeVisible();
+
+  const forumCreator = page.locator("details.forum-admin-create").filter({ hasText: "Create forum" }).last();
+  await forumCreator.locator("summary").click();
+  await forumCreator.getByLabel("Forum name").fill("General discussion");
+  await forumCreator.getByLabel("Description").fill("A place to start talking.");
+  await forumCreator.getByRole("button", { name: "Create forum" }).click();
+  await expect(page.getByText("Forum created.")).toBeVisible();
+
   const ownerRole = page.locator("details").filter({ hasText: "Owner" });
   await ownerRole.locator("summary").click();
   await expect(ownerRole.getByText("System role permissions cannot be changed.")).toBeVisible();
+
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("link", { name: /General discussion/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Manage forums" })).toBeVisible();
+  await page.getByRole("link", { name: "New topic" }).click();
+  await page.getByLabel("Forum").selectOption({ label: "General discussion" });
+  await page.getByLabel("Title").fill("Welcome to the studio");
+  await page.getByRole("textbox", { name: "Opening post" }).fill("This topic was created through the browser interface.");
+  await page.getByRole("button", { name: "Publish topic" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome to the studio" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Reply" }).fill("This reply was created through the browser interface.");
+  await page.getByRole("button", { name: "Publish reply" }).click();
+  await expect(page.getByText("This reply was created through the browser interface.")).toBeVisible();
 });
 
 test("reviews membership requests", async ({ page, request }, testInfo) => {

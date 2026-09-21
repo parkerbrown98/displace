@@ -55,10 +55,11 @@ export class ForumsService {
       this.canReadForum(forum, authorization),
     );
     const readableGroupIds = new Set(readableForums.map((forum) => forum.groupId));
+    const visibleGroups = authorization?.permissions.has('forum.manage')
+      ? navigation.groups
+      : navigation.groups.filter((group) => readableGroupIds.has(group.id));
     return {
-      groups: navigation.groups
-        .filter((group) => readableGroupIds.has(group.id))
-        .map((group) => this.toGroup(
+      groups: visibleGroups.map((group) => this.toGroup(
           group,
           readableForums.filter((forum) => forum.groupId === group.id),
         )),

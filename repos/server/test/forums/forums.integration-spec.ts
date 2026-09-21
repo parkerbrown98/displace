@@ -77,6 +77,16 @@ describe('forum lifecycle', () => {
     expect(groupResponse.statusCode).toBe(201);
     const group = groupResponse.json<{ forums: unknown[]; id: string }>();
     expect(group.forums).toEqual([]);
+    const ownerNavigation = await request(owner, 'GET', `/places/${place.id}/forums`);
+    expect(ownerNavigation.json<{ groups: Array<{ id: string }> }>().groups)
+      .toContainEqual(expect.objectContaining({ id: group.id }));
+    const publicNavigation = await app.inject({
+      method: 'GET',
+      url: `/api/v1/places/${place.id}/forums`,
+    });
+    expect(publicNavigation.statusCode, publicNavigation.body).toBe(200);
+    expect(publicNavigation.json<{ groups: Array<{ id: string }> }>().groups)
+      .not.toContainEqual(expect.objectContaining({ id: group.id }));
     const duplicateGroup = await request(owner, 'POST', `/places/${place.id}/forum-groups`, {
       name: 'general',
     });

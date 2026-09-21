@@ -11,7 +11,7 @@ export const publicIds = {
   netcodeTopic: "01990000-7000-8000-8000-000000000202",
 } as const;
 
-const forumNavigationFixture: ForumNavigationContract = {
+export const forumNavigationFixture: ForumNavigationContract = {
   groups: [
     {
       id: "01990000-7000-8000-8000-000000000100",

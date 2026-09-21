@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { StatusPanel } from "@/components/ui/status-panel";
+import { ForumAuthoringActions } from "@/features/forums/create-topic-form";
 import { TopicDiscussion } from "@/features/forums/topic-discussion";
 import type { PlaceContract, PlacePageContract } from "@/features/places/place-contract";
 import { PlaceMembershipActions } from "@/features/places/place-access";
@@ -77,6 +78,7 @@ export function PlaceView({ feed, navigation, place, tag, topics }: PlaceViewPro
         feed={feed}
         nextCursor={topics.nextCursor}
         path={routes.place(place.slug)}
+        placeId={place.id}
         placeSlug={place.slug}
         tag={tag}
         topics={topics.items}
@@ -110,6 +112,7 @@ export function ForumView({
         feed={feed}
         nextCursor={topics.nextCursor}
         path={routes.forum(place.slug, forum.id)}
+        placeId={place.id}
         placeSlug={place.slug}
         topics={topics.items}
       />
@@ -214,6 +217,7 @@ function TopicDirectory({
   feed,
   nextCursor,
   path,
+  placeId,
   placeSlug,
   tag,
   topics,
@@ -221,6 +225,7 @@ function TopicDirectory({
   feed: "following" | "latest" | "popular";
   nextCursor?: string;
   path: string;
+  placeId: string;
   placeSlug: string;
   tag?: string;
   topics: TopicContract[];
@@ -229,11 +234,14 @@ function TopicDirectory({
     <section className="public-topics" aria-labelledby="public-topics-heading">
       <div className="public-topic-toolbar">
         <h2 id="public-topics-heading">Discussions</h2>
-        <nav aria-label="Topic filters">
-          {(["latest", "popular", "following"] as const).map((value) => (
-            <Link className={feed === value ? "active" : ""} href={`${path}?feed=${value}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`} key={value}>{capitalize(value)}</Link>
-          ))}
-        </nav>
+        <div className="public-topic-toolbar-actions">
+          <nav aria-label="Topic filters">
+            {(["latest", "popular", "following"] as const).map((value) => (
+              <Link className={feed === value ? "active" : ""} href={`${path}?feed=${value}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`} key={value}>{capitalize(value)}</Link>
+            ))}
+          </nav>
+          <ForumAuthoringActions placeId={placeId} placeSlug={placeSlug} />
+        </div>
       </div>
       {topics.length ? topics.map((topic) => (
         <article className="public-topic-row" key={topic.id}>

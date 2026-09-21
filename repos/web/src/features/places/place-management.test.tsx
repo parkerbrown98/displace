@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,6 +6,7 @@ import { createAuthenticationFixture } from "@/features/auth/auth-fixtures";
 import { SessionProvider } from "@/features/auth/session-provider";
 import { resetAuthenticationForTests, signIn } from "@/features/auth/auth-client";
 import { mockServer } from "@/test/mocks/server";
+import { forumNavigationFixture } from "@/features/public-content/public-fixtures";
 import { memberFixture, pendingMemberFixture, placeContextFixture, placeContractFixture, placeInvitesFixture, placeMembersFixture, placeRolesFixture } from "./place-fixtures";
 import { InviteAcceptance, PlaceMembershipActions } from "./place-access";
 import { PlaceMembers } from "./place-members";
@@ -16,13 +17,27 @@ const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
 describe("place management", () => {
+  let createdForumGroup: unknown;
+  let createdForum: unknown;
+
   beforeEach(async () => {
+    createdForumGroup = undefined;
+    createdForum = undefined;
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(createAuthenticationFixture())),
       http.post("http://localhost:3001/api/v1/auth/refresh", () => HttpResponse.json(createAuthenticationFixture())),
       http.get("http://localhost:3001/api/v1/places/game-makers/context", () => HttpResponse.json(placeContextFixture)),
       http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/context", () => HttpResponse.json(placeContextFixture)),
       http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/roles", () => HttpResponse.json({ items: placeRolesFixture })),
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/forums", () => HttpResponse.json(forumNavigationFixture)),
+      http.post("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/forum-groups", async ({ request }) => {
+        createdForumGroup = await request.json();
+        return HttpResponse.json({ ...createdForumGroup as object, forums: [], id: "01990000-7000-8000-8000-000000000120" }, { status: 201 });
+      }),
+      http.post("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/forums", async ({ request }) => {
+        createdForum = await request.json();
+        return HttpResponse.json({ ...createdForum as object, id: "01990000-7000-8000-8000-000000000121" }, { status: 201 });
+      }),
       http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/members", ({ request }) => {
         const status = new URL(request.url).searchParams.get("status");
         return HttpResponse.json({ items: status === "pending" ? [pendingMemberFixture] : placeMembersFixture });
@@ -47,7 +62,7 @@ describe("place management", () => {
 
   it("uses server-shaped capabilities for member and management actions", async () => {
     render(<SessionProvider><PlaceMembershipActions place={placeContractFixture} /></SessionProvider>);
-    expect(await screen.findByRole("link", { name: "Manage" })).toHaveAttribute("href", "/places/game-makers/settings");
+    expect(await screen.findByRole("link", { name: "Manage place" })).toHaveAttribute("href", "/places/game-makers/settings");
     expect(screen.getByRole("link", { name: "Members" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Leave" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Leave" })).toHaveAttribute("title", "Transfer ownership before leaving");
@@ -79,6 +94,32 @@ describe("place management", () => {
     await user.click(screen.getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(screen.queryByRole("heading", { name: "Membership requests" })).not.toBeInTheDocument());
     expect(screen.getByText("Noah Park")).toBeInTheDocument();
+  });
+
+  it("creates forum groups and forums from place settings", async () => {
+    const user = userEvent.setup();
+    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} /></SessionProvider>);
+    expect(await screen.findByRole("heading", { name: "Forums and tags" })).toBeInTheDocument();
+
+    const groupCreator = screen.getByText("Create forum group", { selector: "strong" }).closest("details");
+    expect(groupCreator).not.toBeNull();
+    await user.click(within(groupCreator!).getByText("Create forum group", { selector: "strong" }));
+    await user.type(within(groupCreator!).getByLabelText("Group name"), "Community");
+    await user.type(within(groupCreator!).getByLabelText("Description"), "General conversations.");
+    await user.click(within(groupCreator!).getByRole("button", { name: "Create group" }));
+    await waitFor(() => expect(createdForumGroup).toMatchObject({ name: "Community", description: "General conversations.", position: 0 }));
+
+    const forumCreator = screen.getByText("Create forum", { selector: "strong" }).closest("details");
+    expect(forumCreator).not.toBeNull();
+    await user.click(within(forumCreator!).getByText("Create forum", { selector: "strong" }));
+    await user.type(within(forumCreator!).getByLabelText("Forum name"), "Introductions");
+    await user.type(within(forumCreator!).getByLabelText("Description"), "Meet the community.");
+    await user.click(within(forumCreator!).getByRole("button", { name: "Create forum" }));
+    await waitFor(() => expect(createdForum).toMatchObject({
+      groupId: forumNavigationFixture.groups[0]?.id,
+      name: "Introductions",
+      visibility: "public",
+    }));
   });
 
   it("accepts an invitation and navigates to the place", async () => {

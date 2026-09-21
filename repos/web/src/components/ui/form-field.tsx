@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from "react";
+import { useId, type InputHTMLAttributes } from "react";
 
 interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
@@ -7,7 +7,8 @@ interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function FormField({ error, hint, id, label, ...inputProps }: FormFieldProps) {
-  const fieldId = id ?? inputProps.name;
+  const generatedId = useId();
+  const fieldId = id ?? `${inputProps.name ?? "field"}-${generatedId}`;
   const descriptionId = error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined;
 
   return (

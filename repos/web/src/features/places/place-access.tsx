@@ -87,7 +87,7 @@ export function PlaceMembershipActions({ place }: { place: PlaceContract }) {
   return <div className="place-actions">
     {context ? <>
       <Link className="secondary-button" href={routes.placeMembers(place.slug)}><Users size={16} /> Members</Link>
-      {context.viewer.permissions.includes("place.manage") || context.viewer.permissions.includes("role.manage") ? <Link className="primary-button" href={routes.placeSettings(place.slug)}><Settings size={16} /> Manage</Link> : null}
+      {context.viewer.permissions.includes("place.manage") || context.viewer.permissions.includes("role.manage") || context.viewer.permissions.includes("forum.manage") ? <Link className="primary-button" href={routes.placeSettings(place.slug)}><Settings size={16} /> Manage place</Link> : null}
       <button className="secondary-button" disabled={pending || context.viewer.isOwner} onClick={() => void leave()} title={context.viewer.isOwner ? "Transfer ownership before leaving" : undefined} type="button"><LogOut size={16} /> Leave</button>
     </> : <button className="primary-button" disabled={pending} onClick={() => void join()} type="button">{pending ? "Joining..." : place.joinPolicy === "approval" ? "Request to join" : place.joinPolicy === "invite_only" ? "Invite required" : "Join place"}</button>}
     {notice ? <span className="action-notice" role="status">{notice}</span> : null}

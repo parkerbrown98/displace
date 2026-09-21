@@ -1,22 +1,23 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { Plus, Send, Settings } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { StatusPanel } from "@/components/ui/status-panel";
-import { PlaceWorkspaceGate, placeErrorMessage } from "@/features/places/place-access";
-import type { PlaceContract } from "@/features/places/place-contract";
+import { useEffect, useState, type FormEvent } from "react";
+import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { PlaceWorkspaceGate, placeErrorMessage, usePlaceWorkspace } from "@/features/places/place-access";
+import type { PlaceContextContract, PlaceContract, PlacePermission } from "@/features/places/place-contract";
 import type { ForumNavigationContract } from "@/features/public-content/public-contracts";
 import { routes } from "@/lib/routes";
-import { createTopic } from "./forum-client";
+import { createTopic, getForumNavigation } from "./forum-client";
 import type { RichTextDocumentContract } from "./forum-contract";
 import { ForumEditor } from "./forum-editor";
 
-export function CreateTopicScreen({ navigation, place }: { navigation: ForumNavigationContract; place: PlaceContract }) {
+export function CreateTopicScreen({ placeId }: { placeId: string }) {
   return (
-    <PlaceWorkspaceGate placeId={place.id}>
+    <PlaceWorkspaceGate placeId={placeId}>
       {({ context }) => context.viewer.permissions.includes("topic.create") ? (
-        <CreateTopicForm navigation={navigation} place={place} />
+        <CreateTopicLoader context={context} />
       ) : (
         <main className="public-main" id="main-content"><StatusPanel description="Your role does not allow creating topics here." title="Topic creation unavailable" /></main>
       )}
@@ -24,9 +25,39 @@ export function CreateTopicScreen({ navigation, place }: { navigation: ForumNavi
   );
 }
 
-function CreateTopicForm({ navigation, place }: { navigation: ForumNavigationContract; place: PlaceContract }) {
+function CreateTopicLoader({ context }: { context: PlaceContextContract }) {
+  const [navigation, setNavigation] = useState<ForumNavigationContract>();
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    let active = true;
+    void getForumNavigation(context.place.id).then((value) => {
+      if (active) setNavigation(value);
+    }).catch((cause) => {
+      if (active) setError(placeErrorMessage(cause, "Forums could not be loaded."));
+    });
+    return () => { active = false; };
+  }, [context.place.id]);
+
+  if (error) return <main className="public-main" id="main-content"><StatusPanel description={error} title="Forums unavailable" tone="error" /></main>;
+  if (!navigation) return <main className="public-main" id="main-content"><LoadingPanel label="Loading forums" /></main>;
+  return <CreateTopicForm navigation={navigation} permissions={context.viewer.permissions} place={context.place} />;
+}
+
+export function ForumAuthoringActions({ placeId, placeSlug }: { placeId: string; placeSlug: string }) {
+  const workspace = usePlaceWorkspace(placeId);
+  const canCreateTopics = workspace.context?.viewer.permissions.includes("topic.create");
+  const canManageForums = workspace.context?.viewer.permissions.includes("forum.manage");
+  if (!canCreateTopics && !canManageForums) return null;
+  return <div className="forum-authoring-actions">
+    {canManageForums ? <Link className="secondary-button" href={`${routes.placeSettings(placeSlug)}#forums`}><Settings size={16} /> Manage forums</Link> : null}
+    {canCreateTopics ? <Link className="primary-button" href={routes.createTopic(placeSlug)}><Plus size={16} /> New topic</Link> : null}
+  </div>;
+}
+
+function CreateTopicForm({ navigation, permissions, place }: { navigation: ForumNavigationContract; permissions: PlacePermission[]; place: PlaceContract }) {
   const router = useRouter();
-  const forums = navigation.groups.flatMap((group) => group.forums);
+  const forums = navigation.groups.flatMap((group) => group.forums).filter((forum) => !forum.writePermission || permissions.includes(forum.writePermission as PlacePermission));
   const [document, setDocument] = useState<RichTextDocumentContract>();
   const [editorEmpty, setEditorEmpty] = useState(true);
   const [error, setError] = useState<string>();
