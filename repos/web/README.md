@@ -15,6 +15,8 @@ pnpm install
 
 Copy `.env.example` to `.env.local` when the API is not available at `http://localhost:3001/api/v1`.
 
+Public discovery uses deterministic fixtures by default. Set `WEB_DATA_SOURCE=api` to use the server's cacheable public place, forum, topic, and post operations. Public member profiles remain unavailable in API mode until the server publishes an anonymous profile operation.
+
 ## Run
 
 ```bash
@@ -46,7 +48,7 @@ Playwright starts the development server automatically for browser tests. Instal
 - `src/lib/api` owns public server reads, credentialed browser requests, request IDs, CSRF and idempotency headers, cursors, and problem details.
 - `src/test/mocks` contains MSW handlers for fixture-backed contract tests.
 
-The interface remains fixture-backed while server operations stabilize. Provisional contracts must stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published.
+The interface remains fixture-first while server operations stabilize. Provisional contracts must stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published.
 
 ## Production
 

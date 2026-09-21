@@ -31,6 +31,8 @@ This plan is intentionally coordinated with, but not serialized behind, the [ser
 
 ### Phase 2: Public Discovery and SEO-Ready Reads
 
+**Status:** Complete as of 2026-09-21.
+
 **Server alignment:** Build in parallel with API phases 2-4; connect incrementally as place discovery and public read operations stabilize.
 
 1. Implement a public landing/discovery route, place profile route, forum navigation route, topic route, and profile summary route. Ensure every public page has canonical metadata, Open Graph metadata, a meaningful document title, and a no-index response for private or unavailable resources.

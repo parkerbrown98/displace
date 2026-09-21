@@ -8,6 +8,10 @@ export interface ApiRequestOptions extends Omit<RequestInit, "body" | "headers">
   fetchImplementation?: typeof fetch;
   headers?: HeadersInit;
   idempotencyKey?: string;
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
   requestId?: string;
 }
 
