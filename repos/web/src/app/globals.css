@@ -42,7 +42,9 @@ a {
 }
 
 button,
-input {
+input,
+select,
+textarea {
 	font: inherit;
 }
 
@@ -53,9 +55,27 @@ a {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
 	outline: 3px solid rgba(207, 101, 78, 0.35);
 	outline-offset: 2px;
+}
+
+.skip-link {
+	position: fixed;
+	top: 8px;
+	left: 8px;
+	z-index: 100;
+	padding: 9px 12px;
+	color: white;
+	background: var(--ink);
+	border-radius: 4px;
+	transform: translateY(-150%);
+}
+
+.skip-link:focus {
+	transform: translateY(0);
 }
 
 .sr-only {
@@ -635,6 +655,206 @@ input:focus-visible {
 	text-align: center;
 }
 
+.route-placeholder,
+.auth-panel,
+.status-panel {
+	max-width: 680px;
+}
+
+.route-placeholder {
+	padding: 64px 0;
+}
+
+.route-placeholder h1,
+.auth-panel h1,
+.status-panel h2 {
+	margin: 8px 0 12px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-weight: 500;
+	letter-spacing: 0;
+}
+
+.route-placeholder h1,
+.auth-panel h1 {
+	font-size: 40px;
+}
+
+.route-placeholder > p:last-child,
+.status-panel p {
+	color: var(--muted);
+	line-height: 1.6;
+}
+
+.status-panel {
+	padding: 28px;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-left: 4px solid var(--teal);
+	border-radius: 7px;
+}
+
+.status-panel-error {
+	border-left-color: var(--coral);
+}
+
+.status-panel .primary-button {
+	margin-top: 8px;
+}
+
+.standalone-state,
+.auth-page {
+	display: grid;
+	min-height: 100vh;
+	place-items: center;
+	padding: 32px;
+}
+
+.loading-panel {
+	display: grid;
+	width: min(560px, 100%);
+	gap: 13px;
+}
+
+.skeleton {
+	display: block;
+	height: 18px;
+	background: #deded7;
+	border-radius: 4px;
+	animation: skeleton-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.skeleton-title {
+	width: 56%;
+	height: 34px;
+}
+
+.auth-page {
+	align-content: center;
+	background: var(--paper);
+}
+
+.auth-page > .brand {
+	position: absolute;
+	top: 24px;
+	left: 24px;
+}
+
+.auth-panel {
+	width: min(420px, 100%);
+	padding: 30px;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 7px;
+}
+
+.auth-form,
+.form-field {
+	display: grid;
+}
+
+.auth-form {
+	gap: 18px;
+}
+
+.form-field {
+	gap: 7px;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.form-field input {
+	width: 100%;
+	min-height: 42px;
+	padding: 8px 10px;
+	color: var(--ink);
+	background: white;
+	border: 1px solid #bfc4bf;
+	border-radius: 5px;
+}
+
+.form-field small {
+	color: var(--muted);
+	font-weight: 500;
+}
+
+.form-field .field-error {
+	color: #a13d2d;
+}
+
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 90;
+	display: grid;
+	place-items: center;
+	padding: 24px;
+	background: rgba(29, 41, 40, 0.62);
+}
+
+.modal {
+	width: min(460px, 100%);
+	padding: 24px;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 7px;
+	box-shadow: 0 18px 55px rgba(29, 41, 40, 0.24);
+}
+
+.modal > header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 18px;
+}
+
+.modal h2 {
+	margin: 0;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 25px;
+}
+
+.toast-region {
+	position: fixed;
+	right: 18px;
+	bottom: 18px;
+	z-index: 110;
+	display: grid;
+	width: min(360px, calc(100vw - 36px));
+	gap: 8px;
+}
+
+.toast {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 14px;
+	padding: 13px 14px;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-left: 4px solid var(--teal);
+	border-radius: 6px;
+	box-shadow: 0 10px 30px rgba(29, 41, 40, 0.16);
+}
+
+.toast-error {
+	border-left-color: var(--coral);
+}
+
+.toast-success {
+	border-left-color: #4f9470;
+}
+
+.toast p {
+	margin: 4px 0 0;
+	color: var(--muted);
+	font-size: 13px;
+}
+
+@keyframes skeleton-pulse {
+	from { opacity: 0.5; }
+	to { opacity: 1; }
+}
+
 @keyframes row-in {
 	from { opacity: 0; transform: translateY(8px); }
 	to { opacity: 1; transform: translateY(0); }
@@ -699,6 +919,24 @@ input:focus-visible {
 		font-size: 0;
 	}
 
+	.auth-form .primary-button,
+	.status-panel .primary-button {
+		width: auto;
+		padding: 8px 14px;
+		font-size: 13px;
+	}
+
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		scroll-behavior: auto !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
 	.primary-button svg { width: 18px; height: 18px; }
 
 	.topic-row {
