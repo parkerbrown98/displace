@@ -45,6 +45,7 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
   const [editingTitle, setEditingTitle] = useState(false);
   const canModerate = context?.viewer.permissions.includes("forum.manage") ?? false;
   const canReply = context?.viewer.permissions.includes("post.create") ?? false;
+  const canUpload = context?.viewer.permissions.includes("upload.create") ?? false;
   const isTopicAuthor = session.user?.id === topic.authorUserId;
 
   useEffect(() => {
@@ -114,13 +115,13 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
       {editingTitle ? <form className="topic-title-form" onSubmit={renameTopic}><label className="form-field">Topic title<input defaultValue={topic.title} maxLength={300} name="title" required /></label><button className="primary-button" type="submit">Save title</button></form> : null}
       {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
       <section className="post-list" aria-label="Posts">
-        {posts.map((post, index) => <DiscussionPost canModerate={canModerate} key={post.id} number={index + 1} onChange={(next) => setPosts((current) => current.map((item) => item.id === next.id ? next : item))} placeId={place.id} post={post} />)}
+        {posts.map((post, index) => <DiscussionPost canModerate={canModerate} canUpload={canUpload} key={post.id} number={index + 1} onChange={(next) => setPosts((current) => current.map((item) => item.id === next.id ? next : item))} placeId={place.id} post={post} />)}
       </section>
       {session.status === "anonymous" ? <p className="topic-reply-prompt"><Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.topic(place.slug, topic.id))}`}>Sign in to reply</Link></p> : null}
       {canReply && (topic.status === "open" || canModerate) ? (
         <form className="topic-reply-form" onSubmit={reply}>
           <h2><MessageSquareReply size={20} />Join the discussion</h2>
-          <ForumEditor key={posts.length} label="Reply" onChange={(nextDocument, isEmpty) => { setDocument(nextDocument); setEditorEmpty(isEmpty); }} placeId={place.id} />
+          <ForumEditor canUpload={canUpload} key={posts.length} label="Reply" onChange={(nextDocument, isEmpty) => { setDocument(nextDocument); setEditorEmpty(isEmpty); }} placeId={place.id} />
           <button className="primary-button" disabled={pending || editorEmpty} type="submit"><Send size={16} />{pending ? "Publishing..." : "Publish reply"}</button>
         </form>
       ) : null}
@@ -128,7 +129,7 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
   );
 }
 
-function DiscussionPost({ canModerate, number, onChange, placeId, post }: { canModerate: boolean; number: number; onChange: (post: PostContract) => void; placeId: string; post: PostContract }) {
+function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, post }: { canModerate: boolean; canUpload: boolean; number: number; onChange: (post: PostContract) => void; placeId: string; post: PostContract }) {
   const session = useSession();
   const [editing, setEditing] = useState(false);
   const [document, setDocument] = useState<RichTextDocumentContract>();
@@ -164,7 +165,7 @@ function DiscussionPost({ canModerate, number, onChange, placeId, post }: { canM
   return (
     <article className={`post${post.isDeleted ? " post-deleted" : ""}`}>
       <header><Avatar initials={post.isDeleted ? "-" : "CM"} size="small" /><div><strong>{post.isDeleted ? "Deleted member" : "Community member"}</strong><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time></div><a href={`#post-${post.id}`} id={`post-${post.id}`} aria-label={`Post ${number}`}>#{number}</a></header>
-      {post.isDeleted || !post.document ? <p className="tombstone">This post was removed.</p> : editing ? <div className="post-editor"><ForumEditor initialDocument={post.document as RichTextDocumentContract} label="Edit post" onChange={(next, isEmpty) => { setDocument(next); setEditorEmpty(isEmpty); }} placeId={placeId} /><div><button className="primary-button" disabled={editorEmpty} onClick={() => void saveEdit()} type="button">Save edit</button><button className="secondary-button" onClick={() => setEditing(false)} type="button">Cancel</button></div></div> : <RichText document={post.document} />}
+      {post.isDeleted || !post.document ? <p className="tombstone">This post was removed.</p> : editing ? <div className="post-editor"><ForumEditor canUpload={canUpload} initialDocument={post.document as RichTextDocumentContract} label="Edit post" onChange={(next, isEmpty) => { setDocument(next); setEditorEmpty(isEmpty); }} placeId={placeId} /><div><button className="primary-button" disabled={editorEmpty} onClick={() => void saveEdit()} type="button">Save edit</button><button className="secondary-button" onClick={() => setEditing(false)} type="button">Cancel</button></div></div> : <RichText document={post.document} placeId={placeId} />}
       {!post.isDeleted && session.status === "authenticated" ? <footer className="post-actions">
         {["like", "helpful", "insightful"].map((reaction) => { const summary = post.reactions.find((item) => item.reaction === reaction); return <button aria-pressed={summary?.reacted ?? false} key={reaction} onClick={() => void react(reaction, !(summary?.reacted ?? false))} type="button">{reaction}{summary?.count ? ` ${summary.count}` : ""}</button>; })}
         <button aria-pressed={saved} onClick={() => void setPostSave(placeId, post.id, !saved).then(() => setSaved(!saved)).catch((cause) => setError(placeErrorMessage(cause, "Save status could not be changed.")))} type="button"><Bookmark size={14} />{saved ? "Saved" : "Save"}</button>

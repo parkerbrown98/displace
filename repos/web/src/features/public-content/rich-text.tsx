@@ -1,18 +1,19 @@
 import { Fragment, type ReactNode } from "react";
+import { AuthorizedAssetImage } from "@/features/assets/authorized-asset-image";
 import type { RichTextDocumentContract, RichTextMarkContract, RichTextNodeContract } from "./public-contracts";
 
-export function RichText({ document }: { document: RichTextDocumentContract }) {
-  return <div className="rich-text">{renderNodes(document.content)}</div>;
+export function RichText({ document, placeId }: { document: RichTextDocumentContract; placeId?: string }) {
+  return <div className="rich-text">{renderNodes(document.content, placeId)}</div>;
 }
 
-function renderNodes(nodes: RichTextNodeContract[] | undefined): ReactNode {
+function renderNodes(nodes: RichTextNodeContract[] | undefined, placeId?: string): ReactNode {
   return nodes?.map((node, index) => (
-    <Fragment key={`${node.type}-${index}`}>{renderNode(node)}</Fragment>
+    <Fragment key={`${node.type}-${index}`}>{renderNode(node, placeId)}</Fragment>
   ));
 }
 
-function renderNode(node: RichTextNodeContract): ReactNode {
-  const content = renderNodes(node.content);
+function renderNode(node: RichTextNodeContract, placeId?: string): ReactNode {
+  const content = renderNodes(node.content, placeId);
   switch (node.type) {
     case "doc": return content;
     case "paragraph": return <p>{content}</p>;
@@ -32,6 +33,11 @@ function renderNode(node: RichTextNodeContract): ReactNode {
     case "mention": {
       const handle = typeof node.attrs?.handle === "string" ? node.attrs.handle : "member";
       return <span className="mention">@{handle}</span>;
+    }
+    case "image": {
+      const assetId = typeof node.attrs?.assetId === "string" ? node.attrs.assetId : undefined;
+      const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
+      return assetId ? <AuthorizedAssetImage alt={alt} assetId={assetId} placeId={placeId} /> : null;
     }
     case "text": return applyMarks(node.text ?? "", node.marks);
     default: return null;

@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { setProfileImage } from "@/features/assets/asset-client";
+import { ImageUploader } from "@/features/assets/image-uploader";
+import { getPlaceContext, listMyPlaces } from "@/features/places/place-client";
 import { routes } from "@/lib/routes";
 import type { AccountSession } from "./auth-contracts";
 import { changeEmail, changePassword, listSessions, revokeSession, updateProfile } from "./auth-client";
@@ -49,10 +52,11 @@ export function AccountSettings() {
       </header>
       <div className="settings-layout">
         <nav aria-label="Settings sections">
-          <a href="#profile">Profile</a><a href="#email">Email</a><a href="#password">Password</a><a href="#sessions">Sessions</a>
+          <a href="#profile">Profile</a><a href="#profile-image">Profile image</a><a href="#email">Email</a><a href="#password">Password</a><a href="#sessions">Sessions</a>
         </nav>
         <div className="settings-sections">
           <ProfileSettings user={session.user} onSaved={session.refreshProfile} />
+          <ProfileImageSettings />
           <EmailSettings email={session.user.email} verified={session.user.emailVerified} />
           <PasswordSettings />
           <section className="settings-section" id="sessions">
@@ -63,6 +67,61 @@ export function AccountSettings() {
         </div>
       </div>
     </main>
+  );
+}
+
+function ProfileImageSettings() {
+  const [places, setPlaces] = useState<Array<{ id: string; name: string }>>([]);
+  const [placeId, setPlaceId] = useState("");
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void listMyPlaces()
+      .then(async (page) => {
+        const contexts = await Promise.all(
+          page.items.map((place) => getPlaceContext(place.id).catch(() => undefined)),
+        );
+        const available = contexts
+          .filter((context) => context?.viewer.permissions.includes("upload.create"))
+          .map((context) => ({ id: context!.place.id, name: context!.place.name }));
+        if (active) {
+          setPlaces(available);
+          setPlaceId(available[0]?.id ?? "");
+        }
+      })
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <section className="settings-section" id="profile-image">
+      <p className="eyebrow">Portrait</p>
+      <h2>Profile image</h2>
+      {failed ? (
+        <p className="form-message form-message-error" role="alert">Upload access could not be loaded.</p>
+      ) : places.length ? (
+        <>
+          {places.length > 1 ? (
+            <label className="form-field">
+              Upload storage
+              <select onChange={(event) => setPlaceId(event.target.value)} value={placeId}>
+                {places.map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}
+              </select>
+              <small>The image remains private in this place&apos;s storage.</small>
+            </label>
+          ) : null}
+          <ImageUploader
+            description="JPEG, PNG, or WebP up to 25 MB. Square images work best."
+            label="Profile photo"
+            onUploaded={async (asset) => { await setProfileImage(placeId, "avatar", asset.id); }}
+            placeId={placeId}
+          />
+        </>
+      ) : (
+        <p className="settings-muted">Join a place with upload access to add a profile image.</p>
+      )}
+    </section>
   );
 }
 

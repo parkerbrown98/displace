@@ -34,6 +34,17 @@ describe("public content rendering", () => {
     expect(container).not.toHaveTextContent("never rendered");
   });
 
+  it("renders inaccessible media as an alt-text fallback", () => {
+    render(<RichText document={{
+      type: "doc",
+      version: 1,
+      content: [{ type: "image", attrs: { alt: "Meeting notes diagram", assetId: "asset-id" } }],
+    }} />);
+
+    expect(screen.getByText("Meeting notes diagram")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
   it("renders deleted posts as content-free tombstones", () => {
     const deletedPost = postPageFixture.items[1]!;
     render(

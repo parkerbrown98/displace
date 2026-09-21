@@ -4,8 +4,8 @@ export interface RichTextMarkContract {
 }
 
 export interface RichTextNodeContract {
-  type: "paragraph" | "heading" | "blockquote" | "bulletList" | "orderedList" | "listItem" | "codeBlock" | "text" | "hardBreak" | "mention";
-  attrs?: { handle?: string; level?: number };
+  type: "paragraph" | "heading" | "blockquote" | "bulletList" | "orderedList" | "listItem" | "codeBlock" | "text" | "hardBreak" | "mention" | "image";
+  attrs?: { handle?: string; level?: number; assetId?: string; alt?: string };
   content?: RichTextNodeContract[];
   marks?: RichTextMarkContract[];
   text?: string;

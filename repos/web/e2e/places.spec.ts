@@ -74,6 +74,33 @@ test("reviews membership requests", async ({ page, request }, testInfo) => {
   await expect(page.getByText(applicant.displayName, { exact: true }).last()).toBeVisible();
 });
 
+test("uploads and assigns a place image through object storage", async ({ page, request }, testInfo) => {
+  const owner = await registerVerifiedUser(request, testInfo, "media_owner");
+  const community = await createCommunity(request, owner, testInfo, { withTopic: false });
+  await signIn(page, owner);
+  await openHydrated(page, `/places/${community.placeSlug}/settings`);
+  const uploader = page.locator(".image-uploader").filter({ hasText: "Place icon" });
+
+  await uploader.getByLabel("Choose place icon").setInputFiles({
+    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+    mimeType: "image/png",
+    name: "place-icon.png",
+  });
+  const uploadRequest = page.waitForRequest((request) => request.method() === "PUT");
+  const uploadResponse = page.waitForResponse((response) => response.request().method() === "PUT");
+  await uploader.getByRole("button", { name: "Upload image" }).click();
+  const directUpload = await uploadRequest;
+  const directUploadResponse = await uploadResponse;
+
+  expect(new URL(directUpload.url()).hostname).toBe("localhost");
+  expect(directUploadResponse.status(), await directUploadResponse.text()).toBeLessThan(300);
+
+  await expect(uploader.getByRole("status")).toContainText("Image ready", { timeout: 30_000 });
+  const image = uploader.getByRole("img", { name: "Selected upload preview" });
+  await expect(image).toBeVisible();
+  await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+});
+
 test("returns through sign-in to accept a place invitation", async ({ page, request }, testInfo) => {
   const owner = await registerVerifiedUser(request, testInfo, "invite_owner");
   const invitee = await registerVerifiedUser(request, testInfo, "invitee");

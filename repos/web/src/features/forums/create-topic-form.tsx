@@ -103,7 +103,7 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
           <label className="form-field">Title<input maxLength={300} minLength={1} name="title" required /></label>
         </div>
         {navigation.tags.length ? <fieldset className="topic-tag-picker"><legend>Tags</legend>{navigation.tags.map((tag) => <label key={tag.id}><input name="tagIds" type="checkbox" value={tag.id} /><span>{tag.name}</span></label>)}</fieldset> : null}
-        <ForumEditor label="Opening post" onChange={(nextDocument, isEmpty) => { setDocument(nextDocument); setEditorEmpty(isEmpty); }} placeId={place.id} />
+        <ForumEditor canUpload={permissions.includes("upload.create")} label="Opening post" onChange={(nextDocument, isEmpty) => { setDocument(nextDocument); setEditorEmpty(isEmpty); }} placeId={place.id} />
         {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
         <div className="topic-compose-actions"><button className="primary-button" disabled={pending || editorEmpty} type="submit"><Send size={16} />{pending ? "Publishing..." : "Publish topic"}</button></div>
       </form>

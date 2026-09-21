@@ -53,7 +53,13 @@ export class ObjectStorageService implements ObjectStoragePort {
         Key: input.objectKey,
         Metadata: input.metadata,
       }),
-      { expiresIn: input.expiresInSeconds },
+      {
+        expiresIn: input.expiresInSeconds,
+        signableHeaders: new Set(['content-type']),
+        unhoistableHeaders: new Set(
+          Object.keys(input.metadata).map((name) => `x-amz-meta-${name}`),
+        ),
+      },
     );
   }
 

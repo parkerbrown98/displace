@@ -80,6 +80,8 @@ This plan is intentionally coordinated with the [server API implementation plan]
 
 ### Phase 6: Uploads and Media Presentation
 
+**Status:** Complete as of 2026-09-21.
+
 **Server alignment:** Build in parallel with API phase 6, independent of the forum write work except for final attachment controls.
 
 1. Implement a reusable upload controller that requests an upload intent, uploads directly to the provided S3-compatible URL, reports progress, finalizes completion, and polls or subscribes to validation status where necessary.

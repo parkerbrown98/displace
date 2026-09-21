@@ -59,6 +59,16 @@ Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:
 
 Place management routes include `/places/new`, `/places/[placeSlug]/settings`, `/places/[placeSlug]/members`, `/places/[placeSlug]/members/[memberId]`, and `/places/[placeSlug]/invites/accept`. Navigation and mutation controls use capabilities returned by the place context API; forbidden mutations refresh that context rather than inferring access from role names.
 
+## Uploads and Media
+
+Image uploads request a short-lived intent from the API, send the file directly from the browser to the configured S3-compatible endpoint, complete the intent, and wait for server-side validation and processing. Profile, place, and forum content store asset IDs only. Display URLs are short-lived, authorization-aware URLs returned by the API; the web app never constructs object-storage paths.
+
+The browser origin must be allowed by both the API `CORS_ORIGINS` configuration and MinIO `MINIO_API_CORS_ALLOW_ORIGIN`. The Compose defaults expect `http://localhost:3000`. Run the real object-store lifecycle check while the API, worker, PostgreSQL, Redis, and MinIO services are running:
+
+```bash
+pnpm exec playwright test e2e/places.spec.ts --project=desktop-chromium --workers=1 --grep "uploads and assigns a place image"
+```
+
 Provisional contracts stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published. Fixtures are test-only and are never a runtime fallback.
 
 ## Production

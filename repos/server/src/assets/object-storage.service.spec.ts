@@ -23,6 +23,15 @@ describe('ObjectStorageService', () => {
       objectKey: 'uploads/place/object',
     });
 
-    expect(new URL(url).origin).toBe('https://objects.example.test');
+    const signedUrl = new URL(url);
+    expect(signedUrl.origin).toBe('https://objects.example.test');
+    expect(signedUrl.searchParams.get('X-Amz-SignedHeaders')?.split(';')).toEqual(
+      expect.arrayContaining([
+        'content-length',
+        'content-type',
+        'host',
+        'x-amz-meta-upload-intent-id',
+      ]),
+    );
   });
 });

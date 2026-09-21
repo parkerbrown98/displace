@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { StatusPanel } from "@/components/ui/status-panel";
+import { setPlaceImage } from "@/features/assets/asset-client";
+import type { AssetContract } from "@/features/assets/asset-contract";
+import { ImageUploader } from "@/features/assets/image-uploader";
 import { useSession } from "@/features/auth/session-provider";
 import { ForumSettings } from "@/features/forums/forum-settings";
 import { routes } from "@/lib/routes";
@@ -115,7 +118,12 @@ function IdentityForm({ context, onForbidden, onSaved }: { context: PlaceContext
     catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "Place settings could not be saved.") }); }
     finally { setPending(false); }
   }
-  return <section className="settings-section" id="identity"><p className="eyebrow">Presentation and access</p><h2>Identity and policy</h2><form className="settings-form" method="post" onSubmit={submit}><FormField defaultValue={context.place.name} label="Name" maxLength={120} name="name" required /><label className="form-field">Description<textarea defaultValue={context.place.description} maxLength={4000} name="description" rows={5} /></label><PlacePolicyFields place={context.place} /><NoticeMessage notice={notice} /><button className="primary-button" disabled={pending} type="submit"><Save size={16} /> {pending ? "Saving..." : "Save place"}</button></form></section>;
+  async function assignImage(kind: "banner" | "icon", asset: AssetContract) {
+    try { await setPlaceImage(context.place.id, kind, asset.id); }
+    catch (error) { await onForbidden(error); throw error; }
+  }
+  const canUpload = context.viewer.permissions.includes("upload.create");
+  return <section className="settings-section" id="identity"><p className="eyebrow">Presentation and access</p><h2>Identity and policy</h2>{canUpload ? <div className="place-image-uploaders"><ImageUploader description="Square JPEG, PNG, or WebP. Used in compact place navigation." label="Place icon" onUploaded={(asset) => assignImage("icon", asset)} placeId={context.place.id} /><ImageUploader description="Wide JPEG, PNG, or WebP. Used on place headers." label="Place banner" onUploaded={(asset) => assignImage("banner", asset)} placeId={context.place.id} shape="landscape" /></div> : <p className="settings-muted">Your role can edit place details but cannot upload media.</p>}<form className="settings-form" method="post" onSubmit={submit}><FormField defaultValue={context.place.name} label="Name" maxLength={120} name="name" required /><label className="form-field">Description<textarea defaultValue={context.place.description} maxLength={4000} name="description" rows={5} /></label><PlacePolicyFields place={context.place} /><NoticeMessage notice={notice} /><button className="primary-button" disabled={pending} type="submit"><Save size={16} /> {pending ? "Saving..." : "Save place"}</button></form></section>;
 }
 
 function PlacePolicyFields({ place }: { place?: PlaceContextContract["place"] }) {

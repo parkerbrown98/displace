@@ -32,4 +32,27 @@ describe("forum editor serialization", () => {
       ],
     });
   });
+
+  it("keeps only asset identifiers and bounded alt text for images", () => {
+    const document = toForumDocument({
+      type: "doc",
+      content: [{
+        type: "image",
+        attrs: {
+          alt: "a".repeat(600),
+          assetId: "01994d2a-0f15-7a43-b655-57ec056886b5",
+          src: "https://objects.example.test/private-key",
+        },
+      }],
+    });
+
+    expect(document.content).toEqual([{
+      type: "image",
+      attrs: {
+        alt: "a".repeat(500),
+        assetId: "01994d2a-0f15-7a43-b655-57ec056886b5",
+      },
+    }]);
+    expect(JSON.stringify(document)).not.toContain("private-key");
+  });
 });

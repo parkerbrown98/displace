@@ -49,7 +49,7 @@ export interface TopicPageContract {
 }
 
 export interface RichTextMarkContract {
-  attrs?: Record<string, unknown>;
+  attrs?: { alt?: string; assetId?: string; handle?: string; level?: number } & Record<string, unknown>;
   type: string;
 }
 

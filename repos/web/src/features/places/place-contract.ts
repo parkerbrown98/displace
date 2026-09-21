@@ -28,6 +28,7 @@ export const placePermissions = [
   "chat.send",
   "voice.manage",
   "voice.join",
+  "upload.read",
   "upload.create",
   "moderation.manage",
 ] as const;
