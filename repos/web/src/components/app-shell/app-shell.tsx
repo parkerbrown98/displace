@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { CommunityFixture } from "@/features/community/community-fixtures";
+import { PlaceSwitcher } from "@/features/places/place-access";
 import { routes } from "@/lib/routes";
 import { Avatar } from "@/components/ui/avatar";
 
@@ -26,6 +26,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ activeNavigation = "home", children, fixture }: AppShellProps) {
+  const singlePlace = Boolean(process.env.NEXT_PUBLIC_SINGLE_PLACE_SLUG);
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -38,9 +39,9 @@ export function AppShell({ activeNavigation = "home", children, fixture }: AppSh
           <Link className={`nav-item${activeNavigation === "home" ? " active" : ""}`} href={routes.place(fixture.place.slug)}>
             <HomeIcon size={18} /> Home
           </Link>
-          <Link className={`nav-item${activeNavigation === "discover" ? " active" : ""}`} href={routes.discover}>
+          {!singlePlace ? <Link className={`nav-item${activeNavigation === "discover" ? " active" : ""}`} href={routes.discover}>
             <Compass size={18} /> Discover
-          </Link>
+          </Link> : null}
           <Link className={`nav-item${activeNavigation === "saved" ? " active" : ""}`} href={routes.saved}>
             <Bookmark size={18} /> Saved
           </Link>
@@ -49,23 +50,12 @@ export function AppShell({ activeNavigation = "home", children, fixture }: AppSh
         <section className="places" aria-labelledby="places-heading">
           <div className="section-label-row">
             <h2 id="places-heading">Your places</h2>
-            <Link className="icon-button" href={routes.createPlace} title="Create a place">
+            {!singlePlace ? <Link className="icon-button" href={routes.createPlace} title="Create a place">
               <Plus size={17} />
               <span className="sr-only">Create a place</span>
-            </Link>
+            </Link> : null}
           </div>
-          <div className="place-list">
-            {fixture.places.map((place) => (
-              <Link
-                className={`place-item${place.active ? " active" : ""}`}
-                href={routes.place(place.slug)}
-                key={place.slug}
-              >
-                <Image alt="" className="place-image" height={36} src={place.imageUrl} width={36} />
-                <span>{place.name}</span>
-              </Link>
-            ))}
-          </div>
+          <PlaceSwitcher activeSlug={fixture.places.find((place) => place.active)?.slug} fallback={fixture.places} />
         </section>
 
         <div className="profile-row">

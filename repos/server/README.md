@@ -50,7 +50,7 @@ When `SMTP_HOST` is unset, the worker captures messages in structured developmen
 
 ## Places And Permissions
 
-The `/api/v1/places` API provides public place discovery and lookup plus authenticated place creation, updates, settings, archival, membership requests and approvals, invites, roles, role assignments, bans, and ownership transfer. Public places are anonymously readable; unlisted and private places require active membership. All writes require a verified account.
+The `/api/v1/places` API provides public place discovery and lookup plus authenticated place creation, updates, settings, archival, membership requests and approvals, invites, roles, role assignments, bans, and ownership transfer. Public discovery accepts `q` and `joinPolicy` filters. `GET /api/v1/places/mine` lists the authenticated user's memberships, while `GET /api/v1/places/:placeId/context` returns that member's current server-calculated capabilities. Public places are anonymously readable; unlisted and private places require active membership. All writes require a verified account.
 
 Places support `open`, `approval`, and `invite_only` join policies. Creation seeds immutable Owner, Admin, Moderator, and Member system roles from the fixed permission catalog. Custom roles may be created below the actor's highest role and can grant only permissions the actor already has. Place-scoped foreign keys, guards, and repository predicates prevent cross-place role, member, invite, and ban access; ownership transfer is required before the current owner can leave.
 

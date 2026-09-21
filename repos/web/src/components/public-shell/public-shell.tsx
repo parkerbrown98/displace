@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { routes } from "@/lib/routes";
 
 export function PublicShell({ children }: { children: ReactNode }) {
+  const singlePlace = Boolean(process.env.NEXT_PUBLIC_SINGLE_PLACE_SLUG);
   return (
     <div className="public-shell">
       <header className="public-header">
@@ -12,7 +13,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           <span>Displace</span>
         </Link>
         <nav aria-label="Public navigation">
-          <Link href={routes.discover}>Discover</Link>
+          {!singlePlace ? <Link href={routes.discover}>Discover</Link> : null}
           <form action={routes.search} role="search">
             <Search size={17} aria-hidden="true" />
             <label className="sr-only" htmlFor="public-search">Search discussions</label>

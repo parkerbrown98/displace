@@ -223,6 +223,23 @@ textarea:focus-visible {
 	object-fit: cover;
 }
 
+.place-switcher-mark {
+	display: grid;
+	width: 36px;
+	height: 36px;
+	flex: 0 0 auto;
+	place-items: center;
+	color: white;
+	background: var(--teal);
+	border-radius: 6px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.place-switcher-mark-1 { background: var(--coral); }
+.place-switcher-mark-2 { color: var(--ink); background: var(--mustard); }
+
 .profile-row {
 	display: flex;
 	align-items: center;
@@ -762,7 +779,9 @@ textarea:focus-visible {
 	font-weight: 700;
 }
 
-.form-field input {
+.form-field input,
+.form-field select,
+.form-field textarea {
 	width: 100%;
 	min-height: 42px;
 	padding: 8px 10px;
@@ -770,6 +789,11 @@ textarea:focus-visible {
 	background: white;
 	border: 1px solid #bfc4bf;
 	border-radius: 5px;
+}
+
+.form-field textarea {
+	min-height: 118px;
+	resize: vertical;
 }
 
 .form-field small {
@@ -965,6 +989,342 @@ textarea:focus-visible {
 	font-family: Georgia, "Times New Roman", serif;
 	font-size: 27px;
 	font-weight: 500;
+}
+
+.place-create-section {
+	max-width: 680px;
+}
+
+.policy-grid,
+.invite-form {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.compact-form {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	max-width: 620px;
+}
+
+.compact-form .form-message,
+.compact-form .secondary-button {
+	grid-column: 1 / -1;
+	width: fit-content;
+}
+
+.role-list {
+	display: grid;
+	gap: 8px;
+	margin: 22px 0 12px;
+}
+
+.role-editor {
+	background: rgba(251, 250, 246, 0.58);
+	border-top: 1px solid var(--line);
+}
+
+.role-editor:last-child {
+	border-bottom: 1px solid var(--line);
+}
+
+.role-editor summary {
+	display: flex;
+	min-height: 56px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 18px;
+	padding: 11px 4px;
+	cursor: pointer;
+}
+
+.role-editor summary > span {
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.role-editor summary small {
+	color: var(--muted);
+}
+
+.role-editor > form {
+	max-width: none;
+	padding: 8px 4px 24px;
+}
+
+.new-role {
+	margin-top: 12px;
+	border-bottom: 1px solid var(--line);
+}
+
+.permission-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+	padding: 14px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+}
+
+.permission-grid legend {
+	padding: 0 5px;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.permission-grid label,
+.confirmation-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.permission-grid input,
+.confirmation-check input {
+	accent-color: var(--teal);
+}
+
+.button-row,
+.member-toolbar,
+.place-actions,
+.place-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.danger-section {
+	border-bottom-color: #d9afa6;
+}
+
+.danger-section .confirmation-check {
+	margin: 18px 0;
+}
+
+.member-toolbar {
+	padding: 18px 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.member-toolbar > span {
+	padding: 5px 8px;
+	background: var(--teal-soft);
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 800;
+}
+
+.member-toolbar .secondary-button {
+	margin-left: auto;
+}
+
+.member-section {
+	padding: 34px 0 12px;
+}
+
+.member-list,
+.invite-list {
+	display: grid;
+	border-top: 1px solid var(--ink);
+}
+
+.member-row {
+	display: grid;
+	grid-template-columns: minmax(210px, 1fr) minmax(130px, 0.7fr) auto;
+	align-items: center;
+	gap: 12px;
+	padding: 16px 2px;
+	border-bottom: 1px solid var(--line);
+}
+
+.member-row > .form-message,
+.owner-safety {
+	grid-column: 1 / -1;
+}
+
+.member-identity {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 10px;
+}
+
+.member-identity > div {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+}
+
+.member-identity span,
+.owner-safety {
+	color: var(--muted);
+	font-size: 11px;
+}
+
+.member-identity a:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.member-avatar {
+	display: grid;
+	width: 40px;
+	height: 40px;
+	flex: 0 0 auto;
+	place-items: center;
+	color: white !important;
+	background: var(--teal);
+	border-radius: 50%;
+	font-size: 11px !important;
+	font-weight: 800;
+}
+
+.member-avatar.large {
+	width: 72px;
+	height: 72px;
+	font-size: 18px !important;
+}
+
+.owner-badge,
+.member-roles > span {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	width: fit-content;
+	padding: 4px 7px;
+	background: #e8e7df;
+	border-radius: 4px;
+	font-size: 10px;
+	font-weight: 800;
+}
+
+.member-roles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.member-roles button {
+	padding: 0;
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+}
+
+.member-role-form {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.member-role-form select {
+	max-width: 130px;
+	min-height: 34px;
+	border: 1px solid var(--line);
+	border-radius: 5px;
+}
+
+.invite-panel {
+	border-bottom: 1px solid var(--line);
+}
+
+.invite-form {
+	grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.7fr) auto;
+	align-items: end;
+	margin-bottom: 16px;
+}
+
+.invite-list > div {
+	display: flex;
+	min-height: 54px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	border-bottom: 1px solid var(--line);
+	font-size: 13px;
+}
+
+.invite-list span {
+	display: grid;
+	gap: 3px;
+}
+
+.invite-list small {
+	color: var(--muted);
+}
+
+.member-profile {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	padding: 38px 0;
+	border-bottom: 1px solid var(--ink);
+}
+
+.member-profile h1 {
+	margin: 5px 0;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 42px;
+	font-weight: 500;
+}
+
+.member-profile p:last-child {
+	margin: 0;
+	color: var(--muted);
+}
+
+.invite-acceptance {
+	width: min(520px, 100%);
+	padding: 28px;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 7px;
+}
+
+.invite-acceptance h1 {
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 36px;
+}
+
+.place-header-actions {
+	justify-content: flex-end;
+}
+
+.place-header-actions > span,
+.membership-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 9px 12px;
+	color: var(--teal);
+	background: var(--teal-soft);
+	border-radius: 5px;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.place-actions {
+	justify-content: flex-end;
+}
+
+.action-notice {
+	flex-basis: 100%;
+	color: var(--muted);
+	font-size: 11px;
+	text-align: right;
+}
+
+.discovery-filters {
+	display: grid;
+	grid-template-columns: minmax(220px, 1fr) minmax(170px, 0.4fr) auto;
+	align-items: end;
+	gap: 14px;
+	padding: 22px 0;
+	border-bottom: 1px solid var(--line);
 }
 
 .settings-form {
@@ -1902,4 +2262,60 @@ textarea:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
 	.topic-row { animation: none; }
+}
+
+@media (max-width: 720px) {
+	.policy-grid,
+	.compact-form,
+	.discovery-filters,
+	.invite-form,
+	.member-row {
+		grid-template-columns: 1fr;
+	}
+
+	.permission-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.role-editor summary {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.member-row {
+		align-items: stretch;
+	}
+
+	.member-row > .primary-button,
+	.member-row > .secondary-button,
+	.member-row > .danger-button,
+	.invite-form > .primary-button,
+	.place-actions > .primary-button {
+		width: auto;
+		padding: 8px 14px;
+		font-size: 13px;
+	}
+
+	.member-role-form select {
+		max-width: none;
+		flex: 1;
+	}
+
+	.place-header-actions,
+	.place-actions {
+		justify-content: flex-start;
+	}
+
+	.place-header-actions {
+		margin-top: 20px;
+	}
+
+	.action-notice {
+		text-align: left;
+	}
+
+	.member-toolbar .secondary-button {
+		margin-left: 0;
+	}
 }

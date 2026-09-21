@@ -4,6 +4,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { StatusPanel } from "@/components/ui/status-panel";
 import type { PlaceContract, PlacePageContract } from "@/features/places/place-contract";
+import { PlaceMembershipActions } from "@/features/places/place-access";
 import { routes } from "@/lib/routes";
 import type {
   ForumContract,
@@ -15,7 +16,7 @@ import type {
 } from "./public-contracts";
 import { RichText } from "./rich-text";
 
-export function DiscoveryView({ page }: { page: PlacePageContract }) {
+export function DiscoveryView({ joinPolicy, page, query }: { joinPolicy?: string; page: PlacePageContract; query?: string }) {
   return (
     <main className="public-main" id="main-content">
       <header className="public-page-heading">
@@ -23,6 +24,11 @@ export function DiscoveryView({ page }: { page: PlacePageContract }) {
         <h1>Find your next conversation</h1>
         <p>Browse public places built around durable, searchable discussion.</p>
       </header>
+      <form className="discovery-filters" method="get">
+        <label className="form-field">Search places<input defaultValue={query} name="q" placeholder="Name or description" type="search" /></label>
+        <label className="form-field">Join policy<select defaultValue={joinPolicy ?? ""} name="join"><option value="">Any policy</option><option value="open">Open</option><option value="approval">Approval required</option><option value="invite_only">Invite only</option></select></label>
+        <button className="secondary-button" type="submit">Apply filters</button>
+      </form>
       {page.items.length ? (
         <section className="place-directory" aria-label="Public places">
           {page.items.map((place, index) => (
@@ -64,7 +70,7 @@ export function PlaceView({ feed, navigation, place, tag, topics }: PlaceViewPro
           <h1>{place.name}</h1>
           <p>{place.description}</p>
         </div>
-        <span><Users size={17} aria-hidden="true" /> Public community</span>
+        <div className="place-header-actions"><span><Users size={17} aria-hidden="true" /> {place.visibility === "public" ? "Public community" : place.visibility}</span><PlaceMembershipActions place={place} /></div>
       </header>
       <ForumNavigation navigation={navigation} placeSlug={place.slug} />
       <TopicDirectory

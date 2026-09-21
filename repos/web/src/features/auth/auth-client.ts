@@ -130,7 +130,7 @@ export async function signOut(all = false): Promise<void> {
   }
 }
 
-async function authenticatedRead<T>(path: string): Promise<T> {
+export async function authenticatedRead<T>(path: string): Promise<T> {
   const token = await accessToken();
   try {
     return await browserRead<T>(path, { headers: { Authorization: `Bearer ${token}` } });
@@ -142,7 +142,7 @@ async function authenticatedRead<T>(path: string): Promise<T> {
   }
 }
 
-async function authenticatedMutation<T>(
+export async function authenticatedMutation<T>(
   path: string,
   options: ApiRequestOptions & { method: "DELETE" | "PATCH" | "POST" | "PUT" },
   retry = true,

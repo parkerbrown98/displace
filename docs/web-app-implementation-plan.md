@@ -55,6 +55,8 @@ This plan is intentionally coordinated with, but not serialized behind, the [ser
 
 ### Phase 4: Places, Membership, Roles, and Settings
 
+**Status:** Complete as of 2026-09-20.
+
 **Server alignment:** Build in parallel with API phase 4; use stable place/membership operations as each screen is completed.
 
 1. Implement authenticated place switching, create/edit/archive forms, discovery filters, join/leave/request flows, invitation acceptance, member directory, and member profiles.

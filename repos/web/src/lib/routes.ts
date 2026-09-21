@@ -17,6 +17,10 @@ export const routes = {
   createPlace: "/places/new",
   member: (username: string) => `/members/${username}`,
   place: (placeSlug: string) => `/places/${placeSlug}`,
+  placeSettings: (placeSlug: string) => `/places/${placeSlug}/settings`,
+  placeMembers: (placeSlug: string) => `/places/${placeSlug}/members`,
+  placeMember: (placeSlug: string, memberId: string) => `/places/${placeSlug}/members/${memberId}`,
+  acceptPlaceInvite: (placeSlug: string) => `/places/${placeSlug}/invites/accept`,
   forum: (placeSlug: string, forumSlug: string) =>
     `/places/${placeSlug}/forums/${forumSlug}`,
   topic: (placeSlug: string, topicSlug: string) =>

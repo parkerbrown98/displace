@@ -27,6 +27,7 @@ import {
   type CreatePlaceDto,
   type CreateRoleDto,
   type CursorQueryDto,
+  type PlaceDiscoveryQueryDto,
   type UpdatePlaceDto,
   type UpdateRoleDto,
 } from './places.dto.js';
@@ -69,9 +70,35 @@ export class PlacesService {
     }
   }
 
-  async discover(query: CursorQueryDto) {
+  async discover(query: PlaceDiscoveryQueryDto) {
     const cursor = query.cursor ? this.decodeCursor(query.cursor) : undefined;
     const records = await this.places.listPublic({
+      cursor,
+      joinPolicy: query.joinPolicy,
+      limit: query.limit,
+      query: query.q?.trim() || undefined,
+      singlePlaceSlug: this.config.get('SINGLE_PLACE_MODE', { infer: true })
+        ? this.config.get('SINGLE_PLACE_SLUG', { infer: true })
+        : undefined,
+    });
+    const hasMore = records.length > query.limit;
+    const items = records.slice(0, query.limit);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              createdAt: last.createdAt.toISOString(),
+              id: last.id,
+            })
+          : undefined,
+    };
+  }
+
+  async listMine(userId: string, query: CursorQueryDto) {
+    const cursor = query.cursor ? this.decodeCursor(query.cursor) : undefined;
+    const records = await this.places.listForUser(userId, {
       cursor,
       limit: query.limit,
       singlePlaceSlug: this.config.get('SINGLE_PLACE_MODE', { infer: true })
@@ -101,6 +128,21 @@ export class PlacesService {
       }
     }
     return place;
+  }
+
+  async getContext(placeId: string, userId: string) {
+    const [place, authorization] = await Promise.all([
+      this.requirePlace(placeId),
+      this.requireAuthorization(placeId, userId),
+    ]);
+    return {
+      place,
+      viewer: {
+        isOwner: authorization.isOwner,
+        memberId: authorization.memberId,
+        permissions: [...authorization.permissions].sort(),
+      },
+    };
   }
 
   async update(placeId: string, userId: string, input: UpdatePlaceDto) {

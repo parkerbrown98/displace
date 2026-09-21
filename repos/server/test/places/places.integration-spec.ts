@@ -61,6 +61,37 @@ describe('places lifecycle', () => {
       url: `/api/v1/places/${openPlace.slug}`,
     });
     expect(anonymousRead.statusCode).toBe(200);
+    expect(anonymousRead.json()).not.toHaveProperty('viewer');
+
+    const filteredDiscovery = await app.inject({
+      method: 'GET',
+      url: '/api/v1/places?q=Open%20Place&joinPolicy=open',
+    });
+    expect(filteredDiscovery.statusCode).toBe(200);
+    expect(filteredDiscovery.json<{ items: Array<{ id: string }> }>().items).toEqual([
+      expect.objectContaining({ id: openPlace.id }),
+    ]);
+
+    const anonymousContext = await app.inject({
+      method: 'GET',
+      url: `/api/v1/places/${openPlace.id}/context`,
+    });
+    expect(anonymousContext.statusCode).toBe(401);
+
+    const ownerContext = await app.inject({
+      headers: bearer(owner),
+      method: 'GET',
+      url: `/api/v1/places/${openPlace.id}/context`,
+    });
+    expect(ownerContext.statusCode).toBe(200);
+    expect(ownerContext.json()).toMatchObject({
+      place: { id: openPlace.id },
+      viewer: {
+        isOwner: true,
+        memberId: expect.any(String),
+        permissions: expect.arrayContaining(['place.manage', 'role.manage']),
+      },
+    });
 
     const rolesResponse = await app.inject({
       headers: bearer(owner),
@@ -100,6 +131,16 @@ describe('places lifecycle', () => {
       status: 'active',
     });
 
+    const memberPlaces = await app.inject({
+      headers: bearer(member),
+      method: 'GET',
+      url: '/api/v1/places/mine',
+    });
+    expect(memberPlaces.statusCode).toBe(200);
+    expect(memberPlaces.json<{ items: Array<{ id: string }> }>().items).toContainEqual(
+      expect.objectContaining({ id: openPlace.id }),
+    );
+
     const repeatJoin = await app.inject({
       headers: bearer(member),
       method: 'POST',
@@ -129,6 +170,20 @@ describe('places lifecycle', () => {
       url: `/api/v1/places/${openPlace.id}/members/${memberRecord!.id}/roles`,
     });
     expect(assigned.statusCode).toBe(200);
+
+    const memberContext = await app.inject({
+      headers: bearer(member),
+      method: 'GET',
+      url: `/api/v1/places/${openPlace.id}/context`,
+    });
+    expect(memberContext.statusCode).toBe(200);
+    expect(memberContext.json()).toMatchObject({
+      viewer: {
+        isOwner: false,
+        memberId: memberRecord!.id,
+        permissions: expect.arrayContaining(['member.manage', 'role.manage']),
+      },
+    });
 
     const escalatedRole = await app.inject({
       headers: bearer(member),

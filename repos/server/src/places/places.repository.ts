@@ -3,6 +3,7 @@ import {
   and,
   desc,
   eq,
+  ilike,
   inArray,
   isNull,
   lt,
@@ -149,7 +150,9 @@ export class PlacesRepository {
 
   async listPublic(options: {
     cursor?: PlaceCursor;
+    joinPolicy?: 'open' | 'approval' | 'invite_only';
     limit: number;
+    query?: string;
     singlePlaceSlug?: string;
   }) {
     const cursor = options.cursor
@@ -167,6 +170,68 @@ export class PlacesRepository {
       .where(
         and(
           eq(places.visibility, 'public'),
+          isNull(places.archivedAt),
+          options.joinPolicy
+            ? eq(places.joinPolicy, options.joinPolicy)
+            : undefined,
+          options.query
+            ? or(
+                ilike(places.name, `%${options.query}%`),
+                ilike(places.description, `%${options.query}%`),
+              )
+            : undefined,
+          options.singlePlaceSlug
+            ? eq(places.slug, options.singlePlaceSlug)
+            : undefined,
+          cursor,
+        ),
+      )
+      .orderBy(desc(places.createdAt), desc(places.id))
+      .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
+  }
+
+  async listForUser(
+    userId: string,
+    options: {
+      cursor?: PlaceCursor;
+      limit: number;
+      singlePlaceSlug?: string;
+    },
+  ) {
+    const cursor = options.cursor
+      ? or(
+          lt(places.createdAt, options.cursor.createdAt),
+          and(
+            eq(places.createdAt, options.cursor.createdAt),
+            lt(places.id, options.cursor.id),
+          ),
+        )
+      : undefined;
+    return this.database
+      .select({
+        archivedAt: places.archivedAt,
+        createdAt: places.createdAt,
+        description: places.description,
+        id: places.id,
+        joinPolicy: places.joinPolicy,
+        name: places.name,
+        ownerUserId: places.ownerUserId,
+        settings: places.settings,
+        slug: places.slug,
+        updatedAt: places.updatedAt,
+        visibility: places.visibility,
+      })
+      .from(places)
+      .innerJoin(
+        placeMembers,
+        and(
+          eq(placeMembers.placeId, places.id),
+          eq(placeMembers.userId, userId),
+          eq(placeMembers.status, 'active'),
+        ),
+      )
+      .where(
+        and(
           isNull(places.archivedAt),
           options.singlePlaceSlug
             ? eq(places.slug, options.singlePlaceSlug)

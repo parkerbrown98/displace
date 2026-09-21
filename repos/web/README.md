@@ -19,6 +19,8 @@ Public discovery uses deterministic fixtures by default. Set `WEB_DATA_SOURCE=ap
 
 Authentication and account settings also use deterministic fixtures by default. Set `NEXT_PUBLIC_WEB_DATA_SOURCE=api` to use the browser auth API. Access tokens remain in module memory; the signed refresh cookie is HttpOnly, and the readable CSRF cookie is sent only by the centralized auth transport.
 
+Authenticated place management uses the same `NEXT_PUBLIC_WEB_DATA_SOURCE` switch. It includes place switching, creation, settings, membership requests, invitations, member and role administration, and ownership transfer. Set `NEXT_PUBLIC_SINGLE_PLACE_SLUG` to the configured server place slug to omit discovery and place creation for a single-place deployment.
+
 ## Run
 
 ```bash
@@ -51,6 +53,8 @@ Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:
 - `src/features` contains domain fixtures, provisional contracts, view-model adapters, and feature views.
 - `src/lib/api` owns public server reads, credentialed browser requests, request IDs, CSRF and idempotency headers, cursors, and problem details.
 - `src/test/mocks` contains MSW handlers for fixture-backed contract tests.
+
+Place management routes include `/places/new`, `/places/[placeSlug]/settings`, `/places/[placeSlug]/members`, `/places/[placeSlug]/members/[memberId]`, and `/places/[placeSlug]/invites/accept`. Navigation and mutation controls use capabilities returned by the place context API; forbidden mutations refresh that context rather than inferring access from role names.
 
 The interface remains fixture-first while server operations stabilize. Provisional contracts must stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published.
 

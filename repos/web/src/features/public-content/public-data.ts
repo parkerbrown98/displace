@@ -45,11 +45,19 @@ const publicReadOptions = {
   next: { revalidate: PUBLIC_REVALIDATE_SECONDS },
 };
 
-export async function listPublicPlaces(cursor?: string): Promise<PlacePageContract> {
+export async function listPublicPlaces(parameters: { cursor?: string; joinPolicy?: string; query?: string } = {}): Promise<PlacePageContract> {
   if (usesFixtures()) {
-    return cursor ? { items: [] } : structuredClone(placePageFixture);
+    if (parameters.cursor) return { items: [] };
+    const query = parameters.query?.trim().toLocaleLowerCase();
+    return { items: structuredClone(placePageFixture.items.filter((place) =>
+      (!query || `${place.name} ${place.description}`.toLocaleLowerCase().includes(query)) &&
+      (!parameters.joinPolicy || place.joinPolicy === parameters.joinPolicy),
+    )) };
   }
-  return readPublic<PlacePageContract>(withCursor("/places", cursor), ["places"]);
+  return readPublic<PlacePageContract>(withCursor("/places", parameters.cursor, {
+    joinPolicy: parameters.joinPolicy,
+    q: parameters.query,
+  }), ["places"]);
 }
 
 export async function getPublicPlace(placeSlug: string): Promise<PlaceContract> {

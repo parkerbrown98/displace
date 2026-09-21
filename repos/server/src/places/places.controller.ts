@@ -49,6 +49,8 @@ import {
   MemberDto,
   MemberPageDto,
   MemberQueryDto,
+  PlaceContextDto,
+  PlaceDiscoveryQueryDto,
   PlaceDto,
   PlacePageDto,
   RoleDto,
@@ -69,7 +71,7 @@ export class PlacesController {
 
   @Get()
   @ApiOkResponse({ type: PlacePageDto })
-  discover(@Query() query: CursorQueryDto) {
+  discover(@Query() query: PlaceDiscoveryQueryDto) {
     return this.places.discover(query);
   }
 
@@ -81,6 +83,17 @@ export class PlacesController {
     return this.places.create(user.id, input);
   }
 
+  @Get('mine')
+  @UseGuards(AuthenticatedGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: PlacePageDto })
+  listMine(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: CursorQueryDto,
+  ) {
+    return this.places.listMine(user.id, query);
+  }
+
   @Get(':placeId')
   @UseGuards(PlaceContextGuard)
   @ApiOkResponse({ type: PlaceDto })
@@ -89,6 +102,17 @@ export class PlacesController {
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     return this.places.get(placeId, user?.id);
+  }
+
+  @Get(':placeId/context')
+  @UseGuards(AuthenticatedGuard, PlaceContextGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: PlaceContextDto })
+  getContext(
+    @CurrentPlace() place: AuthorizedPlace,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.places.getContext(place.id, user.id);
   }
 
   @Patch(':placeId')

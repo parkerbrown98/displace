@@ -48,6 +48,19 @@ export class CursorQueryDto {
   limit = 25;
 }
 
+export class PlaceDiscoveryQueryDto extends CursorQueryDto {
+  @ApiPropertyOptional({ maxLength: 120 })
+  @IsString()
+  @MaxLength(120)
+  @IsOptional()
+  q?: string;
+
+  @ApiPropertyOptional({ enum: PlaceJoinPolicyDto })
+  @IsEnum(PlaceJoinPolicyDto)
+  @IsOptional()
+  joinPolicy?: PlaceJoinPolicyDto;
+}
+
 export class CreatePlaceDto {
   @ApiProperty({ maxLength: 80, minLength: 3 })
   @Length(3, 80)
@@ -138,6 +151,22 @@ export class PlacePageDto {
   items: PlaceDto[];
   @ApiPropertyOptional()
   nextCursor?: string;
+}
+
+export class PlaceViewerDto {
+  @ApiProperty()
+  memberId: string;
+  @ApiProperty()
+  isOwner: boolean;
+  @ApiProperty({ enum: PLACE_PERMISSIONS, isArray: true })
+  permissions: string[];
+}
+
+export class PlaceContextDto {
+  @ApiProperty({ type: PlaceDto })
+  place: PlaceDto;
+  @ApiProperty({ type: PlaceViewerDto })
+  viewer: PlaceViewerDto;
 }
 
 export class JoinPlaceDto {

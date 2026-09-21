@@ -17,6 +17,90 @@ export interface PlacePageContract {
   nextCursor?: string;
 }
 
+export const placePermissions = [
+  "place.manage",
+  "role.manage",
+  "member.manage",
+  "forum.manage",
+  "topic.create",
+  "post.create",
+  "chat.manage",
+  "chat.send",
+  "voice.manage",
+  "voice.join",
+  "upload.create",
+  "moderation.manage",
+] as const;
+
+export type PlacePermission = (typeof placePermissions)[number];
+
+export interface PlaceContextContract {
+  place: PlaceContract;
+  viewer: {
+    isOwner: boolean;
+    memberId: string;
+    permissions: PlacePermission[];
+  };
+}
+
+export interface PlaceRoleContract {
+  id: string;
+  name: string;
+  position: number;
+  isSystem: boolean;
+  permissions: PlacePermission[];
+}
+
+export interface PlaceMemberContract {
+  id: string;
+  userId: string;
+  handle: string;
+  displayName: string;
+  status: "pending" | "active" | "left";
+  joinedAt: string | null;
+  roles: PlaceRoleContract[];
+}
+
+export interface PlaceMemberPageContract {
+  items: PlaceMemberContract[];
+  nextCursor?: string;
+}
+
+export interface PlaceRolePageContract {
+  items: PlaceRoleContract[];
+  nextCursor?: string;
+}
+
+export interface PlaceInviteContract {
+  id: string;
+  email: string | null;
+  roleId: string | null;
+  maxUses: number;
+  useCount: number;
+  expiresAt: string;
+  createdAt: string;
+  token?: string;
+}
+
+export interface PlaceInvitePageContract {
+  items: PlaceInviteContract[];
+  nextCursor?: string;
+}
+
+export interface PlaceWriteInput {
+  name: string;
+  slug?: string;
+  description: string;
+  visibility: PlaceContract["visibility"];
+  joinPolicy: PlaceContract["joinPolicy"];
+}
+
+export interface RoleWriteInput {
+  name: string;
+  position: number;
+  permissions: PlacePermission[];
+}
+
 export const placeContractFixture: PlaceContract = {
   id: "0199-0000-7000-8000-000000000001",
   ownerUserId: "0199-0000-7000-8000-000000000002",
