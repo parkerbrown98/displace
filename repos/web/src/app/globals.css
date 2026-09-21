@@ -1528,6 +1528,71 @@ textarea:focus-visible {
 	border-bottom: 1px solid var(--line);
 }
 
+.search-filters {
+	display: grid;
+	grid-template-columns: minmax(240px, 1fr) minmax(150px, 0.35fr) minmax(180px, 0.45fr) auto;
+	align-items: end;
+	gap: 14px;
+	padding: 22px 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.search-result-list {
+	border-top: 1px solid var(--ink);
+}
+
+.search-result {
+	display: grid;
+	grid-template-columns: 42px minmax(0, 1fr);
+	gap: 16px;
+	padding: 22px 4px;
+	border-bottom: 1px solid var(--line);
+}
+
+.search-result-icon {
+	display: grid;
+	width: 36px;
+	height: 36px;
+	place-items: center;
+	color: var(--teal);
+	background: var(--teal-soft);
+	border-radius: 5px;
+}
+
+.search-result h2 {
+	margin: 5px 0 7px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 22px;
+	font-weight: 500;
+}
+
+.search-result h2 a:hover {
+	text-decoration: underline;
+	text-decoration-color: var(--coral);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 4px;
+}
+
+.search-result p:not(.eyebrow) {
+	max-width: 760px;
+	margin: 0;
+	color: var(--muted);
+	line-height: 1.6;
+}
+
+.search-result time {
+	display: block;
+	margin-top: 9px;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.search-result mark {
+	padding: 0 2px;
+	color: inherit;
+	background: var(--mustard);
+}
+
 .settings-form {
 	display: grid;
 	max-width: 500px;

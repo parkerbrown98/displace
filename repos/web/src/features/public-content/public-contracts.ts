@@ -91,3 +91,21 @@ export interface PublicProfileContract {
   handle: string;
   joinedAt: string;
 }
+
+export interface SearchResultContract {
+  createdAt: string;
+  forumId?: string;
+  highlights?: Partial<Record<"text" | "title", string>>;
+  placeId: string;
+  placeSlug: string;
+  postId?: string;
+  text: string;
+  title: string;
+  topicId?: string;
+  type: "place" | "post" | "topic";
+}
+
+export interface SearchPageContract {
+  items: SearchResultContract[];
+  nextCursor?: string;
+}

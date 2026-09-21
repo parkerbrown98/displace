@@ -68,6 +68,16 @@ Post bodies use version 1 ProseMirror-compatible JSON. The API validates exact n
 
 Topic replies and latest-post counters update transactionally. Topic views are buffered in Redis and reconciled to PostgreSQL by the worker every minute. Reconciliation uses idempotent processing batches with a 30-day Redis retry window and a 31-day PostgreSQL deduplication window.
 
+## Search
+
+`GET /api/v1/search` searches public places, topics, and replies through Meilisearch. It accepts `q`, optional `type` (`place`, `topic`, or `post`), optional `placeId`, and an opaque cursor. Results are rebuilt from PostgreSQL by the worker after durable outbox events; every response also verifies current place, forum, and content visibility before returning a hit.
+
+Run the worker alongside the API to dispatch and process search events. To rebuild the index from authoritative PostgreSQL records after a loss or configuration change, run:
+
+```bash
+pnpm search:reindex
+```
+
 ## Uploads And Media
 
 Members with `upload.create` request a short-lived URL from `POST /api/v1/places/:placeId/assets/upload-intents`, upload directly to private S3-compatible storage with the returned required headers, then call `POST /api/v1/places/:placeId/assets/upload-intents/:intentId/complete`. Completion verifies object size, MIME declaration, and intent metadata before creating a quarantined asset and enqueueing processing. Members with `upload.read` can poll `GET /api/v1/places/:placeId/assets/:assetId` for processing status and obtain a short-lived download URL from `GET /api/v1/places/:placeId/assets/:assetId/download` once it is ready.
@@ -125,7 +135,7 @@ pnpm test:cov
 
 Format source and test files with `pnpm format`.
 
-The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it processes authentication mail and media, cleans expired upload intents, and reconciles buffered forum view counters, with the remaining domain queues added in Phase 7.
+The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it processes authentication mail, media, search-index events, expired upload intents, and buffered forum view counters.
 
 ## Docker Development
 

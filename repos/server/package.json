@@ -15,6 +15,7 @@
     "db:reset": "tsx src/database/cli/reset.ts",
     "db:seed": "tsx src/database/cli/seed.ts",
     "db:setup": "pnpm db:bootstrap && pnpm db:migrate",
+    "search:reindex": "tsx src/search/cli/reindex.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

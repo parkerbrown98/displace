@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getPublicProfile, listPublicTopics, PublicResourceError } from "./public-data";
+import { getPublicProfile, listPublicTopics, PublicResourceError, searchPublicContent } from "./public-data";
 
 describe("public content data", () => {
   afterEach(() => {
@@ -68,6 +68,27 @@ describe("public content data", () => {
         credentials: "omit",
         next: { revalidate: 60, tags: ["profile:mara_v"] },
       }),
+    );
+  });
+
+  it("forwards search filters without caching eventually consistent results", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [] }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await searchPublicContent({
+      cursor: "signed-cursor",
+      placeId: "018f8dd0-5d14-7f9d-93f7-9bf1b39ebd9e",
+      query: "deterministic previews",
+      type: "topic",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/v1/search?cursor=signed-cursor&placeId=018f8dd0-5d14-7f9d-93f7-9bf1b39ebd9e&q=deterministic+previews&type=topic",
+      expect.objectContaining({ cache: "no-store", credentials: "omit" }),
     );
   });
 });

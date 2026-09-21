@@ -15,6 +15,7 @@ import type { Database } from '../database/database.types.js';
 import {
   auditLog,
   memberRoles,
+  outboxEvents,
   placeMembers,
   places,
   rolePermissions,
@@ -123,6 +124,12 @@ export class PlacesRepository {
         placeId: place.id,
         targetId: place.id,
         targetType: 'place',
+      });
+      await transaction.insert(outboxEvents).values({
+        aggregateId: place.id,
+        aggregateType: 'place',
+        eventType: 'place.created',
+        payload: { placeId: place.id },
       });
       return place;
     });
@@ -279,6 +286,14 @@ export class PlacesRepository {
         targetId: placeId,
         targetType: 'place',
       });
+      if (place) {
+        await transaction.insert(outboxEvents).values({
+          aggregateId: place.id,
+          aggregateType: 'place',
+          eventType: 'place.updated',
+          payload: { placeId: place.id },
+        });
+      }
       return place;
     });
   }
@@ -336,6 +351,12 @@ export class PlacesRepository {
           placeId,
           targetId: placeId,
           targetType: 'place',
+        });
+        await transaction.insert(outboxEvents).values({
+          aggregateId: place.id,
+          aggregateType: 'place',
+          eventType: 'place.archived',
+          payload: { placeId: place.id },
         });
       }
       return place;

@@ -343,6 +343,7 @@ export class ForumsRepository {
           'forum.updated',
           forumId,
         );
+        await this.emit(transaction, 'forum.updated', forumId, { placeId });
       }
       return record;
     });
@@ -374,6 +375,7 @@ export class ForumsRepository {
           'forum.archived',
           forumId,
         );
+        await this.emit(transaction, 'forum.archived', forumId, { placeId });
       }
       return record;
     });

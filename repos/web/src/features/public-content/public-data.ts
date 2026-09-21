@@ -6,6 +6,7 @@ import type {
   ForumNavigationContract,
   PostPageContract,
   PublicProfileContract,
+  SearchPageContract,
   TopicContract,
   TopicPageContract,
 } from "./public-contracts";
@@ -80,6 +81,27 @@ export async function listPublicPosts(
 
 export async function getPublicProfile(handle: string): Promise<PublicProfileContract> {
   return readPublic<PublicProfileContract>(`/profiles/${encodeURIComponent(handle)}`, [`profile:${handle}`]);
+}
+
+export async function searchPublicContent(parameters: {
+  cursor?: string;
+  placeId?: string;
+  query: string;
+  type?: "place" | "post" | "topic";
+}): Promise<SearchPageContract> {
+  try {
+    return await publicServerRead<SearchPageContract>(withCursor("/search", parameters.cursor, {
+      placeId: parameters.placeId,
+      q: parameters.query,
+      type: parameters.type,
+    }), { cache: "no-store" });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.problem.status === 403) throw new PublicResourceError("private");
+      if (error.problem.status === 404) throw new PublicResourceError("not-found");
+    }
+    throw new PublicResourceError("unavailable");
+  }
 }
 
 async function readPublic<T>(path: string, tags: string[]): Promise<T> {
