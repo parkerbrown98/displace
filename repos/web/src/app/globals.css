@@ -169,6 +169,36 @@ textarea:focus-visible {
 	margin-top: 30px;
 }
 
+.sidebar-session-status,
+.sidebar-auth-callout {
+	margin-top: 30px;
+	padding: 16px 14px;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 7px;
+}
+
+.sidebar-session-status p,
+.sidebar-auth-callout p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.sidebar-auth-callout h2 {
+	margin: 0 0 7px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 20px;
+	font-weight: 500;
+}
+
+.sidebar-auth-actions {
+	display: grid;
+	gap: 8px;
+	margin-top: 14px;
+}
+
 .section-label-row,
 .rail-heading,
 .voice-footer,
@@ -1469,29 +1499,14 @@ textarea:focus-visible {
 }
 
 .public-shell {
+	min-width: 0;
 	min-height: 100vh;
 }
 
-.public-header {
-	position: sticky;
-	top: 0;
-	z-index: 20;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	min-height: 72px;
-	padding: 0 max(24px, calc((100vw - 1120px) / 2));
-	background: rgba(244, 242, 236, 0.94);
-	border-bottom: 1px solid var(--line);
-	backdrop-filter: blur(12px);
+.public-shell > .topbar {
+	margin: 0 24px;
 }
 
-.public-header .brand {
-	padding: 0;
-}
-
-.public-header nav,
-.public-header form,
 .secondary-button,
 .cursor-pagination a,
 .place-profile-header > span,
@@ -1501,36 +1516,9 @@ textarea:focus-visible {
 	display: flex;
 	align-items: center;
 }
-
-.public-header nav {
-	gap: 22px;
-	font-size: 13px;
-	font-weight: 700;
-}
-
-.public-header nav > a:not(.secondary-button):hover,
 .breadcrumbs a:hover,
 .text-link:hover {
 	color: var(--coral);
-}
-
-.public-header form {
-	width: 210px;
-	height: 38px;
-	gap: 8px;
-	padding: 0 11px;
-	color: var(--muted);
-	background: var(--paper-raised);
-	border: 1px solid var(--line);
-	border-radius: 6px;
-}
-
-.public-header input {
-	width: 100%;
-	min-width: 0;
-	background: transparent;
-	border: 0;
-	outline: 0;
 }
 
 .secondary-button {
@@ -2171,31 +2159,6 @@ textarea:focus-visible {
 }
 
 @media (max-width: 720px) {
-	.public-header {
-		position: static;
-		min-height: 62px;
-		padding: 0 16px;
-	}
-
-	.public-header .brand {
-		padding: 0;
-		font-size: 19px;
-	}
-
-	.public-header .brand-mark {
-		width: 29px;
-		height: 29px;
-	}
-
-	.public-header nav {
-		gap: 12px;
-	}
-
-	.public-header form,
-	.public-header nav > a:first-child {
-		display: none;
-	}
-
 	.public-main {
 		width: min(100% - 32px, 1120px);
 		padding: 42px 0 60px;
@@ -2320,7 +2283,7 @@ textarea:focus-visible {
 	.brand { padding: 0 0 14px; }
 
 	.primary-nav {
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 	}
 
 	.nav-item {
@@ -2331,8 +2294,23 @@ textarea:focus-visible {
 	.places,
 	.profile-row { display: none; }
 
+	.sidebar-session-status,
+	.sidebar-auth-callout {
+		margin-top: 14px;
+		padding: 12px;
+	}
+
+	.sidebar-auth-callout h2,
+	.sidebar-auth-callout p { display: none; }
+
+	.sidebar-auth-actions {
+		grid-template-columns: 1fr 1fr;
+		margin-top: 0;
+	}
+
 	.main-content { padding: 0 18px 40px; }
 	.topbar { height: 62px; }
+	.public-shell > .topbar { margin: 0 18px; }
 
 	.community-header {
 		display: block;
