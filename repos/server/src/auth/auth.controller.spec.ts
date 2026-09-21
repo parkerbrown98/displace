@@ -71,7 +71,7 @@ describe('AuthController OIDC callback', () => {
     expect(reply.setCookie).toHaveBeenCalledWith(
       'displace_csrf',
       'csrf-token',
-      expect.objectContaining({ httpOnly: false, path: '/api/v1/auth' }),
+      expect.objectContaining({ httpOnly: false, path: '/' }),
     );
     expect(reply.redirect).toHaveBeenCalledWith(
       'http://localhost:3000/auth/callback',

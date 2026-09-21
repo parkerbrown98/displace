@@ -25,6 +25,7 @@ import {
   postRevisions,
   posts,
   placeMembers,
+  places,
   savedPosts,
   savedTopics,
   topicFollows,
@@ -60,6 +61,11 @@ export interface TopicCursor {
 export interface PostCursor {
   createdAt: Date;
   id: string;
+}
+
+export interface SavedItemCursor {
+  id: string;
+  savedAt: Date;
 }
 
 export interface IdempotentCreate {
@@ -470,6 +476,40 @@ export class ForumsRepository {
       .limit(1);
     if (!record) return undefined;
     return (await this.attachTags(placeId, [record]))[0];
+  }
+
+  async listSavedTopics(userId: string, cursor: SavedItemCursor | undefined, limit: number) {
+    return this.database
+      .select({ placeId: places.id, placeName: places.name, placeSlug: places.slug, savedAt: savedTopics.createdAt, topic: topics })
+      .from(savedTopics)
+      .innerJoin(topics, and(eq(topics.placeId, savedTopics.placeId), eq(topics.id, savedTopics.topicId)))
+      .innerJoin(places, eq(places.id, savedTopics.placeId))
+      .where(and(
+        eq(savedTopics.userId, userId),
+        isNull(topics.deletedAt),
+        isNull(places.archivedAt),
+        cursor ? or(lt(savedTopics.createdAt, cursor.savedAt), and(eq(savedTopics.createdAt, cursor.savedAt), lt(topics.id, cursor.id))) : undefined,
+      ))
+      .orderBy(desc(savedTopics.createdAt), desc(topics.id))
+      .limit(Math.min(Math.max(limit, 1), 100) + 1);
+  }
+
+  async listSavedPosts(userId: string, cursor: SavedItemCursor | undefined, limit: number) {
+    return this.database
+      .select({ placeId: places.id, placeName: places.name, placeSlug: places.slug, post: posts, savedAt: savedPosts.createdAt, topicTitle: topics.title })
+      .from(savedPosts)
+      .innerJoin(posts, and(eq(posts.placeId, savedPosts.placeId), eq(posts.id, savedPosts.postId)))
+      .innerJoin(topics, and(eq(topics.placeId, posts.placeId), eq(topics.id, posts.topicId)))
+      .innerJoin(places, eq(places.id, savedPosts.placeId))
+      .where(and(
+        eq(savedPosts.userId, userId),
+        isNull(posts.deletedAt),
+        isNull(topics.deletedAt),
+        isNull(places.archivedAt),
+        cursor ? or(lt(savedPosts.createdAt, cursor.savedAt), and(eq(savedPosts.createdAt, cursor.savedAt), lt(posts.id, cursor.id))) : undefined,
+      ))
+      .orderBy(desc(savedPosts.createdAt), desc(posts.id))
+      .limit(Math.min(Math.max(limit, 1), 100) + 1);
   }
 
   async listPosts(placeId: string, topicId: string, cursor: PostCursor | undefined, limit: number) {

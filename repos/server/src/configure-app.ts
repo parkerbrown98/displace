@@ -64,6 +64,7 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
       callback(new Error('Origin is not allowed by CORS.'), false);
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Authorization',
       'Content-Type',

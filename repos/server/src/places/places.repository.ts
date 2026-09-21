@@ -390,6 +390,7 @@ export class PlacesRepository {
     options: {
       cursor?: PlaceCursor;
       limit: number;
+      query?: string;
       status?: 'pending' | 'active';
     },
   ): Promise<MemberRecord[]> {
@@ -418,6 +419,12 @@ export class PlacesRepository {
         and(
           eq(placeMembers.placeId, placeId),
           options.status ? eq(placeMembers.status, options.status) : undefined,
+          options.query
+            ? or(
+                ilike(users.handle, `%${options.query}%`),
+                ilike(users.displayName, `%${options.query}%`),
+              )
+            : undefined,
           cursor,
         ),
       )

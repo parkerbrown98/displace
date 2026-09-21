@@ -333,18 +333,19 @@ export class AuthController {
     const csrfToken = this.csrf.generate();
     const commonOptions = {
       maxAge: REFRESH_MAX_AGE_SECONDS,
-      path: '/api/v1/auth',
       sameSite: 'strict' as const,
       secure: this.secureCookies,
     };
     void reply.setCookie(REFRESH_COOKIE, authentication.refreshToken, {
       ...commonOptions,
       httpOnly: true,
+      path: '/api/v1/auth',
       signed: true,
     });
     void reply.setCookie(CSRF_COOKIE, csrfToken, {
       ...commonOptions,
       httpOnly: false,
+      path: '/',
     });
     return {
       accessToken: authentication.accessToken,
@@ -379,7 +380,7 @@ export class AuthController {
 
   private clearCookies(reply: FastifyReply): void {
     void reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
-    void reply.clearCookie(CSRF_COOKIE, { path: '/api/v1/auth' });
+    void reply.clearCookie(CSRF_COOKIE, { path: '/' });
   }
 
   private getRequestMetadata(request: FastifyRequest) {

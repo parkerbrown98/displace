@@ -55,6 +55,21 @@ describe("authentication client", () => {
     await expect(getCurrentProfile()).resolves.toEqual(userProfileFixture);
   });
 
+  it("deduplicates concurrent refresh-token rotations", async () => {
+    let refreshCalls = 0;
+    mockServer.use(http.post("http://localhost:3001/api/v1/auth/refresh", async () => {
+      refreshCalls += 1;
+      await Promise.resolve();
+      return HttpResponse.json({ accessToken: "shared-token", expiresInSeconds: 900, user: userProfileFixture });
+    }));
+
+    const [first, second] = await Promise.all([refreshAuthentication(), refreshAuthentication()]);
+
+    expect(first?.accessToken).toBe("shared-token");
+    expect(second?.accessToken).toBe("shared-token");
+    expect(refreshCalls).toBe(1);
+  });
+
   it("clears an expired session when refresh is authoritatively rejected", async () => {
     document.cookie = "displace_csrf=expired-csrf; path=/";
     mockServer.use(

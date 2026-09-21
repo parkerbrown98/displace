@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { StatusPanel } from "@/components/ui/status-panel";
+import { TopicDiscussion } from "@/features/forums/topic-discussion";
 import type { PlaceContract, PlacePageContract } from "@/features/places/place-contract";
 import { PlaceMembershipActions } from "@/features/places/place-access";
 import { routes } from "@/lib/routes";
@@ -14,7 +15,6 @@ import type {
   TopicContract,
   TopicPageContract,
 } from "./public-contracts";
-import { RichText } from "./rich-text";
 
 export function DiscoveryView({ joinPolicy, page, query }: { joinPolicy?: string; page: PlacePageContract; query?: string }) {
   return (
@@ -147,22 +147,7 @@ export function TopicView({
           <time dateTime={topic.createdAt}>{formatPublicDate(topic.createdAt)}</time>
         </div>
       </header>
-      <section className="post-list" aria-label="Posts">
-        {posts.items.map((post, index) => (
-          <article className={`post${post.isDeleted ? " post-deleted" : ""}`} key={post.id}>
-            <header>
-              <Avatar initials={post.isDeleted ? "-" : memberInitials(post.authorUserId)} size="small" />
-              <div><strong>{post.isDeleted ? "Deleted member" : "Community member"}</strong><time dateTime={post.createdAt}>{formatPublicDate(post.createdAt)}</time></div>
-              <a href={`#post-${post.id}`} id={`post-${post.id}`} aria-label={`Post ${index + 1}`}>#{index + 1}</a>
-            </header>
-            {post.isDeleted || !post.document ? (
-              <p className="tombstone">This post was removed.</p>
-            ) : (
-              <RichText document={post.document} />
-            )}
-          </article>
-        ))}
-      </section>
+      <TopicDiscussion initialPosts={posts} initialTopic={topic} place={place} />
       <CursorPagination nextCursor={posts.nextCursor} parameters={cursor ? { from: cursor } : undefined} path={routes.topic(place.slug, topic.id)} />
     </main>
   );
@@ -283,8 +268,4 @@ function formatPublicDate(value: string): string {
 
 function initials(value: string): string {
   return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-}
-
-function memberInitials(userId: string): string {
-  return userId.slice(-2).toUpperCase();
 }

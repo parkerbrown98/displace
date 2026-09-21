@@ -65,6 +65,11 @@ describe('forum lifecycle', () => {
     const otherPlace = await createPlace(owner, `other-${suffix()}`);
     await join(place.id, member);
 
+    const memberSearch = await request(member, 'GET', `/places/${place.id}/members?status=active&q=${owner.handle.slice(0, 8)}`);
+    expect(memberSearch.statusCode).toBe(200);
+    expect(memberSearch.json<{ items: Array<{ id: string; handle: string }> }>().items)
+      .toContainEqual(expect.objectContaining({ handle: owner.handle }));
+
     const groupResponse = await request(owner, 'POST', `/places/${place.id}/forum-groups`, {
       name: 'General',
       position: 10,
@@ -293,6 +298,16 @@ describe('forum lifecycle', () => {
     expect(await context.database.select().from(savedTopics)).toHaveLength(1);
     expect(await context.database.select().from(savedPosts)).toHaveLength(1);
     expect(await context.database.select().from(topicReadState)).toHaveLength(1);
+
+    const savedTopicResponse = await request(member, 'GET', '/saved/topics?limit=1');
+    expect(savedTopicResponse.statusCode).toBe(200);
+    expect(savedTopicResponse.json<{ items: Array<{ placeSlug: string; topic: { id: string } }> }>().items)
+      .toContainEqual(expect.objectContaining({ placeSlug: place.slug, topic: expect.objectContaining({ id: topic.id }) }));
+    const savedPostResponse = await request(member, 'GET', '/saved/posts?limit=1');
+    expect(savedPostResponse.statusCode).toBe(200);
+    expect(savedPostResponse.json<{ items: Array<{ post: { id: string }; topicTitle: string }> }>().items)
+      .toContainEqual(expect.objectContaining({ post: expect.objectContaining({ id: reply.id }), topicTitle: 'First topic' }));
+    expect((await request(outsider, 'GET', '/saved/topics')).json<{ items: unknown[] }>().items).toEqual([]);
 
     const following = await request(member, 'GET', `/places/${place.id}/topics?feed=following`);
     expect(following.statusCode).toBe(200);

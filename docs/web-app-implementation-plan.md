@@ -67,6 +67,8 @@ This plan is intentionally coordinated with the [server API implementation plan]
 
 ### Phase 5: Forum Authoring and Durable Discussion
 
+**Status:** Complete as of 2026-09-21.
+
 **Server alignment:** Build in parallel with API phase 5. The content editor can be implemented and tested with local document fixtures before write endpoints are enabled.
 
 1. Implement forum group/forum navigation, latest/popular/following feeds, tag filters, saved items, topic follows, unread indicators, and topic read-state updates.

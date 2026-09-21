@@ -38,7 +38,8 @@ export function usePlaceWorkspace(placeId: string) {
     return () => { active = false; };
   }, [placeId, session.status]);
 
-  return { context, reload, session, status };
+  const workspaceStatus = session.status === "authenticated" ? status : session.status === "loading" ? "loading" : "error";
+  return { context, reload, session, status: workspaceStatus };
 }
 
 export function PlaceWorkspaceGate({ children, placeId }: { children: (workspace: { context: PlaceContextContract; reload: () => Promise<void> }) => React.ReactNode; placeId: string }) {

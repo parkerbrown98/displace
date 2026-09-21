@@ -209,7 +209,7 @@ export class PlacesService {
   async listMembers(
     placeId: string,
     userId: string,
-    query: CursorQueryDto & { status?: 'pending' | 'active' },
+    query: CursorQueryDto & { q?: string; status?: 'pending' | 'active' },
   ) {
     const authorization = await this.requireAuthorization(placeId, userId);
     if (
@@ -222,6 +222,7 @@ export class PlacesService {
     const records = await this.places.listMembers(placeId, {
       cursor,
       limit: query.limit,
+      query: query.q?.trim(),
       status: query.status ?? 'active',
     });
     const hasMore = records.length > query.limit;

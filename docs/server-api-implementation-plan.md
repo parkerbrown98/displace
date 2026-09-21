@@ -17,6 +17,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 2: Database, Migrations, and Test Harness
 
+**Status:** Complete as of 2026-09-21.
+
 2. Add Drizzle with `pg` pooling, migration tooling, and PostgreSQL conventions. *Depends on step 1.*
    - Require PostgreSQL 18 and use built-in UUIDv7 defaults for externally visible identifiers, `timestamptz` timestamps, lowercase identifiers, explicit foreign keys/check constraints, indexes on every foreign key, and composite indexes matching feed/query order.
    - Use keyset pagination throughout; never expose unbounded list endpoints or offset pagination.

@@ -46,6 +46,8 @@ import {
   PostRevisionDto,
   ReactionDto,
   RichTextDocumentDto,
+  SavedPostPageDto,
+  SavedTopicPageDto,
   TopicDto,
   TopicPageDto,
   TopicQueryDto,
@@ -438,5 +440,27 @@ export class ForumsController {
   @ApiNoContentResponse()
   markUnread(@CurrentPlace() place: AuthorizedPlace, @CurrentUser() user: AuthenticatedUser, @Param('topicId', UUID_V7_PIPE) topicId: string) {
     return this.service.markUnread(place.id, topicId, user.id);
+  }
+}
+
+@ApiTags('Forums')
+@Controller({ path: 'saved', version: '1' })
+export class SavedForumsController {
+  constructor(private readonly service: ForumsService) {}
+
+  @Get('topics')
+  @UseGuards(AuthenticatedGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: SavedTopicPageDto })
+  listTopics(@CurrentUser() user: AuthenticatedUser, @Query() query: ForumCursorQueryDto) {
+    return this.service.listSavedTopics(user.id, query);
+  }
+
+  @Get('posts')
+  @UseGuards(AuthenticatedGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: SavedPostPageDto })
+  listPosts(@CurrentUser() user: AuthenticatedUser, @Query() query: ForumCursorQueryDto) {
+    return this.service.listSavedPosts(user.id, query);
   }
 }

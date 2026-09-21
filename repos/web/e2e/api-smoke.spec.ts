@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createCommunity, createDeletedReply, registerVerifiedUser } from "./support/api";
 
 test("renders and navigates the API-backed community", async ({ page }) => {
   await page.goto("/");
@@ -6,20 +7,23 @@ test("renders and navigates the API-backed community", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Find your next conversation" })).toBeVisible();
 });
 
-test("public discovery, forum, topic, and profile are crawlable", async ({ page }) => {
-  await page.goto("/discover");
+test("public discovery, forum, topic, and profile are crawlable", async ({ page, request }, testInfo) => {
+  const owner = await registerVerifiedUser(request, testInfo, "public_owner");
+  const community = await createCommunity(request, owner, testInfo);
+  await createDeletedReply(request, owner, community);
+  await page.goto(`/discover?q=${encodeURIComponent(community.placeName)}`);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/discover$/);
-  await page.getByRole("link", { name: "Game Makers" }).click();
+  await page.getByRole("link", { name: community.placeName }).click();
   await expect(page.getByRole("heading", { name: "Browse discussions" })).toBeVisible();
 
   await page.getByRole("link", { name: "Showcase" }).click();
   await expect(page.getByRole("heading", { name: "Showcase" })).toBeVisible();
-  await page.getByRole("link", { name: "What are you building this week?" }).click();
-  await expect(page).toHaveTitle(/What are you building this week/);
-  await expect(page.getByText("deterministic previews")).toBeVisible();
+  await page.getByRole("link", { name: community.topicTitle }).click();
+  await expect(page).toHaveTitle(new RegExp(community.topicTitle));
+  await expect(page.getByText("A real API-backed browser test discussion.")).toBeVisible();
   await expect(page.getByText("This post was removed.")).toBeVisible();
 
-  await page.goto("/members/mara_v");
-  await expect(page.getByRole("heading", { name: "Mara V." })).toBeVisible();
-  await expect(page.locator("main")).toContainText("@mara_v");
+  await page.goto(`/members/${owner.handle}`);
+  await expect(page.getByRole("heading", { name: owner.displayName })).toBeVisible();
+  await expect(page.locator(".profile-handle:visible")).toHaveText(`@${owner.handle}`);
 });

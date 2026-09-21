@@ -35,7 +35,14 @@ pnpm test:e2e
 pnpm build
 ```
 
-Playwright starts the web development server automatically for browser tests. The API must already be available at the configured origin with the test data expected by the specs. Because the journeys mutate accounts, invitations, memberships, and places, run them against an isolated database that is reset before each browser project. Install Chromium with `pnpm exec playwright install chromium` if no compatible browser is available.
+Playwright starts the web development server automatically for browser tests. The API and its supporting services must already be available at their configured origins. Because the journeys mutate accounts, invitations, memberships, and places, run them against an isolated database that is reset before each browser project. Install Chromium with `pnpm exec playwright install chromium` if no compatible browser is available.
+
+The browser journeys provision unique users and community data through the real API and read verification and password-reset links from Mailpit; they do not depend on runtime fixtures or seeded application records. Start the API, mail worker, PostgreSQL, Redis, and Mailpit before running them. Run each viewport serially against freshly reset test services so production-style authentication rate limits remain meaningful:
+
+```bash
+pnpm exec playwright test --project=desktop-chromium --workers=1
+pnpm exec playwright test --project=mobile-chromium --workers=1
+```
 
 Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:e2e`. Playwright uses the same `localhost` origin as Next.js so client hydration resources are not blocked by the development origin policy.
 

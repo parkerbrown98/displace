@@ -28,6 +28,7 @@ import {
 import {
   ForumsRepository,
   type PostCursor,
+  type SavedItemCursor,
   type TopicCursor,
 } from './forums.repository.js';
 import { RichTextService } from './rich-text.service.js';
@@ -397,6 +398,68 @@ export class ForumsService {
     await this.forums.setPostSaved(placeId, postId, userId, enabled);
   }
 
+  async listSavedTopics(userId: string, query: ForumCursorQueryDto) {
+    await this.requireVerified(userId);
+    const records = await this.forums.listSavedTopics(userId, query.cursor ? this.decodeSavedCursor(query.cursor) : undefined, query.limit);
+    const hasMore = records.length > query.limit;
+    const page = records.slice(0, query.limit);
+    const readable = [];
+    for (const record of page) {
+      try {
+        await this.requireTopicRead(record.placeId, record.topic.id, userId);
+        readable.push(record);
+      } catch {
+        // Saves remain private and hidden if the viewer loses access.
+      }
+    }
+    const last = page.at(-1);
+    return {
+      items: await Promise.all(readable.map(async (record) => ({
+        placeId: record.placeId,
+        placeName: record.placeName,
+        placeSlug: record.placeSlug,
+        savedAt: record.savedAt,
+        topic: this.toTopic((await this.forums.findTopic(record.placeId, record.topic.id))!),
+      }))),
+      nextCursor: hasMore && last ? this.cursors.encode({ id: last.topic.id, savedAt: last.savedAt.toISOString() }) : undefined,
+    };
+  }
+
+  async listSavedPosts(userId: string, query: ForumCursorQueryDto) {
+    await this.requireVerified(userId);
+    const records = await this.forums.listSavedPosts(userId, query.cursor ? this.decodeSavedCursor(query.cursor) : undefined, query.limit);
+    const hasMore = records.length > query.limit;
+    const page = records.slice(0, query.limit);
+    const readable = [];
+    for (const record of page) {
+      try {
+        await this.requireTopicRead(record.placeId, record.post.topicId, userId);
+        readable.push(record);
+      } catch {
+        // Saves remain private and hidden if the viewer loses access.
+      }
+    }
+    const postIdsByPlace = new Map<string, string[]>();
+    for (const record of readable) {
+      postIdsByPlace.set(record.placeId, [...(postIdsByPlace.get(record.placeId) ?? []), record.post.id]);
+    }
+    const reactions = (await Promise.all(
+      [...postIdsByPlace].map(([placeId, postIds]) => this.forums.listReactionSummaries(placeId, postIds, userId)),
+    )).flat();
+    const last = page.at(-1);
+    return {
+      items: readable.map((record) => ({
+        placeId: record.placeId,
+        placeName: record.placeName,
+        placeSlug: record.placeSlug,
+        post: { ...this.toPost(record.post), reactions: reactions.filter((item) => item.postId === record.post.id).map(({ count, reacted, reaction }) => ({ count, reacted, reaction })) },
+        savedAt: record.savedAt,
+        topicTitle: record.topicTitle,
+      })),
+      nextCursor: hasMore && last ? this.cursors.encode({ id: last.post.id, savedAt: last.savedAt.toISOString() }) : undefined,
+    };
+  }
+
   async markRead(placeId: string, topicId: string, userId: string, input: MarkTopicReadDto) {
     await this.requireTopicRead(placeId, topicId, userId);
     if (!(await this.forums.markRead(placeId, topicId, userId, input.lastReadPostId, this.clock.now()))) {
@@ -580,6 +643,14 @@ export class ForumsService {
       throw new BadRequestException('Post cursor is invalid.');
     }
     return { createdAt: new Date(cursor.createdAt), id: cursor.id };
+  }
+
+  private decodeSavedCursor(value: string): SavedItemCursor {
+    const cursor = this.cursors.decode<Record<string, unknown>>(value);
+    if (typeof cursor.id !== 'string' || typeof cursor.savedAt !== 'string' || Number.isNaN(Date.parse(cursor.savedAt))) {
+      throw new BadRequestException('Saved-item cursor is invalid.');
+    }
+    return { id: cursor.id, savedAt: new Date(cursor.savedAt) };
   }
 
   private toPost<

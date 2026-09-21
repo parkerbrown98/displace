@@ -86,7 +86,7 @@ export class AuthMailWorkerService
     const isVerification = job.data.kind === 'verify-email';
     const path = isVerification ? 'verify-email' : 'reset-password';
     const action = isVerification ? 'Verify email' : 'Reset password';
-    const url = `${this.applicationUrl}/auth/${path}?token=${encodeURIComponent(job.data.token)}`;
+    const url = `${this.applicationUrl}/${path}?token=${encodeURIComponent(job.data.token)}`;
     await this.transporter.sendMail({
       from: this.from,
       subject: `${action} for Displace`,

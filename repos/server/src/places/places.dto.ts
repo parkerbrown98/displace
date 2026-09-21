@@ -391,6 +391,12 @@ export class MemberPageDto {
 }
 
 export class MemberQueryDto extends CursorQueryDto {
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsString()
+  @MaxLength(100)
+  @IsOptional()
+  q?: string;
+
   @ApiPropertyOptional({ enum: ['active', 'pending'] })
   @IsIn(['active', 'pending'])
   @IsOptional()

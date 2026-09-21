@@ -368,3 +368,45 @@ export class PostPageDto {
   @ApiPropertyOptional()
   nextCursor?: string;
 }
+
+export class SavedTopicDto {
+  @ApiProperty()
+  placeId: string;
+  @ApiProperty()
+  placeSlug: string;
+  @ApiProperty()
+  placeName: string;
+  @ApiProperty({ type: TopicDto })
+  topic: TopicDto;
+  @ApiProperty({ format: 'date-time' })
+  savedAt: Date;
+}
+
+export class SavedTopicPageDto {
+  @ApiProperty({ type: SavedTopicDto, isArray: true })
+  items: SavedTopicDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
+}
+
+export class SavedPostDto {
+  @ApiProperty()
+  placeId: string;
+  @ApiProperty()
+  placeSlug: string;
+  @ApiProperty()
+  placeName: string;
+  @ApiProperty()
+  topicTitle: string;
+  @ApiProperty({ type: PostDto })
+  post: PostDto;
+  @ApiProperty({ format: 'date-time' })
+  savedAt: Date;
+}
+
+export class SavedPostPageDto {
+  @ApiProperty({ type: SavedPostDto, isArray: true })
+  items: SavedPostDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
+}

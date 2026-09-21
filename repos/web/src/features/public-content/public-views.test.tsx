@@ -1,9 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { placeContractFixture } from "@/features/places/place-fixtures";
 import { postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
 import { RichText } from "./rich-text";
 import { TopicView } from "./public-views";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }) }));
+vi.mock("@/features/auth/session-provider", () => ({
+  useSession: () => ({ status: "anonymous", user: null }),
+}));
 
 describe("public content rendering", () => {
   it("renders only allowlisted rich-text nodes and safe links", () => {

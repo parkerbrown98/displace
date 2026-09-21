@@ -54,8 +54,10 @@ export async function leavePlace(placeId: string): Promise<void> {
   return authenticatedMutation<void>(`/places/${encodeURIComponent(placeId)}/members/me`, { method: "DELETE" });
 }
 
-export async function listPlaceMembers(placeId: string, status: "active" | "pending" = "active"): Promise<PlaceMemberPageContract> {
-  return authenticatedRead<PlaceMemberPageContract>(`/places/${encodeURIComponent(placeId)}/members?status=${status}`);
+export async function listPlaceMembers(placeId: string, status: "active" | "pending" = "active", query?: string): Promise<PlaceMemberPageContract> {
+  const parameters = new URLSearchParams({ status });
+  if (query) parameters.set("q", query);
+  return authenticatedRead<PlaceMemberPageContract>(`/places/${encodeURIComponent(placeId)}/members?${parameters}`);
 }
 
 export async function getPlaceMember(placeId: string, memberId: string): Promise<PlaceMemberContract> {

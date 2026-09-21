@@ -11,6 +11,7 @@ import type {
 } from "./auth-contracts";
 
 let authentication: Authentication | null = null;
+let refreshRequest: Promise<Authentication | null> | null = null;
 
 function csrfCookie(): string | undefined {
   if (typeof document === "undefined") return undefined;
@@ -43,7 +44,13 @@ export async function signIn(input: SignInInput): Promise<Authentication> {
   return remember(result);
 }
 
-export async function refreshAuthentication(): Promise<Authentication | null> {
+export function refreshAuthentication(): Promise<Authentication | null> {
+  if (refreshRequest) return refreshRequest;
+  refreshRequest = performRefresh().finally(() => { refreshRequest = null; });
+  return refreshRequest;
+}
+
+async function performRefresh(): Promise<Authentication | null> {
   try {
     const result = await browserMutation<Authentication>("/auth/refresh", {
       body: { refreshTokenDelivery: "cookie" },
@@ -155,4 +162,5 @@ function isUnauthorized(error: unknown): boolean {
 
 export function resetAuthenticationForTests(): void {
   authentication = null;
+  refreshRequest = null;
 }
