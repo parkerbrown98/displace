@@ -82,7 +82,7 @@ services:
     build:
       context: ./repos/server
       dockerfile: Dockerfile.dev
-    command: ["pnpm", "worker:dev"]
+    command: ["sh", "-c", "CI=true pnpm install --frozen-lockfile && pnpm worker:dev"]
     env_file:
       - .env.example
     environment:
@@ -96,7 +96,7 @@ services:
       SMTP_HOST: ${SMTP_HOST:-mailpit}
     volumes:
       - ./repos/server:/workspace
-      - api_node_modules:/workspace/node_modules
+      - worker_node_modules:/workspace/node_modules
     depends_on:
       database-migrate:
         condition: service_completed_successfully
@@ -110,7 +110,7 @@ services:
     build:
       context: ./repos/server
       dockerfile: Dockerfile.dev
-    command: ["sh", "-c", "pnpm db:setup && pnpm db:seed"]
+    command: ["sh", "-c", "CI=true pnpm install --frozen-lockfile && pnpm db:setup && pnpm db:seed"]
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://${POSTGRES_RUNTIME_USER:-displace_app}:${POSTGRES_RUNTIME_PASSWORD:-displace_app_dev}@postgres:5432/${POSTGRES_DB:-displace}
@@ -118,6 +118,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./repos/server:/workspace
+      - migration_node_modules:/workspace/node_modules
     restart: "no"
 
   postgres:
@@ -228,6 +231,8 @@ services:
 
 volumes:
   api_node_modules:
+  worker_node_modules:
+  migration_node_modules:
   postgres_data:
   redis_data:
   minio_data:
