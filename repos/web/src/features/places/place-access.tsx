@@ -42,11 +42,11 @@ export function usePlaceWorkspace(placeId: string) {
   return { context, reload, session, status: workspaceStatus };
 }
 
-export function PlaceWorkspaceGate({ children, placeId }: { children: (workspace: { context: PlaceContextContract; reload: () => Promise<void> }) => React.ReactNode; placeId: string }) {
+export function PlaceWorkspaceGate({ children, placeId, returnTo = routes.place(placeId) }: { children: (workspace: { context: PlaceContextContract; reload: () => Promise<void> }) => React.ReactNode; placeId: string; returnTo?: string }) {
   const workspace = usePlaceWorkspace(placeId);
-  if (workspace.session.status === "loading" || workspace.status === "loading") return <main className="settings-main" id="main-content"><LoadingPanel label="Loading place" /></main>;
-  if (workspace.session.status === "anonymous") return <main className="settings-main" id="main-content"><StatusPanel title="Sign in required" description="Sign in to manage this place." action={<Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.placeSettings(placeId))}`}>Sign in</Link>} /></main>;
-  if (!workspace.context) return <main className="settings-main" id="main-content"><StatusPanel tone="error" title="Place unavailable" description="Your membership or permissions may have changed. Return to the place and try again." action={<Link className="secondary-button" href={routes.place(placeId)}>Return to place</Link>} /></main>;
+  if (workspace.session.status === "loading" || workspace.status === "loading") return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading place" /></main>;
+  if (workspace.session.status === "anonymous") return <main className="public-main standalone-public-state" id="main-content"><StatusPanel title="Sign in required" description="Sign in to access this page." action={<Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</Link>} /></main>;
+  if (!workspace.context) return <main className="public-main standalone-public-state" id="main-content"><StatusPanel tone="error" title="Place unavailable" description="Your membership or permissions may have changed. Return to the place and try again." action={<Link className="secondary-button" href={routes.place(placeId)}>Return to place</Link>} /></main>;
   return children({ context: workspace.context, reload: workspace.reload });
 }
 

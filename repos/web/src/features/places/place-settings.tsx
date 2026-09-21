@@ -9,6 +9,7 @@ import { useSession } from "@/features/auth/session-provider";
 import { ForumSettings } from "@/features/forums/forum-settings";
 import { routes } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
+import { PlaceForumHeader } from "./place-forum-header";
 import {
   archivePlace,
   createPlace,
@@ -32,9 +33,9 @@ export function CreatePlacePanel() {
   const [pending, setPending] = useState(false);
   const configuredSlug = singlePlaceSlug();
 
-  if (configuredSlug) return <main className="settings-main" id="main-content"><StatusPanel title="Place creation disabled" description="This installation is configured for one place." action={<a className="primary-button" href={routes.place(configuredSlug)}>Open place</a>} /></main>;
-  if (session.status === "loading") return <main className="settings-main" id="main-content"><p className="settings-muted">Loading account...</p></main>;
-  if (session.status !== "authenticated") return <main className="settings-main" id="main-content"><StatusPanel title="Sign in required" description="Use a verified account to create a place." action={<a className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.createPlace)}`}>Sign in</a>} /></main>;
+  if (configuredSlug) return <main className="public-main standalone-public-state" id="main-content"><StatusPanel title="Place creation disabled" description="This installation is configured for one place." action={<a className="primary-button" href={routes.place(configuredSlug)}>Open place</a>} /></main>;
+  if (session.status === "loading") return <main className="public-main standalone-public-state" id="main-content"><p className="settings-muted">Loading account...</p></main>;
+  if (session.status !== "authenticated") return <main className="public-main standalone-public-state" id="main-content"><StatusPanel title="Sign in required" description="Use a verified account to create a place." action={<a className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.createPlace)}`}>Sign in</a>} /></main>;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setPending(true); setNotice(null);
@@ -52,8 +53,8 @@ export function CreatePlacePanel() {
     finally { setPending(false); }
   }
 
-  return <main className="settings-main" id="main-content">
-    <header className="settings-heading"><p className="eyebrow">New community</p><h1>Create a place</h1><p>Choose a stable identity and how the first members can enter.</p></header>
+  return <main className="public-main place-workspace-page place-create-page" id="main-content">
+    <header className="place-page-heading standalone"><p className="eyebrow">New community</p><h1>Create a place</h1><p>Choose a stable identity and how the first members can enter.</p></header>
     <section className="settings-section place-create-section"><form className="settings-form" method="post" onSubmit={submit}>
       <FormField label="Name" maxLength={120} minLength={1} name="name" required />
       <FormField hint="Lowercase letters, numbers, and hyphens. This becomes the permanent URL." label="Slug" maxLength={80} minLength={3} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
@@ -65,7 +66,7 @@ export function CreatePlacePanel() {
 }
 
 export function PlaceSettings({ placeId }: { placeId: string }) {
-  return <PlaceWorkspaceGate placeId={placeId}>{({ context, reload }) => <PlaceSettingsContent context={context} reload={reload} />}</PlaceWorkspaceGate>;
+  return <PlaceWorkspaceGate placeId={placeId} returnTo={routes.placeSettings(placeId)}>{({ context, reload }) => <PlaceSettingsContent context={context} reload={reload} />}</PlaceWorkspaceGate>;
 }
 
 function PlaceSettingsContent({ context, reload }: { context: PlaceContextContract; reload: () => Promise<void> }) {
@@ -82,14 +83,15 @@ function PlaceSettingsContent({ context, reload }: { context: PlaceContextContra
     return () => { active = false; };
   }, [canManageRoles, context.place.id]);
 
-  if (!canManagePlace && !canManageRoles && !canManageForums) return <StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, or role management." />;
+  if (!canManagePlace && !canManageRoles && !canManageForums) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, or role management." /></div></main>;
 
   async function refreshAfterForbidden(error: unknown) {
     if (isForbiddenPlaceError(error)) await reload();
   }
 
-  return <main className="settings-main" id="main-content">
-    <header className="settings-heading"><p className="eyebrow">{context.place.name}</p><h1>Place settings</h1><p>Identity, discussion structure, access policy, roles, and ownership-sensitive operations.</p></header>
+  return <main className="public-main place-workspace-page" id="main-content">
+    <PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings />
+    <header className="place-page-heading"><p className="eyebrow">Administration</p><h2>Place settings</h2><p>Identity, discussion structure, access policy, roles, and ownership-sensitive operations.</p></header>
     <div className="settings-layout">
       <nav aria-label="Place settings sections">{canManagePlace ? <><a href="#identity">Identity</a><a href="#preferences">Preferences</a></> : null}{canManageForums ? <a href="#forums">Forums</a> : null}{canManageRoles ? <a href="#roles">Roles</a> : null}{canManagePlace ? <a href="#archive">Archive</a> : null}</nav>
       <div className="settings-sections">

@@ -7,6 +7,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
 import { PlaceWorkspaceGate, placeErrorMessage, usePlaceWorkspace } from "@/features/places/place-access";
 import type { PlaceContextContract, PlaceContract, PlacePermission } from "@/features/places/place-contract";
+import { PlaceForumHeader } from "@/features/places/place-forum-header";
 import type { ForumNavigationContract } from "@/features/public-content/public-contracts";
 import { routes } from "@/lib/routes";
 import { createTopic, getForumNavigation } from "./forum-client";
@@ -15,11 +16,11 @@ import { ForumEditor } from "./forum-editor";
 
 export function CreateTopicScreen({ placeId }: { placeId: string }) {
   return (
-    <PlaceWorkspaceGate placeId={placeId}>
+    <PlaceWorkspaceGate placeId={placeId} returnTo={routes.createTopic(placeId)}>
       {({ context }) => context.viewer.permissions.includes("topic.create") ? (
         <CreateTopicLoader context={context} />
       ) : (
-        <main className="public-main" id="main-content"><StatusPanel description="Your role does not allow creating topics here." title="Topic creation unavailable" /></main>
+        <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description="Your role does not allow creating topics here." title="Topic creation unavailable" /></div></main>
       )}
     </PlaceWorkspaceGate>
   );
@@ -39,8 +40,8 @@ function CreateTopicLoader({ context }: { context: PlaceContextContract }) {
     return () => { active = false; };
   }, [context.place.id]);
 
-  if (error) return <main className="public-main" id="main-content"><StatusPanel description={error} title="Forums unavailable" tone="error" /></main>;
-  if (!navigation) return <main className="public-main" id="main-content"><LoadingPanel label="Loading forums" /></main>;
+  if (error) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description={error} title="Forums unavailable" tone="error" /></div></main>;
+  if (!navigation) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} showMembershipActions={false} /><div className="place-page-state"><LoadingPanel label="Loading forums" /></div></main>;
   return <CreateTopicForm navigation={navigation} permissions={context.viewer.permissions} place={context.place} />;
 }
 
@@ -84,14 +85,16 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
   }
 
   if (!forums.length) {
-    return <main className="public-main" id="main-content"><StatusPanel description="A forum must be created before members can start discussions." title="No forums available" /></main>;
+    return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description="A forum must be created before members can start discussions." title="No forums available" /></div></main>;
   }
 
   return (
-    <main className="public-main topic-compose-page" id="main-content">
-      <header className="public-page-heading compact-heading">
-        <p className="eyebrow">{place.name} / Discussion</p>
-        <h1>New topic</h1>
+    <main className="public-main place-workspace-page topic-compose-page" id="main-content">
+      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
+      <nav className="breadcrumbs place-page-breadcrumbs" aria-label="Breadcrumb"><Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>New topic</span></nav>
+      <header className="place-page-heading">
+        <p className="eyebrow">Discussion</p>
+        <h2>New topic</h2>
         <p>Start a durable conversation with enough context for others to contribute.</p>
       </header>
       <form className="topic-compose-form" onSubmit={submit}>

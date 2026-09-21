@@ -1,4 +1,4 @@
-import { Clock3, Lock, MessageSquareText, Pin, Users } from "lucide-react";
+import { Clock3, LayoutList, Lock, MessageSquareText, Pin } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
@@ -6,7 +6,7 @@ import { StatusPanel } from "@/components/ui/status-panel";
 import { ForumAuthoringActions } from "@/features/forums/create-topic-form";
 import { TopicDiscussion } from "@/features/forums/topic-discussion";
 import type { PlaceContract, PlacePageContract } from "@/features/places/place-contract";
-import { PlaceMembershipActions } from "@/features/places/place-access";
+import { PlaceForumHeader } from "@/features/places/place-forum-header";
 import { routes } from "@/lib/routes";
 import type {
   ForumContract,
@@ -66,10 +66,10 @@ interface PlaceViewProps {
 export function PlaceView({ feed, navigation, place, tag, topics }: PlaceViewProps) {
   return (
     <main className="public-main forum-portal" id="main-content">
-      <PlaceForumHeader place={place} />
+      <PlaceForumHeader active="forums" place={place} />
       <div className="forum-portal-grid">
         <div className="forum-portal-content">
-          <ForumNavigation navigation={navigation} placeSlug={place.slug} />
+          <ForumNavigation navigation={navigation} placeSlug={place.slug} topics={topics.items} />
           <TopicDirectory
             feed={feed}
             nextCursor={topics.nextCursor}
@@ -99,7 +99,7 @@ export function ForumView({
 }) {
   return (
     <main className="public-main forum-subroute" id="main-content">
-      <PlaceForumHeader place={place} />
+      <PlaceForumHeader active="forums" place={place} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
       </nav>
@@ -135,7 +135,7 @@ export function TopicView({
 }) {
   return (
     <main className="public-main topic-page forum-subroute" id="main-content">
-      <PlaceForumHeader place={place} />
+      <PlaceForumHeader active="forums" place={place} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href={routes.place(place.slug)}>Forums</Link>
         {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}
@@ -193,22 +193,6 @@ export function findForum(navigation: ForumNavigationContract, forumId: string):
   return navigation.groups.flatMap((group) => group.forums).find((forum) => forum.id === forumId);
 }
 
-function PlaceForumHeader({ place }: { place: PlaceContract }) {
-  return (
-    <header className="place-forum-header">
-      <div className="place-forum-identity">
-        <span className="place-forum-mark" aria-hidden="true">{initials(place.name)}</span>
-        <div><p className="eyebrow">{place.visibility} community</p><h1>{place.name}</h1><p>{place.description}</p></div>
-      </div>
-      <div className="place-header-actions"><span><Users size={17} aria-hidden="true" /> {place.joinPolicy === "open" ? "Open membership" : "Membership by request"}</span><PlaceMembershipActions place={place} /></div>
-      <nav className="place-forum-nav" aria-label={`${place.name} navigation`}>
-        <Link href={routes.place(place.slug)}>Forums</Link>
-        <Link href={routes.placeMembers(place.slug)}>Members</Link>
-      </nav>
-    </header>
-  );
-}
-
 function ForumPortalRail({ place, topics }: { place: PlaceContract; topics: TopicContract[] }) {
   const recentTopics = [...topics]
     .sort((left, right) => Date.parse(right.latestPostAt) - Date.parse(left.latestPostAt))
@@ -229,22 +213,37 @@ function ForumPortalRail({ place, topics }: { place: PlaceContract; topics: Topi
   );
 }
 
-function ForumNavigation({ navigation, placeSlug }: { navigation: ForumNavigationContract; placeSlug: string }) {
+function ForumNavigation({ navigation, placeSlug, topics }: { navigation: ForumNavigationContract; placeSlug: string; topics: TopicContract[] }) {
+  const forumCount = navigation.groups.reduce((count, group) => count + group.forums.length, 0);
   return (
     <section className="forum-directory" aria-labelledby="forums-heading">
-      <div className="section-heading"><p className="eyebrow">Forums</p><h2 id="forums-heading">Browse discussions</h2></div>
+      <header className="forum-directory-heading">
+        <div><LayoutList size={18} aria-hidden="true" /><h2 id="forums-heading">Forum boards</h2></div>
+        <span>{forumCount} {forumCount === 1 ? "board" : "boards"}</span>
+      </header>
+      <div className="forum-directory-columns" aria-hidden="true"><span>Board</span><span>Topics</span><span>Latest activity</span></div>
       {navigation.groups.length ? navigation.groups.map((group) => (
-        <div className="forum-group" key={group.id}>
-          <header><h3>{group.name}</h3><p>{group.description}</p></header>
-          <div>
-            {group.forums.map((forum) => (
-              <Link className="forum-row" href={routes.forum(placeSlug, forum.id)} key={forum.id}>
-                <MessageSquareText size={19} aria-hidden="true" />
-                <span><strong>{forum.name}</strong><small>{forum.description}</small></span>
-              </Link>
-            ))}
+        <section className="forum-group" key={group.id}>
+          <header><div><h3>{group.name}</h3>{group.description ? <p>{group.description}</p> : null}</div><span>{group.forums.length} {group.forums.length === 1 ? "board" : "boards"}</span></header>
+          <div className="forum-group-rows">
+            {group.forums.map((forum) => {
+              const forumTopics = topics.filter((topic) => topic.forumId === forum.id);
+              const latestTopic = [...forumTopics].sort((left, right) => Date.parse(right.latestPostAt) - Date.parse(left.latestPostAt))[0];
+              return (
+                <article className="forum-row" key={forum.id}>
+                  <Link className="forum-row-main" href={routes.forum(placeSlug, forum.id)}>
+                    <span className="forum-row-icon"><MessageSquareText size={19} aria-hidden="true" /></span>
+                    <span className="forum-row-copy"><strong>{forum.name}</strong><small>{forum.description}</small></span>
+                  </Link>
+                  <div className="forum-row-count"><strong>{forumTopics.length}</strong><small>shown</small></div>
+                  <div className="forum-row-latest">
+                    {latestTopic ? <><Link href={routes.topic(placeSlug, latestTopic.id)}>{latestTopic.title}</Link><time dateTime={latestTopic.latestPostAt}>{formatRelativeDate(latestTopic.latestPostAt)}</time></> : <span>No topics yet</span>}
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        </div>
+        </section>
       )) : <StatusPanel title="No public forums" description="This place has not published any forums yet." />}
     </section>
   );
