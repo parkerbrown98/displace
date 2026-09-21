@@ -93,7 +93,7 @@ export function PlaceMembershipActions({ place }: { place: PlaceContract }) {
   </div>;
 }
 
-export function PlaceSwitcher({ activeSlug, fallback }: { activeSlug?: string; fallback: Array<{ imageUrl: string; name: string; slug: string }> }) {
+export function PlaceSwitcher({ activeSlug }: { activeSlug?: string }) {
   const session = useSession();
   const [places, setPlaces] = useState<Array<{ name: string; slug: string }>>([]);
   const configuredSlug = singlePlaceSlug();
@@ -103,7 +103,7 @@ export function PlaceSwitcher({ activeSlug, fallback }: { activeSlug?: string; f
     void listMyPlaces().then((page) => { if (active) setPlaces(page.items); }).catch(() => undefined);
     return () => { active = false; };
   }, [session.status]);
-  const visible = places.length ? places : fallback.filter((place) => !configuredSlug || place.slug === configuredSlug);
+  const visible = places.filter((place) => !configuredSlug || place.slug === configuredSlug);
   return <div className="place-list">{visible.map((place, index) => <Link className={`place-item${place.slug === activeSlug ? " active" : ""}`} href={routes.place(place.slug)} key={place.slug}>
     <span className={`place-switcher-mark place-switcher-mark-${index % 3}`} aria-hidden="true">{initials(place.name)}</span><span>{place.name}</span>
   </Link>)}</div>;

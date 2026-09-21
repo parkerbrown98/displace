@@ -15,11 +15,7 @@ pnpm install
 
 Copy `.env.example` to `.env.local` when the API is not available at `http://localhost:3001/api/v1`.
 
-Public discovery uses deterministic fixtures by default. Set `WEB_DATA_SOURCE=api` to use the server's cacheable public place, forum, topic, and post operations. Public member profiles remain unavailable in API mode until the server publishes an anonymous profile operation.
-
-Authentication and account settings also use deterministic fixtures by default. Set `NEXT_PUBLIC_WEB_DATA_SOURCE=api` to use the browser auth API. Access tokens remain in module memory; the signed refresh cookie is HttpOnly, and the readable CSRF cookie is sent only by the centralized auth transport.
-
-Authenticated place management uses the same `NEXT_PUBLIC_WEB_DATA_SOURCE` switch. It includes place switching, creation, settings, membership requests, invitations, member and role administration, and ownership transfer. Set `NEXT_PUBLIC_SINGLE_PLACE_SLUG` to the configured server place slug to omit discovery and place creation for a single-place deployment.
+All application data comes from the versioned API. Access tokens remain in module memory; the signed refresh cookie is HttpOnly, and the readable CSRF cookie is sent only by the centralized auth transport. Set `NEXT_PUBLIC_SINGLE_PLACE_SLUG` to the configured server place slug to omit discovery and place creation for a single-place deployment.
 
 ## Run
 
@@ -39,7 +35,7 @@ pnpm test:e2e
 pnpm build
 ```
 
-Playwright starts the development server automatically for browser tests. Install its Chromium build with `pnpm exec playwright install chromium` if no compatible browser is available.
+Playwright starts the web development server automatically for browser tests. The API must already be available at the configured origin with the test data expected by the specs. Because the journeys mutate accounts, invitations, memberships, and places, run them against an isolated database that is reset before each browser project. Install Chromium with `pnpm exec playwright install chromium` if no compatible browser is available.
 
 Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:e2e`. Playwright uses the same `localhost` origin as Next.js so client hydration resources are not blocked by the development origin policy.
 
@@ -50,13 +46,13 @@ Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:
 - `src/app/(app)` contains authenticated and place-scoped application routes.
 - `src/app/@modal` contains intercepted routes displayed over the current page.
 - `src/components` contains reusable shell and interaction primitives.
-- `src/features` contains domain fixtures, provisional contracts, view-model adapters, and feature views.
+- `src/features` contains provisional contracts, view-model adapters, and feature views.
 - `src/lib/api` owns public server reads, credentialed browser requests, request IDs, CSRF and idempotency headers, cursors, and problem details.
-- `src/test/mocks` contains MSW handlers for fixture-backed contract tests.
+- `src/test/mocks` contains MSW handlers and deterministic API payloads for contract tests.
 
 Place management routes include `/places/new`, `/places/[placeSlug]/settings`, `/places/[placeSlug]/members`, `/places/[placeSlug]/members/[memberId]`, and `/places/[placeSlug]/invites/accept`. Navigation and mutation controls use capabilities returned by the place context API; forbidden mutations refresh that context rather than inferring access from role names.
 
-The interface remains fixture-first while server operations stabilize. Provisional contracts must stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published.
+Provisional contracts stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published. Fixtures are test-only and are never a runtime fallback.
 
 ## Production
 

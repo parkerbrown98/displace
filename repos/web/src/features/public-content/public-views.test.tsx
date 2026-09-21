@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { placeContractFixture } from "@/features/places/place-contract";
+import { placeContractFixture } from "@/features/places/place-fixtures";
 import { postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
 import { RichText } from "./rich-text";
 import { TopicView } from "./public-views";

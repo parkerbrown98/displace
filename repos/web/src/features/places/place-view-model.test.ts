@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeContractFixture } from "./place-contract";
+import { placeContractFixture } from "./place-fixtures";
 import { toPlaceViewModel } from "./place-view-model";
 
 describe("toPlaceViewModel", () => {

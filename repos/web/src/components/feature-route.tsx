@@ -1,8 +1,8 @@
 import { AppShell, ShellTopbar } from "@/components/app-shell/app-shell";
-import { createCommunityFixture } from "@/features/community/community-fixtures";
 
 interface FeatureRouteProps {
   activeNavigation?: "discover" | "home" | "saved";
+  activePlaceSlug?: string;
   description: string;
   eyebrow: string;
   title: string;
@@ -10,14 +10,13 @@ interface FeatureRouteProps {
 
 export function FeatureRoute({
   activeNavigation,
+  activePlaceSlug,
   description,
   eyebrow,
   title,
 }: FeatureRouteProps) {
-  const fixture = createCommunityFixture();
-
   return (
-    <AppShell activeNavigation={activeNavigation} fixture={fixture}>
+    <AppShell activeNavigation={activeNavigation} activePlaceSlug={activePlaceSlug}>
       <main className="main-content" id="main-content">
         <ShellTopbar />
         <section className="route-placeholder">

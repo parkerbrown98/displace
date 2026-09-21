@@ -1,13 +1,6 @@
-import {
-  openSourcePlaceContractFixture,
-  placeContractFixture,
-  soundDesignPlaceContractFixture,
-  type PlacePageContract,
-} from "@/features/places/place-contract";
 import type {
   ForumNavigationContract,
   PostPageContract,
-  PublicProfileFixture,
   TopicPageContract,
 } from "./public-contracts";
 
@@ -18,12 +11,7 @@ export const publicIds = {
   netcodeTopic: "01990000-7000-8000-8000-000000000202",
 } as const;
 
-export const placePageFixture: PlacePageContract = {
-  items: [placeContractFixture, openSourcePlaceContractFixture, soundDesignPlaceContractFixture],
-  nextCursor: "eyJjcmVhdGVkQXQiOiIyMDI2LTA5LTIwVDAwOjAwOjAwLjAwMFoifQ",
-};
-
-export const forumNavigationFixture: ForumNavigationContract = {
+const forumNavigationFixture: ForumNavigationContract = {
   groups: [
     {
       id: "01990000-7000-8000-8000-000000000100",
@@ -134,14 +122,4 @@ export const postPageFixture: PostPageContract = {
       updatedAt: "2026-09-17T08:10:00.000Z",
     },
   ],
-};
-
-export const publicProfilesFixture: Record<string, PublicProfileFixture> = {
-  "mara-v": {
-    displayName: "Mara V.",
-    handle: "mara-v",
-    initials: "MV",
-    joinedAt: "2024-02-12T00:00:00.000Z",
-    summary: "Independent game developer sharing weekly progress and production notes.",
-  },
 };

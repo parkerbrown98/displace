@@ -3,29 +3,22 @@ import {
   Bell,
   Bookmark,
   Compass,
-  Headphones,
   Home as HomeIcon,
-  MessageSquareText,
-  Mic2,
-  MoreHorizontal,
   Plus,
   Search,
   Settings,
-  Volume2,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { CommunityFixture } from "@/features/community/community-fixtures";
 import { PlaceSwitcher } from "@/features/places/place-access";
 import { routes } from "@/lib/routes";
-import { Avatar } from "@/components/ui/avatar";
 
 interface AppShellProps {
   activeNavigation?: "discover" | "home" | "saved" | null;
+  activePlaceSlug?: string;
   children: ReactNode;
-  fixture: CommunityFixture;
 }
 
-export function AppShell({ activeNavigation = "home", children, fixture }: AppShellProps) {
+export function AppShell({ activeNavigation = "home", activePlaceSlug, children }: AppShellProps) {
   const singlePlace = Boolean(process.env.NEXT_PUBLIC_SINGLE_PLACE_SLUG);
   return (
     <div className="app-shell">
@@ -36,7 +29,7 @@ export function AppShell({ activeNavigation = "home", children, fixture }: AppSh
         </Link>
 
         <nav className="primary-nav" aria-label="Primary navigation">
-          <Link className={`nav-item${activeNavigation === "home" ? " active" : ""}`} href={routes.place(fixture.place.slug)}>
+          <Link className={`nav-item${activeNavigation === "home" ? " active" : ""}`} href={activePlaceSlug ? routes.place(activePlaceSlug) : routes.home}>
             <HomeIcon size={18} /> Home
           </Link>
           {!singlePlace ? <Link className={`nav-item${activeNavigation === "discover" ? " active" : ""}`} href={routes.discover}>
@@ -55,14 +48,13 @@ export function AppShell({ activeNavigation = "home", children, fixture }: AppSh
               <span className="sr-only">Create a place</span>
             </Link> : null}
           </div>
-          <PlaceSwitcher activeSlug={fixture.places.find((place) => place.active)?.slug} fallback={fixture.places} />
+          <PlaceSwitcher activeSlug={activePlaceSlug} />
         </section>
 
         <div className="profile-row">
-          <Avatar initials="PK" tone="coral" />
           <span className="profile-copy">
-            <strong>Parker</strong>
-            <small>Available</small>
+            <strong>Account</strong>
+            <small>Settings and sessions</small>
           </span>
           <Link className="icon-button" href={routes.settings} title="Settings">
             <Settings size={17} />
@@ -72,60 +64,6 @@ export function AppShell({ activeNavigation = "home", children, fixture }: AppSh
       </aside>
 
       {children}
-
-      <aside className="context-rail">
-        <div className="rail-heading">
-          <div>
-            <p className="eyebrow">Live now</p>
-            <h2>Voice rooms</h2>
-          </div>
-          <button className="icon-button" type="button" title="More voice options">
-            <MoreHorizontal size={19} />
-            <span className="sr-only">More voice options</span>
-          </button>
-        </div>
-
-        <div className="voice-list">
-          {fixture.voiceRooms.map((room) => (
-            <article className="voice-room" key={room.slug}>
-              <div className="voice-room-title">
-                <span className="voice-icon"><Volume2 size={17} /></span>
-                <div>
-                  <h3>{room.name}</h3>
-                  <p>{room.count} listening</p>
-                </div>
-              </div>
-              <div className="voice-footer">
-                <div className="avatar-stack" aria-label={`${room.count} participants`}>
-                  {room.people.map((person) => <Avatar initials={person} key={person} size="small" />)}
-                </div>
-                <button className="join-button" type="button">
-                  <Headphones size={16} /> Join
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <section className="rail-section" aria-labelledby="channels-heading">
-          <div className="section-label-row">
-            <h2 id="channels-heading">Chat channels</h2>
-            <button className="icon-button" type="button" title="Add channel">
-              <Plus size={17} />
-              <span className="sr-only">Add channel</span>
-            </button>
-          </div>
-          <Link className="channel-row" href={routes.chat(fixture.place.slug, "general")}>
-            <MessageSquareText size={17} />
-            <span>general</span>
-            <strong>14</strong>
-          </Link>
-          <Link className="channel-row" href={routes.chat(fixture.place.slug, "playtesting")}>
-            <Mic2 size={17} />
-            <span>playtesting</span>
-          </Link>
-        </section>
-      </aside>
     </div>
   );
 }

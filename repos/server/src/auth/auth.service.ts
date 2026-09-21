@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
@@ -13,6 +14,7 @@ import type { AuthMailJob } from './auth-mail.types.js';
 import { AuthRepository, type AuthUserRecord } from './auth.repository.js';
 import type {
   AuthenticationDto,
+  PublicProfileDto,
   SessionDto,
   UserProfileDto,
 } from './auth.dto.js';
@@ -243,6 +245,20 @@ export class AuthService {
 
   async getProfile(userId: string): Promise<UserProfileDto> {
     return this.toProfile(await this.requireActiveUser(userId));
+  }
+
+  async getPublicProfile(handle: string): Promise<PublicProfileDto> {
+    const profile = await this.repository.findPublicProfileByHandle(
+      handle.trim().toLowerCase(),
+    );
+    if (!profile) {
+      throw new NotFoundException('The profile was not found.');
+    }
+    return {
+      displayName: profile.displayName,
+      handle: profile.handle,
+      joinedAt: profile.createdAt,
+    };
   }
 
   async updateProfile(

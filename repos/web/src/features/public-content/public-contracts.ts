@@ -86,10 +86,8 @@ export interface PostPageContract {
   nextCursor?: string;
 }
 
-export interface PublicProfileFixture {
+export interface PublicProfileContract {
   displayName: string;
   handle: string;
-  initials: string;
   joinedAt: string;
-  summary: string;
 }

@@ -10,7 +10,7 @@ import type {
   ForumContract,
   ForumNavigationContract,
   PostPageContract,
-  PublicProfileFixture,
+  PublicProfileContract,
   TopicContract,
   TopicPageContract,
 } from "./public-contracts";
@@ -168,21 +168,24 @@ export function TopicView({
   );
 }
 
-export function ProfileView({ profile }: { profile: PublicProfileFixture }) {
+export function ProfileView({ profile }: { profile: PublicProfileContract }) {
   return (
     <main className="public-main" id="main-content">
       <section className="profile-summary">
-        <Avatar initials={profile.initials} tone="coral" />
+        <Avatar initials={profileInitials(profile.displayName)} tone="coral" />
         <div>
           <p className="eyebrow">Public profile</p>
           <h1>{profile.displayName}</h1>
           <p className="profile-handle">@{profile.handle}</p>
-          <p>{profile.summary}</p>
           <time dateTime={profile.joinedAt}>Joined {formatPublicDate(profile.joinedAt)}</time>
         </div>
       </section>
     </main>
   );
+}
+
+function profileInitials(displayName: string): string {
+  return displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
 
 export function PublicUnavailableView() {

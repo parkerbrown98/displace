@@ -6,8 +6,7 @@ import { createAuthenticationFixture } from "@/features/auth/auth-fixtures";
 import { SessionProvider } from "@/features/auth/session-provider";
 import { resetAuthenticationForTests, signIn } from "@/features/auth/auth-client";
 import { mockServer } from "@/test/mocks/server";
-import { placeContractFixture } from "./place-contract";
-import { memberFixture, placeContextFixture, placeRolesFixture } from "./place-fixtures";
+import { memberFixture, pendingMemberFixture, placeContextFixture, placeContractFixture, placeInvitesFixture, placeMembersFixture, placeRolesFixture } from "./place-fixtures";
 import { InviteAcceptance, PlaceMembershipActions } from "./place-access";
 import { PlaceMembers } from "./place-members";
 import { CreatePlacePanel, PlaceSettings } from "./place-settings";
@@ -18,7 +17,25 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
 describe("place management", () => {
   beforeEach(async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "fixture");
+    mockServer.use(
+      http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(createAuthenticationFixture())),
+      http.post("http://localhost:3001/api/v1/auth/refresh", () => HttpResponse.json(createAuthenticationFixture())),
+      http.get("http://localhost:3001/api/v1/places/game-makers/context", () => HttpResponse.json(placeContextFixture)),
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/context", () => HttpResponse.json(placeContextFixture)),
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/roles", () => HttpResponse.json({ items: placeRolesFixture })),
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/members", ({ request }) => {
+        const status = new URL(request.url).searchParams.get("status");
+        return HttpResponse.json({ items: status === "pending" ? [pendingMemberFixture] : placeMembersFixture });
+      }),
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/invites", () => HttpResponse.json({ items: placeInvitesFixture })),
+      http.post(`http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/members/${pendingMemberFixture.id}/approve`, () => HttpResponse.json({ ...pendingMemberFixture, status: "active" })),
+      http.post("http://localhost:3001/api/v1/places", async ({ request }) => HttpResponse.json({
+        ...placeContractFixture,
+        ...await request.json() as object,
+        id: "created-place",
+      })),
+      http.post("http://localhost:3001/api/v1/places/game-makers/invites/accept", () => HttpResponse.json({ memberId: memberFixture.id, status: "active" })),
+    );
     await signIn({ identifier: "parker", password: "correct horse battery staple" });
   });
 
@@ -72,7 +89,6 @@ describe("place management", () => {
   });
 
   it("refreshes stale capabilities after a forbidden update", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     let contextReads = 0;
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/refresh", () => HttpResponse.json(createAuthenticationFixture())),

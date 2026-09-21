@@ -8,7 +8,6 @@ describe("public content data", () => {
   });
 
   it("forwards opaque cursors and filters with public cache policy", async () => {
-    vi.stubEnv("WEB_DATA_SOURCE", "api");
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ items: [] }), {
         headers: { "Content-Type": "application/json" },
@@ -34,7 +33,6 @@ describe("public content data", () => {
   });
 
   it("normalizes missing and unavailable public resources", async () => {
-    vi.stubEnv("WEB_DATA_SOURCE", "api");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(
       new Response(JSON.stringify({ status: 404, title: "Not found" }), {
         status: 404,
@@ -50,18 +48,26 @@ describe("public content data", () => {
     );
   });
 
-  it("filters deterministic fixtures and treats cursors as opaque", async () => {
-    vi.stubEnv("WEB_DATA_SOURCE", "fixture");
-    await expect(listPublicTopics("game-makers", { tag: "networking" })).resolves.toMatchObject({
-      items: [{ title: "Rollback netcode: practical resources and tradeoffs" }],
-    });
-    await expect(listPublicTopics("game-makers", { cursor: "anything" })).resolves.toEqual({ items: [] });
-  });
+  it("loads public profiles from the API", async () => {
+    const profile = {
+      displayName: "Mara V.",
+      handle: "mara_v",
+      joinedAt: "2024-02-12T00:00:00.000Z",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(profile), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
 
-  it("does not substitute profile fixtures when API mode has no public profile operation", async () => {
-    vi.stubEnv("WEB_DATA_SOURCE", "api");
-    await expect(getPublicProfile("mara-v")).rejects.toEqual(
-      expect.objectContaining<Partial<PublicResourceError>>({ reason: "unavailable" }),
+    await expect(getPublicProfile("mara_v")).resolves.toEqual(profile);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/v1/profiles/mara_v",
+      expect.objectContaining({
+        credentials: "omit",
+        next: { revalidate: 60, tags: ["profile:mara_v"] },
+      }),
     );
   });
 });

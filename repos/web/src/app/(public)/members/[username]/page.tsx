@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: PageProps<"/members/[username
   try {
     const profile = await getPublicProfile(username);
     return createPublicMetadata({
-      description: profile.summary,
+      description: `${profile.displayName} (@${profile.handle}) on Displace.`,
       path: routes.member(profile.handle),
       title: profile.displayName,
     });

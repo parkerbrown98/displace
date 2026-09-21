@@ -12,10 +12,11 @@ import { AuthRepository } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { CsrfService } from './csrf.service.js';
 import { OidcService } from './oidc.service.js';
+import { ProfilesController } from './profiles.controller.js';
 import { TokenHashService } from './token-hash.service.js';
 
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, ProfilesController],
   providers: [
     AccessTokenService,
     AuthenticatedGuard,

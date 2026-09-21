@@ -2,14 +2,14 @@
 
 Build the Displace web application as a server-rendered Next.js client that makes public forum content discoverable while providing a fast, accessible application experience for members. The web app will consume the versioned API through a dedicated, generated client boundary; it will not import NestJS classes, Drizzle schemas, or server-internal types.
 
-This plan is intentionally coordinated with, but not serialized behind, the [server API implementation plan](server-api-implementation-plan.md). Each client phase begins with fixture-backed views and contract tests, then moves to the corresponding API once its OpenAPI operations and integration tests are available. This allows the web and API teams to work independently while retaining one verified contract.
+This plan is intentionally coordinated with the [server API implementation plan](server-api-implementation-plan.md). Runtime features integrate with the versioned API from the start; deterministic fixtures are limited to tests that need controlled API payloads.
 
 ## Delivery Principles
 
 - Render public place, forum, topic, and search pages on the server for crawlability, canonical URLs, metadata, and social previews. Use static generation or incremental revalidation only for public data that can safely be cached.
 - Keep authenticated and permission-sensitive data dynamic. Do not place session, membership, notification, moderation, or private-content responses in shared server caches.
 - Isolate all HTTP, authentication headers, cursor handling, RFC 9457 problem details, and Socket.IO/LiveKit integration in data-access and transport modules. Screens and UI components receive domain view models rather than raw API DTOs.
-- Treat API OpenAPI output as the client contract. Until generated artifacts are available, use small hand-authored contract fixtures that mirror the documented endpoint shapes and are removed as generated types replace them.
+- Treat API OpenAPI output as the client contract. Until generated artifacts are available, use small hand-authored contract types and test-only payloads that mirror the documented endpoint shapes.
 - Preserve optimistic interactions only where an idempotency key or client-generated command identifier makes retry safe. Reconcile every optimistic mutation with the authoritative API response or realtime event.
 - Keep public and private rendering paths explicit. Public reads may use server-side API requests; browser-side authenticated mutations use credentialed API calls with CSRF protection and request IDs as required by the API contract.
 - Design desktop-first dense community workflows, then validate all routes at narrow mobile widths with accessible navigation, keyboard operation, focus management, meaningful empty/error states, and reduced-motion support.
@@ -23,11 +23,11 @@ This plan is intentionally coordinated with, but not serialized behind, the [ser
 **Server alignment:** Can begin immediately alongside API phases 1-2. It depends only on the documented `/api/v1` conventions and OpenAPI availability, not on domain endpoints.
 
 1. Establish the App Router structure for public routes, authenticated routes, place-scoped routes, and modal/intercepting-route conventions. Define stable URL shapes for discovery, places, forums, topics, account settings, moderation, and administration before feature implementation begins.
-2. Extract the existing fixture-backed screen into reusable layout, navigation, avatar, list, status, empty-state, error-state, and loading components. Preserve its existing visual language while replacing anchor placeholders with route-aware navigation.
+2. Extract the initial scaffold into reusable layout, navigation, avatar, list, status, empty-state, error-state, and loading components. Preserve its existing visual language while replacing anchor placeholders with route-aware navigation.
 3. Add a data-access layer with separate public server-read, authenticated browser-read/mutation, and realtime transport adapters. Centralize API base URL resolution, `credentials: "include"`, `X-Request-Id`, `X-CSRF-Token`, idempotency keys, cursor serialization, and RFC 9457 error normalization.
 4. Create fixture factories and request-interception-based contract mocks for every route under active development. Fixtures must include anonymous, unauthenticated, pending, forbidden, empty, deleted, slow, and failed states rather than only ideal content.
 5. Establish application-wide typography, tokens, responsive layout rules, icon-button conventions, forms, dialogs, toast/error presentation, and accessible focus/announcement behavior. Use the current Tailwind CSS and Lucide setup rather than introducing a second UI system.
-6. Add unit tests for view-model adapters and interaction primitives, route-level rendering tests, lint/type/build checks, and browser smoke coverage for the fixture mode.
+6. Add unit tests for view-model adapters and interaction primitives, route-level rendering tests, lint/type/build checks, and browser smoke coverage against the development API.
 
 ### Phase 2: Public Discovery and SEO-Ready Reads
 
@@ -88,7 +88,7 @@ This plan is intentionally coordinated with, but not serialized behind, the [ser
 
 ### Phase 7: Search and Background-Convergent Data
 
-**Server alignment:** Build in parallel with API phase 7. Search UI may use fixtures until server search indexes and authorization filtering are ready.
+**Server alignment:** Begin after the API phase 7 search contract, authorization filtering, and development index are available.
 
 1. Implement a dedicated search route with URL-encoded query/filter state, type/place filters, keyset cursor results, result highlights, empty states, and a keyboard-accessible command/search entry point.
 2. Clearly communicate eventual consistency after writes without exposing queue internals. A just-created topic can be navigated directly even before it appears in search.
@@ -152,11 +152,11 @@ This plan is intentionally coordinated with, but not serialized behind, the [ser
 2. The web team updates generated artifacts in `repos/shared`, then changes only the relevant data-access adapter and its contract fixtures.
 3. Both teams run the endpoint's API integration test plus the corresponding web route/component/e2e test before calling that slice integrated.
 4. API schema changes remain backward-compatible within a web release train. Breaking changes require a new API version or coordinated feature flag, generated-client update, and migration test.
-5. The fixture adapter remains available for deterministic visual and failure-state tests but is not a production fallback once a server capability is enabled.
+5. Deterministic API mocks remain available for visual and failure-state tests, but the application has no runtime fixture adapter or production fallback.
 
 ## Relevant Files
 
-- [`repos/web/src/app/page.tsx`](../repos/web/src/app/page.tsx) - fixture-backed starting screen to decompose into routed features and reusable components.
+- [`repos/web/src/app/page.tsx`](../repos/web/src/app/page.tsx) - root route that resolves into API-backed discovery or the configured single place.
 - [`repos/web/src/app/layout.tsx`](../repos/web/src/app/layout.tsx) - root metadata, global providers, and document shell.
 - [`repos/web/src/app/globals.css`](../repos/web/src/app/globals.css) - existing visual tokens and responsive styling baseline.
 - [`repos/web/package.json`](../repos/web/package.json) - web scripts and dependencies.

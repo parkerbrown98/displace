@@ -21,6 +21,12 @@ export interface AuthUserRecord {
   status: 'active' | 'suspended' | 'deleted';
 }
 
+export interface PublicProfileRecord {
+  createdAt: Date;
+  displayName: string;
+  handle: string;
+}
+
 export interface SessionRecord {
   createdAt: Date;
   expiresAt: Date;
@@ -217,6 +223,21 @@ export class AuthRepository {
     return record
       ? { ...record, emailVerified: record.emailVerified !== null }
       : undefined;
+  }
+
+  async findPublicProfileByHandle(
+    handle: string,
+  ): Promise<PublicProfileRecord | undefined> {
+    const [profile] = await this.database
+      .select({
+        createdAt: users.createdAt,
+        displayName: users.displayName,
+        handle: users.handle,
+      })
+      .from(users)
+      .where(and(eq(users.handle, handle), eq(users.status, 'active')))
+      .limit(1);
+    return profile;
   }
 
   async createSession(input: SessionInput): Promise<string> {

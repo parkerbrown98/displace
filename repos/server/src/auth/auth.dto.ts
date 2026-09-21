@@ -137,6 +137,17 @@ export class UserProfileDto {
   emailVerified: boolean;
 }
 
+export class PublicProfileDto {
+  @ApiProperty()
+  handle: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty({ format: 'date-time' })
+  joinedAt: Date;
+}
+
 export class AuthenticationDto {
   @ApiProperty()
   accessToken: string;

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockServer } from "@/test/mocks/server";
+import { accountSessionsFixture, createAuthenticationFixture, userProfileFixture } from "./auth-fixtures";
 import { AccountSettings } from "./account-settings";
 import { resetAuthenticationForTests, signIn } from "./auth-client";
 import { ForgotPasswordPanel, RegisterPanel } from "./identity-panels";
@@ -22,7 +23,16 @@ describe("authentication journeys", () => {
   });
 
   it("uses account-enumeration-safe registration and recovery confirmations", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "fixture");
+    mockServer.use(
+      http.post("http://localhost:3001/api/v1/auth/register", () => HttpResponse.json(
+        { message: "If registration can proceed, a verification message has been queued." },
+        { status: 202 },
+      )),
+      http.post("http://localhost:3001/api/v1/auth/password/forgot", () => HttpResponse.json(
+        { message: "If the account exists, a reset message has been queued." },
+        { status: 202 },
+      )),
+    );
     const user = userEvent.setup();
     const { unmount } = render(<RegisterPanel />);
 
@@ -41,7 +51,10 @@ describe("authentication journeys", () => {
   });
 
   it("rejects external return destinations after sign-in", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "fixture");
+    mockServer.use(
+      http.post("http://localhost:3001/api/v1/auth/refresh", () => new HttpResponse(null, { status: 401 })),
+      http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(createAuthenticationFixture())),
+    );
     const user = userEvent.setup();
     render(<SessionProvider><SignInPanel returnTo="https://attacker.example" /></SessionProvider>);
 
@@ -53,7 +66,6 @@ describe("authentication journeys", () => {
   });
 
   it("surfaces API rate limits without exposing account details", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/refresh", () => new HttpResponse(null, { status: 401 })),
       http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(
@@ -72,7 +84,14 @@ describe("authentication journeys", () => {
   });
 
   it("revokes a device session and signs out all sessions", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "fixture");
+    mockServer.use(
+      http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(createAuthenticationFixture())),
+      http.post("http://localhost:3001/api/v1/auth/refresh", () => HttpResponse.json(createAuthenticationFixture())),
+      http.get("http://localhost:3001/api/v1/auth/me", () => HttpResponse.json(userProfileFixture)),
+      http.get("http://localhost:3001/api/v1/auth/sessions", () => HttpResponse.json(accountSessionsFixture)),
+      http.delete("http://localhost:3001/api/v1/auth/sessions/01990000-7000-8000-8000-000000000602", () => new HttpResponse(null, { status: 204 })),
+      http.post("http://localhost:3001/api/v1/auth/logout-all", () => new HttpResponse(null, { status: 204 })),
+    );
     await signIn({ identifier: "parker", password: "correct horse battery staple" });
     const user = userEvent.setup();
     render(<SessionProvider><AccountSettings /></SessionProvider>);

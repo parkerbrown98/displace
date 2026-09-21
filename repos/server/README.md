@@ -38,6 +38,8 @@ REST endpoints are versioned under `/api/v1`. Errors use RFC 9457 problem detail
 
 The `/api/v1/auth` API provides registration and email verification, login, refresh rotation, current/all-session logout, password recovery, profile and email/password changes, session listing/revocation, and optional generic OIDC login/linking. Passwords use Argon2id; access tokens expire after 15 minutes and opaque rotating refresh tokens expire after 30 days.
 
+`GET /api/v1/profiles/:handle` exposes an active user's public display name, handle, and join date without returning email, status, or authentication data.
+
 Browser clients use the signed HttpOnly `displace_session` cookie and must echo the `displace_csrf` cookie in `X-CSRF-Token` for cookie-based refresh and logout. Native clients set `refreshTokenDelivery` to `response_body`, store the returned refresh token in secure OS storage, and submit it in the refresh request body.
 
 Run the worker alongside the API to deliver verification and password-reset mail:

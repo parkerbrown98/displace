@@ -92,7 +92,7 @@ textarea:focus-visible {
 
 .app-shell {
 	display: grid;
-	grid-template-columns: 244px minmax(500px, 1fr) 304px;
+	grid-template-columns: 244px minmax(500px, 1fr);
 	min-height: 100vh;
 }
 

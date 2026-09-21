@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { mockServer } from "@/test/mocks/server";
 import {
   changePassword,
@@ -15,11 +15,9 @@ import { userProfileFixture } from "./auth-fixtures";
 describe("authentication client", () => {
   afterEach(() => {
     resetAuthenticationForTests();
-    vi.unstubAllEnvs();
   });
 
   it("keeps access credentials in memory after cookie-delivery login", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     mockServer.use(http.post("http://localhost:3001/api/v1/auth/login", async ({ request }) => {
       expect(request.credentials).toBe("include");
       expect(await request.json()).toEqual({
@@ -41,7 +39,6 @@ describe("authentication client", () => {
   });
 
   it("bootstraps from the refresh cookie and authenticates profile reads", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     document.cookie = "displace_csrf=cookie-csrf; path=/";
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/refresh", ({ request }) => {
@@ -59,7 +56,6 @@ describe("authentication client", () => {
   });
 
   it("clears an expired session when refresh is authoritatively rejected", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     document.cookie = "displace_csrf=expired-csrf; path=/";
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json({
@@ -75,7 +71,6 @@ describe("authentication client", () => {
   });
 
   it("sends CSRF credentials and preserves forbidden mutation responses", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json({
         accessToken: "access-token", csrfToken: "csrf-token", expiresInSeconds: 900, user: userProfileFixture,
@@ -94,7 +89,6 @@ describe("authentication client", () => {
   });
 
   it("uses the logout-all endpoint and forgets in-memory credentials", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEB_DATA_SOURCE", "api");
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json({
         accessToken: "access-token", csrfToken: "csrf-token", expiresInSeconds: 900, user: userProfileFixture,

@@ -1,11 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test("renders and navigates the fixture-backed community", async ({ page }) => {
+test("renders and navigates the API-backed community", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Game Makers" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
-
-  await page.getByRole("link", { name: "Discover" }).click();
   await expect(page).toHaveURL(/\/discover$/);
   await expect(page.getByRole("heading", { name: "Find your next conversation" })).toBeVisible();
 });
@@ -23,7 +19,7 @@ test("public discovery, forum, topic, and profile are crawlable", async ({ page 
   await expect(page.getByText("deterministic previews")).toBeVisible();
   await expect(page.getByText("This post was removed.")).toBeVisible();
 
-  await page.goto("/members/mara-v");
+  await page.goto("/members/mara_v");
   await expect(page.getByRole("heading", { name: "Mara V." })).toBeVisible();
-  await expect(page.locator("main")).toContainText("@mara-v");
+  await expect(page.locator("main")).toContainText("@mara_v");
 });
