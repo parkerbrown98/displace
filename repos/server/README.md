@@ -56,6 +56,16 @@ Places support `open`, `approval`, and `invite_only` join policies. Creation see
 
 Discovery and administrative collection endpoints use signed keyset cursors. Set `SINGLE_PLACE_MODE=true` with `SINGLE_PLACE_SLUG` to restrict creation, lookup, and discovery to one configured place while retaining the same schema and endpoints.
 
+## Forums
+
+The `/api/v1/places/:placeId` forum API provides ordered forum groups and forums, tags, latest/popular/following topic feeds, chronological posts, reactions, follows, saved topics/posts, and per-member read state. Forum visibility and optional read/write permission overrides are enforced in addition to place membership. Public forums in public places are anonymously readable; all mutations require a verified active member.
+
+Topic and reply creation require an `Idempotency-Key` header containing 8-128 URL-safe characters. Repeating a key with the same request replays the original response; reusing it with a different request returns a conflict.
+
+Post bodies use version 1 ProseMirror-compatible JSON. The API validates exact node, parent/child, attribute, and mark schemas, normalizes links, resolves mentions, and stores derived escaped HTML and plain text. Edits use an expected version to reject lost updates and append immutable revisions. Deletes return tombstones from normal post reads, while forum managers can inspect revision history.
+
+Topic replies and latest-post counters update transactionally. Topic views are buffered in Redis and reconciled to PostgreSQL by the worker every minute. Reconciliation uses idempotent processing batches with a 30-day Redis retry window and a 31-day PostgreSQL deduplication window.
+
 ## Configuration
 
 Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.
@@ -105,7 +115,7 @@ pnpm test:cov
 
 Format source and test files with `pnpm format`.
 
-The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it currently processes authentication mail, with the remaining domain queues added in Phase 7.
+The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it processes authentication mail and reconciles buffered forum view counters, with the remaining domain queues added in Phase 7.
 
 ## Docker Development
 

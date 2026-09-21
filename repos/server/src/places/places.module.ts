@@ -21,5 +21,6 @@ import { RolesRepository } from './roles.repository.js';
     PlacesService,
     RolesRepository,
   ],
+  exports: [PlaceContextGuard, PlacesRepository],
 })
 export class PlacesModule {}

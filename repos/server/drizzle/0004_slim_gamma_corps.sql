@@ -1,0 +1,2 @@
+CREATE INDEX "posts_place_id_topic_id_idx" ON "posts" USING btree ("place_id","topic_id");--> statement-breakpoint
+CREATE INDEX "topics_place_id_forum_id_idx" ON "topics" USING btree ("place_id","forum_id");

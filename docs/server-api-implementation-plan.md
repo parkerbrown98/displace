@@ -47,6 +47,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 5: Forum Domain and Durable Content
 
+**Status:** Complete as of 2026-09-20.
+
 5. Implement the forum-first content model. *Depends on step 4.*
    - Add ordered forum groups, forums, forum-level visibility/write permissions, tags, topics, posts, post revisions, reactions, topic follows, saved topics/posts, and per-member topic read state.
    - Topics contain flat chronological posts. Store a versioned ProseMirror-compatible JSON document as the source, derive sanitized HTML and plain text server-side, validate node/mark allowlists, normalize links, resolve mentions, and retain immutable edit revisions.
