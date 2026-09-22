@@ -123,7 +123,11 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
         }
         sync();
       });
-      await next.connect(ticket.serverUrl, ticket.token);
+      await next.connect(ticket.serverUrl, ticket.token, {
+        maxRetries: 1,
+        peerConnectionTimeout: 10_000,
+        websocketTimeout: 10_000,
+      });
       liveRoom.current = next;
       setPublishAllowed(ticket.canPublish);
       setConnection("connected"); sync();
@@ -142,7 +146,7 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
       }
     } catch (cause) {
       await liveRoom.current?.disconnect(); liveRoom.current = null; setConnection("disconnected");
-      setError(placeErrorMessage(cause, "The voice room could not be joined. Check microphone access and try again."));
+      setError(placeErrorMessage(cause, "The voice room could not connect. Check your network and try again."));
     }
   }
 
