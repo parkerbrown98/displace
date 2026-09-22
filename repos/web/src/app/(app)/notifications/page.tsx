@@ -1,5 +1,5 @@
-import { FeatureRoute } from "@/components/feature-route";
+import { NotificationInbox } from "@/features/notifications/notification-inbox";
 
 export default function NotificationsPage() {
-  return <FeatureRoute eyebrow="Inbox" title="Notifications" description="Updates from your places and discussions." />;
+  return <NotificationInbox />;
 }

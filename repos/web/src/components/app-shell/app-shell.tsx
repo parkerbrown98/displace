@@ -13,6 +13,7 @@ import {
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useSession } from "@/features/auth/session-provider";
+import { NotificationIndicator } from "@/features/notifications/notification-indicator";
 import { PlaceSwitcher } from "@/features/places/place-access";
 import { routes } from "@/lib/routes";
 
@@ -105,7 +106,7 @@ export function ShellTopbar() {
       </form>
       {session.status === "authenticated" ? <Link className="icon-button notification-button" href={routes.notifications} title="Notifications">
         <Bell size={19} />
-        <span className="notification-dot" />
+        <NotificationIndicator />
         <span className="sr-only">Notifications</span>
       </Link> : null}
     </header>
