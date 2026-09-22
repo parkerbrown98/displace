@@ -98,8 +98,8 @@ export function ForumView({
   topics: TopicPageContract;
 }) {
   return (
-    <main className="public-main forum-subroute" id="main-content">
-      <PlaceForumHeader active="forums" place={place} />
+    <main className="public-main place-workspace-page forum-subroute" id="main-content">
+      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
       </nav>
@@ -134,8 +134,8 @@ export function TopicView({
   topic: TopicContract;
 }) {
   return (
-    <main className="public-main topic-page forum-subroute" id="main-content">
-      <PlaceForumHeader active="forums" place={place} />
+    <main className="public-main place-workspace-page topic-page forum-subroute" id="main-content">
+      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href={routes.place(place.slug)}>Forums</Link>
         {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}

@@ -57,5 +57,6 @@ describe("public content rendering", () => {
 
     expect(screen.getByText("This post was removed.")).toBeInTheDocument();
     expect(screen.queryByText("deterministic previews")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in to join" })).not.toBeInTheDocument();
   });
 });
