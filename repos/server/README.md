@@ -86,6 +86,12 @@ The worker sniffs file contents, optionally scans them through `MALWARE_SCANNER_
 
 Ready image assets can be assigned to a member profile with `PUT /api/v1/places/:placeId/assets/profile-images/:kind` or to a place with `PUT /api/v1/places/:placeId/assets/place-images/:kind`. Rich-text `image` nodes accept only `{ "assetId": "<uuidv7>", "alt": "..." }`; post writes transactionally reject assets that are not ready or do not belong to the same place. Profile, place, and post references store asset IDs only.
 
+## Voice
+
+Authenticated place members list authorized rooms under `GET /api/v1/places/:placeId/voice/rooms` and request a 10-minute room-scoped LiveKit token from `POST /api/v1/places/:placeId/voice/rooms/:roomId/join-token`. Room managers can create, order, configure, and archive rooms with separate listen and speak permissions. The API enforces membership, active bans, capacity, and least-privilege publish/subscribe grants, and applies room permission changes to participants who are already connected.
+
+`POST /api/v1/voice/webhook` accepts signed LiveKit `application/webhook+json` events and publishes authorization-safe room invalidations over Socket.IO. `LIVEKIT_URL` is the internal API-to-LiveKit control endpoint; `LIVEKIT_PUBLIC_URL` is the browser-reachable `ws:`/`wss:` signaling endpoint returned with join tokens. Production requires `LIVEKIT_PUBLIC_URL` to use `wss:`. Voice media flows directly between browsers and LiveKit and is never proxied through this API.
+
 ## Configuration
 
 Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.

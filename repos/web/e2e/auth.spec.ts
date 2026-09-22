@@ -47,6 +47,8 @@ test("returns from an expired session and manages signed-in devices", async ({ p
 
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole("heading", { name: "Active sessions" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Active sessions" })).toBeVisible();
   await page.getByRole("button", { name: "Revoke Safari on iPhone" }).click();
   await expect(page.locator(".session-row").filter({ hasText: "Safari on iPhone" })).toHaveCount(0);
 

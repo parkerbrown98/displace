@@ -2,21 +2,36 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import type { AuthorizedRequest } from '../platform/authorization/authorized-request.js';
 import { AccessTokenService } from './access-token.service.js';
 import { AuthService } from './auth.service.js';
+
+const EXTERNAL_AUTHORIZATION = Symbol('external-authorization');
+
+export const ExternalAuthorization = () => SetMetadata(EXTERNAL_AUTHORIZATION, true);
 
 @Injectable()
 export class AccessAuthenticationGuard implements CanActivate {
   constructor(
     private readonly accessTokens: AccessTokenService,
     private readonly authService: AuthService,
+    private readonly reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (context.getType() === 'ws') {
+      return true;
+    }
+    if (
+      this.reflector.getAllAndOverride<boolean>(EXTERNAL_AUTHORIZATION, [
+        context.getHandler(),
+        context.getClass(),
+      ])
+    ) {
       return true;
     }
     const request = context.switchToHttp().getRequest<AuthorizedRequest>();

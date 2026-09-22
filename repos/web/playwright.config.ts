@@ -6,6 +6,10 @@ export default defineConfig({
   testDir: "./e2e",
   use: {
     baseURL: `http://localhost:${webPort}`,
+    launchOptions: {
+      args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+    },
+    permissions: ["microphone"],
     trace: "on-first-retry",
   },
   webServer: {

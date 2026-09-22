@@ -49,7 +49,7 @@ describe('database foundation', () => {
 
     expect(result.rows[0]).toEqual({
       is_postgres_18: true,
-      table_count: '36',
+      table_count: '42',
       timestamp_type: 'timestamp with time zone',
     });
   });

@@ -39,6 +39,7 @@ services:
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-displace-dev-search-key}
       LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}
       LIVEKIT_API_KEY: devkey
       LIVEKIT_API_SECRET: secret
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-development-access-token-secret-change-me}
@@ -111,6 +112,7 @@ services:
       MALWARE_SCANNER_REQUIRED: ${MALWARE_SCANNER_REQUIRED:-false}
       MEILISEARCH_HOST: http://meilisearch:7700
       LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}
       SMTP_HOST: ${SMTP_HOST:-mailpit}
     volumes:
       - ./repos/server:/workspace

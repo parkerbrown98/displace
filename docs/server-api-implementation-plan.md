@@ -85,6 +85,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 9: Voice Integration
 
+**Status:** Complete as of 2026-09-22.
+
 9. Implement voice-room policy and LiveKit token issuance. *Depends on steps 4 and 8.*
    - Add durable voice-room configuration/order/permissions, while participant state remains LiveKit/Redis-derived.
    - Add room CRUD and a join-token endpoint that verifies membership, bans/timeouts, room capacity, and speak/listen permissions, then issues a short-lived least-privilege LiveKit JWT containing stable identity and room grants.

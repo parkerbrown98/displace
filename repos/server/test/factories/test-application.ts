@@ -18,6 +18,7 @@ export async function createTestApplication(
     onApplicationCreated?: (
       application: NestFastifyApplication,
     ) => Promise<void> | void;
+    providerOverrides?: Array<{ token: unknown; value: unknown }>;
   } = {},
 ): Promise<NestFastifyApplication> {
   const environment = validateEnvironment({
@@ -33,12 +34,16 @@ export async function createTestApplication(
       .overrideProvider(DEPENDENCY_PROBE)
       .useValue(options.dependencyProbe);
   }
+  for (const override of options.providerOverrides ?? []) {
+    builder = builder.overrideProvider(override.token).useValue(override.value);
+  }
   let moduleFixture: TestingModule | undefined;
   let app: NestFastifyApplication | undefined;
   try {
     moduleFixture = await builder.compile();
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       createFastifyAdapter(environment),
+      { rawBody: true },
     );
     await options.onApplicationCreated?.(app);
     await configureApp(app);

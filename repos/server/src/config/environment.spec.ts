@@ -36,6 +36,16 @@ describe('validateEnvironment', () => {
     ).toThrow(/SMTP_HOST is required in production/);
   });
 
+  it('requires a secure public LiveKit URL in production', () => {
+    expect(() =>
+      validateEnvironment({
+        LIVEKIT_PUBLIC_URL: 'ws://voice.example',
+        NODE_ENV: 'production',
+        PUBLIC_URL: 'https://displace.example',
+      }),
+    ).toThrow(/LIVEKIT_PUBLIC_URL must use WSS in production/);
+  });
+
   it('requires a complete OIDC configuration', () => {
     expect(() =>
       validateEnvironment({ OIDC_ISSUER_URL: 'https://identity.example' }),

@@ -365,6 +365,54 @@ textarea:focus-visible {
 	padding-bottom: 48px;
 }
 
+.voice-page { padding-bottom: 48px; }
+
+.voice-layout {
+	display: grid;
+	grid-template-columns: minmax(190px, 250px) minmax(0, 1fr);
+	min-height: 580px;
+	overflow: hidden;
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 7px;
+}
+
+.voice-room-list {
+	display: grid;
+	align-content: start;
+	gap: 5px;
+	padding: 18px 12px;
+	background: #ebe9e1;
+	border-right: 1px solid var(--line);
+}
+
+.voice-room-list .eyebrow { padding: 0 8px 8px; }
+.voice-room-button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 48px; padding: 8px 10px; color: var(--muted); background: transparent; border: 0; border-radius: 5px; cursor: pointer; text-align: left; }
+.voice-room-button:hover, .voice-room-button.active { color: var(--ink); background: var(--paper-raised); }
+.voice-room-button span { display: grid; min-width: 0; gap: 2px; }
+.voice-room-button small { color: var(--muted); font-size: 11px; }
+.voice-room { display: grid; grid-template-rows: auto minmax(250px, 1fr) auto auto; min-width: 0; }
+.voice-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 24px; border-bottom: 1px solid var(--line); }
+.voice-heading h1 { margin: 4px 0; font-family: Georgia, "Times New Roman", serif; font-size: 30px; font-weight: 500; }
+.voice-heading p:last-child { margin: 0; color: var(--muted); font-size: 12px; }
+.voice-connection { padding: 5px 8px; color: var(--muted); background: #e8e7df; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.voice-connection-connected { color: #28573c; background: #dceadf; }
+.voice-connection-reconnecting, .voice-connection-connecting { color: #765718; background: #f3e8c8; }
+.voice-participants { display: grid; align-content: start; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; padding: 24px; }
+.voice-participant { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 66px; padding: 12px; background: #f0efe9; border: 1px solid var(--line); border-radius: 6px; }
+.voice-participant > div { display: grid; gap: 3px; min-width: 0; }
+.voice-participant small { color: var(--muted); }
+.voice-avatar { display: grid; width: 38px; height: 38px; place-items: center; color: white; background: var(--teal); border-radius: 50%; font-size: 11px; font-weight: 800; }
+.voice-empty { grid-column: 1 / -1; display: grid; place-items: center; align-content: center; gap: 7px; min-height: 240px; color: var(--muted); text-align: center; }
+.voice-device-panel { display: grid; grid-template-columns: auto minmax(160px, 1fr) minmax(160px, 1fr); align-items: end; gap: 12px; margin: 0 20px 12px; padding: 12px; background: #f0efe9; border: 1px solid var(--line); border-radius: 6px; }
+.voice-device-panel > svg { align-self: center; color: var(--teal); }
+.voice-device-panel label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.voice-device-panel select { min-width: 0; padding: 7px; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 4px; }
+.voice-controls { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 16px 20px 20px; border-top: 1px solid var(--line); }
+.voice-controls .icon-button { border: 1px solid var(--line); }
+.voice-controls .icon-button[aria-pressed="true"] { color: white; background: var(--ink); }
+.voice-media { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+
 .chat-layout {
 	display: grid;
 	grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
@@ -641,6 +689,12 @@ textarea:focus-visible {
 	.chat-layout {
 	grid-template-columns: 1fr;
 	}
+
+	.voice-layout { grid-template-columns: 1fr; }
+	.voice-room-list { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border-right: 0; border-bottom: 1px solid var(--line); }
+	.voice-room-list .eyebrow { grid-column: 1 / -1; }
+	.voice-heading, .voice-participants { padding-right: 16px; padding-left: 16px; }
+	.voice-device-panel { grid-template-columns: 1fr; margin-right: 12px; margin-left: 12px; }
 
 	.chat-channel-list {
 	grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));

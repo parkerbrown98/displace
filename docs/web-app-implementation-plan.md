@@ -112,6 +112,8 @@ This plan is intentionally coordinated with the [server API implementation plan]
 
 ### Phase 9: Voice Experience
 
+**Status:** Complete as of 2026-09-22.
+
 **Server alignment:** Build in parallel with API phase 9 after the realtime connection layer is established.
 
 1. Implement place voice-room navigation, room ordering, participant summaries, join/leave controls, microphone selection, output selection where browser support allows, mute/deafen controls, and clear connection/error states.

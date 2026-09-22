@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { listChatChannels } from "@/features/chat/chat-client";
 import type { ChatChannelContract } from "@/features/chat/chat-contracts";
+import { listVoiceRooms } from "@/features/voice/voice-client";
 import { useSession } from "@/features/auth/session-provider";
 import { NotificationIndicator } from "@/features/notifications/notification-indicator";
 import { routes } from "@/lib/routes";
@@ -12,7 +13,7 @@ import { PlaceMembershipActions } from "./place-access";
 import { getPlaceContext } from "./place-client";
 import type { PlaceContract } from "./place-contract";
 
-type PlaceSection = "chat" | "forums" | "members" | "settings";
+type PlaceSection = "chat" | "forums" | "members" | "settings" | "voice";
 
 interface PlaceForumHeaderProps {
   active?: PlaceSection;
@@ -41,6 +42,7 @@ export function PlaceForumHeader({
       <nav className="place-toolbar-nav" aria-label={`${place.name} navigation`}>
         <PlaceNavLink active={active === "forums"} href={routes.place(place.slug)}>Forums</PlaceNavLink>
         <PlaceNavLink active={active === "members"} href={routes.placeMembers(place.slug)}>Members</PlaceNavLink>
+        <VoiceNavLink active={active === "voice"} place={place} />
         {settingsVisible ? <PlaceNavLink active={active === "settings"} href={routes.placeSettings(place.slug)}>Settings</PlaceNavLink> : null}
         <ChatNavLink active={active === "chat"} currentSection={currentSection} place={place} />
       </nav>
@@ -58,25 +60,36 @@ export function PlaceForumHeader({
   );
 }
 
+function VoiceNavLink({ active, place }: { active: boolean; place: PlaceContract }) {
+  const session = useSession();
+  const [visible, setVisible] = useState(active);
+  useEffect(() => {
+    if (active || session.status !== "authenticated") return;
+    let activeRequest = true;
+    void listVoiceRooms(place.id).then((rooms) => { if (activeRequest) setVisible(rooms.length > 0); }).catch(() => undefined);
+    return () => { activeRequest = false; };
+  }, [active, place.id, session.status]);
+  return visible ? <PlaceNavLink active={active} href={routes.voice(place.slug)}>Voice</PlaceNavLink> : null;
+}
+
 function useSettingsVisibility(placeId: string, showSettings: boolean) {
   const session = useSession();
-  const [settingsVisible, setSettingsVisible] = useState(showSettings);
+  const [authorizedSettingsVisible, setAuthorizedSettingsVisible] = useState(false);
 
   useEffect(() => {
-    setSettingsVisible(showSettings);
     if (showSettings || session.status !== "authenticated") return;
     let active = true;
     void getPlaceContext(placeId)
       .then((context) => {
-        if (active) setSettingsVisible(context.viewer.permissions.some((permission) => ["place.manage", "role.manage", "member.manage", "forum.manage"].includes(permission)));
+        if (active) setAuthorizedSettingsVisible(context.viewer.permissions.some((permission) => ["place.manage", "role.manage", "member.manage", "forum.manage", "chat.manage", "voice.manage"].includes(permission)));
       })
       .catch(() => {
-        if (active) setSettingsVisible(false);
+        if (active) setAuthorizedSettingsVisible(false);
       });
     return () => { active = false; };
   }, [placeId, session.status, showSettings]);
 
-  return settingsVisible;
+  return showSettings || authorizedSettingsVisible;
 }
 
 function PlaceSearch() {

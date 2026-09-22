@@ -25,6 +25,11 @@ export interface E2eCommunity {
   topicTitle: string;
 }
 
+export interface E2eVoiceRoom {
+  id: string;
+  name: string;
+}
+
 export function uniqueValue(prefix: string, testInfo: TestInfo): string {
   const project = testInfo.project.name.startsWith("mobile") ? "m" : "d";
   return `${prefix}_${project}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -113,11 +118,37 @@ export async function joinCommunity(request: APIRequestContext, user: E2eUser, p
   expect([200, 201]).toContain(response.status());
 }
 
+export async function createVoiceRoom(request: APIRequestContext, owner: E2eUser, placeId: string): Promise<E2eVoiceRoom> {
+  const authentication = await login(request, owner);
+  const response = await authorized(request, authentication.accessToken, "POST", `/places/${placeId}/voice/rooms`, {
+    capacity: 1,
+    listenPermission: "voice.join",
+    name: "Studio voice",
+    position: 0,
+    slug: "studio-voice",
+    speakPermission: "voice.join",
+  });
+  expect(response.status(), await response.text()).toBe(201);
+  return response.json();
+}
+
+export async function restrictVoiceSpeaking(request: APIRequestContext, owner: E2eUser, placeId: string, roomId: string): Promise<void> {
+  const authentication = await login(request, owner);
+  const response = await authorized(request, authentication.accessToken, "PATCH", `/places/${placeId}/voice/rooms/${roomId}`, {
+    capacity: 1,
+    listenPermission: "voice.join",
+    name: "Studio voice",
+    position: 0,
+    speakPermission: "voice.manage",
+  });
+  expect(response.status(), await response.text()).toBe(200);
+}
+
 export function richText(text: string) {
   return { content: [{ content: [{ text, type: "text" }], type: "paragraph" }], type: "doc", version: 1 };
 }
 
-async function authorized(request: APIRequestContext, accessToken: string, method: "DELETE" | "POST", path: string, data?: unknown, headers: Record<string, string> = {}) {
+async function authorized(request: APIRequestContext, accessToken: string, method: "DELETE" | "PATCH" | "POST", path: string, data?: unknown, headers: Record<string, string> = {}) {
   return request.fetch(`${apiUrl}${path}`, { data, headers: { ...headers, Authorization: `Bearer ${accessToken}`, Origin: "http://localhost:3000" }, method });
 }
 

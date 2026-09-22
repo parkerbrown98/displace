@@ -227,6 +227,9 @@ const environmentSchema = z
     LIVEKIT_URL: serviceUrl(['http:', 'https:', 'ws:', 'wss:']).default(
       'http://localhost:7880',
     ),
+    LIVEKIT_PUBLIC_URL: serviceUrl(['ws:', 'wss:']).default(
+      'ws://localhost:7880',
+    ),
     LIVEKIT_API_KEY: z.string().min(1).default('devkey'),
     LIVEKIT_API_SECRET: z.string().min(1).default('secret'),
     ACCESS_TOKEN_SECRET: z
@@ -335,6 +338,14 @@ const environmentSchema = z
         code: 'custom',
         path: ['S3_PUBLIC_ENDPOINT'],
         message: 'S3_PUBLIC_ENDPOINT must use HTTPS in production.',
+      });
+    }
+
+    if (new URL(environment.LIVEKIT_PUBLIC_URL).protocol !== 'wss:') {
+      context.addIssue({
+        code: 'custom',
+        path: ['LIVEKIT_PUBLIC_URL'],
+        message: 'LIVEKIT_PUBLIC_URL must use WSS in production.',
       });
     }
 

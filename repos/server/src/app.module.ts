@@ -12,6 +12,7 @@ import { PlacesModule } from './places/places.module.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { SearchModule } from './search/search.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
+import { VoiceModule } from './voice/voice.module.js';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { RealtimeModule } from './realtime/realtime.module.js';
     JobsModule,
     NotificationsModule,
     SearchModule,
+    VoiceModule,
     RealtimeModule,
     HealthModule,
   ],

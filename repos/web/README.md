@@ -69,6 +69,16 @@ The browser origin must be allowed by both the API `CORS_ORIGINS` configuration 
 pnpm exec playwright test e2e/places.spec.ts --project=desktop-chromium --workers=1 --grep "uploads and assigns a place image"
 ```
 
+## Voice
+
+The place voice route lists API-authorized rooms and connects directly to LiveKit only after the member chooses to join. It supports participant summaries, microphone and output selection, mute, deafen, audio-playback recovery, reconnect state, and active speaking-permission revocation. Room ordering, capacity, and listen/speak permissions are managed from place settings by members with `voice.manage`.
+
+Run the controlled real-stack voice journey while API, PostgreSQL, Redis, LiveKit, and coturn are running:
+
+```bash
+pnpm exec playwright test e2e/voice.spec.ts --project=desktop-chromium --workers=1
+```
+
 Provisional contracts stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published. Fixtures are test-only and are never a runtime fallback.
 
 ## Production

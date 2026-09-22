@@ -38,6 +38,23 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
     ),
   );
 
+  app.getHttpAdapter().getInstance().addContentTypeParser(
+    'application/webhook+json',
+    {
+      bodyLimit: config.get('BODY_LIMIT_BYTES', { infer: true }),
+      parseAs: 'buffer',
+    },
+    (request, body, done) => {
+      const rawBody = Buffer.isBuffer(body) ? body : Buffer.from(body);
+      (request as typeof request & { rawBody?: Buffer }).rawBody = rawBody;
+      try {
+        done(null, JSON.parse(rawBody.toString('utf8')));
+      } catch (error) {
+        done(error as Error, undefined);
+      }
+    },
+  );
+
   await app.register(cookie, {
     secret: config.get('COOKIE_SECRET', { infer: true }),
   });

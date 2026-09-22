@@ -28,4 +28,11 @@ export class RealtimePublisher {
   publishNotificationUpdated(userId: string, notification: unknown): void {
     this.server?.to(`user:${userId}`).emit('notification.updated', notification);
   }
+
+  publishVoiceRoomUpdated(placeId: string, roomId: string): void {
+    this.server?.to(`place:${placeId}`).to(`voice:${roomId}`).emit('voice.room.updated', {
+      placeId,
+      roomId,
+    });
+  }
 }

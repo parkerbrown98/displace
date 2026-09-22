@@ -9,6 +9,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { PlacesRepository } from '../places/places.repository.js';
 import { PresenceService } from './presence.service.js';
 import { RealtimePublisher } from './realtime.publisher.js';
+import { VoiceService } from '../voice/voice.service.js';
 
 type RealtimeSocket = Socket<Record<string, (...args: never[]) => void>, Record<string, (...args: unknown[]) => void>, Record<string, (...args: unknown[]) => void>, { sessionId: string; userId: string; places: Set<string> }>;
 
@@ -26,6 +27,7 @@ export class RealtimeGateway implements OnGatewayInit {
     private readonly places: PlacesRepository,
     private readonly presence: PresenceService,
     private readonly publisher: RealtimePublisher,
+    private readonly voice: VoiceService,
   ) {}
 
   afterInit(server: Server | Namespace): void {
@@ -93,6 +95,16 @@ export class RealtimeGateway implements OnGatewayInit {
     const place = await this.requireMembership(client, body.placeId);
     await this.presence.heartbeat(place.id, client.data.userId);
     return { placeId: place.id };
+  }
+
+  @SubscribeMessage('voice.watch')
+  async watchVoiceRoom(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { placeId?: string; roomId?: string }) {
+    const place = await this.requireMembership(client, body.placeId);
+    if (!body.roomId) throw new WsException('Voice room is required.');
+    const room = await this.voice.getRoom(place.id, body.roomId, client.data.userId);
+    await client.join(`voice:${room.id}`);
+    client.emit('voice.watched', { roomId: room.id });
+    return room;
   }
 
   @SubscribeMessage('chat.typing')
