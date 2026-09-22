@@ -292,7 +292,7 @@ function TopicDirectory({
           </div>
           <dl><div><dt>Replies</dt><dd>{topic.replyCount}</dd></div><div><dt>Views</dt><dd>{formatCount(topic.viewCount)}</dd></div></dl>
         </article>
-      )) : <StatusPanel title="No discussions found" description="Try another feed or return later." />}
+      )) : <section className="public-topics-empty" role="status"><h3>No discussions found</h3><p>Try another feed or return later.</p></section>}
       <CursorPagination nextCursor={nextCursor} parameters={{ feed, tag }} path={path} />
     </section>
   );
