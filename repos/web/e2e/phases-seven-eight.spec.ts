@@ -1,21 +1,7 @@
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { createCommunity, joinCommunity, login, registerVerifiedUser, type E2eAuthentication, type E2eUser } from "./support/api";
+import { expect, test, type Page } from "@playwright/test";
+import { createCommunity, joinCommunity, registerVerifiedUser, type E2eUser } from "./support/api";
 
 const apiUrl = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:3001/api/v1";
-
-async function authenticatedRequest(
-  request: APIRequestContext,
-  authentication: E2eAuthentication,
-  method: "POST" | "PUT",
-  path: string,
-  data: unknown,
-) {
-  return request.fetch(`${apiUrl}${path}`, {
-    data,
-    headers: { Authorization: `Bearer ${authentication.accessToken}`, Origin: "http://localhost:3000" },
-    method,
-  });
-}
 
 async function signIn(page: Page, user: E2eUser) {
   await page.goto("/sign-in");
@@ -31,7 +17,6 @@ test("indexes public content and delivers chat mentions over the live stack", as
   const recipient = await registerVerifiedUser(request, testInfo, "phase_recipient");
   const community = await createCommunity(request, owner, testInfo);
   await joinCommunity(request, recipient, community.placeId);
-  const ownerAuthentication = await login(request, owner);
 
   await expect.poll(async () => {
     const response = await request.get(`${apiUrl}/search?q=${encodeURIComponent(community.placeName)}`);
@@ -43,12 +28,17 @@ test("indexes public content and delivers chat mentions over the live stack", as
   await page.goto(`/search?q=${encodeURIComponent(community.placeName)}`);
   await expect(page.getByRole("heading", { name: community.placeName })).toBeVisible();
 
-  const channelResponse = await authenticatedRequest(request, ownerAuthentication, "POST", `/places/${community.placeId}/chat/channels`, {
-    name: "Live room",
-    slug: "live-room",
-    visibility: "members",
-  });
-  expect(channelResponse.status(), await channelResponse.text()).toBe(201);
+  await signIn(page, owner);
+  await page.goto(`/places/${community.placeSlug}`);
+  const navigation = page.getByRole("navigation", { name: `${community.placeName} navigation` });
+  await expect(navigation.getByRole("link", { name: "Settings" })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Chat" })).toHaveCount(0);
+  await navigation.getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { name: "Chat channels" })).toBeVisible();
+  await page.getByLabel("Channel name").fill("Live room");
+  await page.getByLabel("Channel slug").fill("live-room");
+  await page.getByRole("button", { name: "Create channel" }).click();
+  await expect(page.getByText("Channel created.")).toBeVisible();
 
   const recipientContext = await browser.newContext();
   const recipientPage = await recipientContext.newPage();
@@ -58,14 +48,12 @@ test("indexes public content and delivers chat mentions over the live stack", as
     await expect(recipientPage.locator(".chat-heading h1")).toContainText("Live room");
     await expect(recipientPage.locator(".chat-live-status")).toHaveText("Live");
 
-    await signIn(page, owner);
-  await page.goto(`/places/${community.placeSlug}`);
-  await expect(page.getByPlaceholder("Search discussions")).toHaveCount(0);
-      await expect(page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Settings" })).toBeVisible();
-  await page.getByRole("button", { name: "Search discussions" }).click();
-  await expect(page.getByPlaceholder("Search discussions")).toBeVisible();
-  await page.getByTitle("Close search").click();
-  await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Chat" }).click();
+    await page.goto(`/places/${community.placeSlug}`);
+    await expect(page.getByPlaceholder("Search discussions")).toHaveCount(0);
+    await page.getByRole("button", { name: "Search discussions" }).click();
+    await expect(page.getByPlaceholder("Search discussions")).toBeVisible();
+    await page.getByTitle("Close search").click();
+    await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Chat" }).click();
     await expect(page.locator(".chat-heading h1")).toContainText("Live room");
     await expect(page.locator(".chat-live-status")).toHaveText("Live");
     const message = `Realtime mention for @${recipient.handle}`;

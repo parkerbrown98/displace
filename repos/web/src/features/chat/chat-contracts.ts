@@ -1,3 +1,5 @@
+import type { PlacePermission } from "@/features/places/place-contract";
+
 export interface ChatChannelContract {
   archived: boolean;
   id: string;
@@ -7,6 +9,22 @@ export interface ChatChannelContract {
   sendPermission: string | null;
   slug: string;
   visibility: string;
+}
+
+export interface CreateChatChannelInput {
+  name: string;
+  position?: number;
+  readPermission?: PlacePermission;
+  sendPermission?: PlacePermission;
+  slug: string;
+  visibility: "members" | "public";
+}
+
+export interface UpdateChatChannelInput {
+  position?: number;
+  readPermission?: PlacePermission | null;
+  sendPermission?: PlacePermission | null;
+  visibility?: "members" | "public";
 }
 
 export interface ChatMessageContract {

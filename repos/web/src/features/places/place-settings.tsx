@@ -9,6 +9,7 @@ import { setPlaceImage } from "@/features/assets/asset-client";
 import type { AssetContract } from "@/features/assets/asset-contract";
 import { ImageUploader } from "@/features/assets/image-uploader";
 import { useSession } from "@/features/auth/session-provider";
+import { ChatChannelSettings } from "@/features/chat/chat-channel-settings";
 import { ForumSettings } from "@/features/forums/forum-settings";
 import { routes } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
@@ -74,6 +75,7 @@ export function PlaceSettings({ placeId }: { placeId: string }) {
 
 function PlaceSettingsContent({ context, reload }: { context: PlaceContextContract; reload: () => Promise<void> }) {
   const canManagePlace = context.viewer.permissions.includes("place.manage");
+  const canManageChat = context.viewer.permissions.includes("chat.manage");
   const canManageRoles = context.viewer.permissions.includes("role.manage");
   const canManageForums = context.viewer.permissions.includes("forum.manage");
   const [roles, setRoles] = useState<PlaceRoleContract[]>([]);
@@ -86,7 +88,7 @@ function PlaceSettingsContent({ context, reload }: { context: PlaceContextContra
     return () => { active = false; };
   }, [canManageRoles, context.place.id]);
 
-  if (!canManagePlace && !canManageRoles && !canManageForums) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, or role management." /></div></main>;
+  if (!canManagePlace && !canManageRoles && !canManageForums && !canManageChat) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, role, or chat management." /></div></main>;
 
   async function refreshAfterForbidden(error: unknown) {
     if (isForbiddenPlaceError(error)) await reload();
@@ -96,11 +98,12 @@ function PlaceSettingsContent({ context, reload }: { context: PlaceContextContra
     <PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings />
     <header className="place-page-heading"><p className="eyebrow">Administration</p><h2>Place settings</h2><p>Identity, discussion structure, access policy, roles, and ownership-sensitive operations.</p></header>
     <div className="settings-layout">
-      <nav aria-label="Place settings sections">{canManagePlace ? <><a href="#identity">Identity</a><a href="#preferences">Preferences</a></> : null}{canManageForums ? <a href="#forums">Forums</a> : null}{canManageRoles ? <a href="#roles">Roles</a> : null}{canManagePlace ? <a href="#archive">Archive</a> : null}</nav>
+      <nav aria-label="Place settings sections">{canManagePlace ? <><a href="#identity">Identity</a><a href="#preferences">Preferences</a></> : null}{canManageForums ? <a href="#forums">Forums</a> : null}{canManageChat ? <a href="#chat">Chat</a> : null}{canManageRoles ? <a href="#roles">Roles</a> : null}{canManagePlace ? <a href="#archive">Archive</a> : null}</nav>
       <div className="settings-sections">
         {canManagePlace ? <IdentityForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} /> : null}
         {canManagePlace ? <PreferenceForm context={context} onForbidden={refreshAfterForbidden} /> : null}
         {canManageForums ? <ForumSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
+        {canManageChat ? <ChatChannelSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
         {canManageRoles ? <section className="settings-section" id="roles"><p className="eyebrow">Authorization</p><h2>Roles and permissions</h2><p className="settings-muted">Roles can only grant permissions and positions below your own. System roles are read-only.</p>{rolesFailed ? <p className="form-message form-message-error" role="alert">Roles could not be loaded.</p> : <div className="role-list">{roles.map((role) => <RoleEditor key={role.id} onChanged={async () => setRoles((await listPlaceRoles(context.place.id)).items)} onForbidden={refreshAfterForbidden} placeId={context.place.id} role={role} />)}</div>}<NewRoleForm onCreated={(role) => setRoles((items) => [...items, role].sort((a, b) => a.position - b.position))} onForbidden={refreshAfterForbidden} placeId={context.place.id} /></section> : null}
         {canManagePlace ? <ArchiveSection context={context} onForbidden={refreshAfterForbidden} /> : null}
       </div>

@@ -1,10 +1,22 @@
 import { authenticatedMutation, authenticatedRead } from "@/features/auth/auth-client";
-import type { ChatChannelContract, ChatMessageContract, ChatMessagePageContract } from "./chat-contracts";
+import type { ChatChannelContract, ChatMessageContract, ChatMessagePageContract, CreateChatChannelInput, UpdateChatChannelInput } from "./chat-contracts";
 
 const chatPath = (placeId: string) => `/places/${encodeURIComponent(placeId)}/chat`;
 
 export function listChatChannels(placeId: string): Promise<ChatChannelContract[]> {
   return authenticatedRead(`${chatPath(placeId)}/channels`);
+}
+
+export function createChatChannel(placeId: string, input: CreateChatChannelInput): Promise<ChatChannelContract> {
+  return authenticatedMutation(`${chatPath(placeId)}/channels`, { body: input, method: "POST" });
+}
+
+export function updateChatChannel(placeId: string, channelId: string, input: UpdateChatChannelInput): Promise<ChatChannelContract> {
+  return authenticatedMutation(`${chatPath(placeId)}/channels/${encodeURIComponent(channelId)}`, { body: input, method: "PATCH" });
+}
+
+export function archiveChatChannel(placeId: string, channelId: string): Promise<void> {
+  return authenticatedMutation(`${chatPath(placeId)}/channels/${encodeURIComponent(channelId)}`, { method: "DELETE" });
 }
 
 export function listChatMessages(placeId: string, channelId: string, cursor?: string): Promise<ChatMessagePageContract> {
