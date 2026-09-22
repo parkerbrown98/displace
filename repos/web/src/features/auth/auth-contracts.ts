@@ -4,6 +4,7 @@ export interface UserProfile {
   displayName: string;
   email: string;
   emailVerified: boolean;
+  isInstanceAdmin: boolean;
 }
 
 export interface Authentication {

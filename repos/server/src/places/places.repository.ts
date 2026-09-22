@@ -3,6 +3,7 @@ import {
   and,
   desc,
   eq,
+  gt,
   ilike,
   inArray,
   isNull,
@@ -14,6 +15,7 @@ import { DATABASE } from '../database/database.constants.js';
 import type { Database } from '../database/database.types.js';
 import {
   auditLog,
+  memberSanctions,
   memberRoles,
   outboxEvents,
   placeMembers,
@@ -385,6 +387,27 @@ export class PlacesRepository {
       .limit(1);
     if (!membership) {
       return undefined;
+    }
+    const [timeout] = await this.database
+      .select({ id: memberSanctions.id })
+      .from(memberSanctions)
+      .where(
+        and(
+          eq(memberSanctions.placeId, placeId),
+          eq(memberSanctions.userId, userId),
+          eq(memberSanctions.type, 'timeout'),
+          isNull(memberSanctions.revokedAt),
+          gt(memberSanctions.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+    if (timeout) {
+      return {
+        isOwner: membership.isOwner === userId,
+        memberId: membership.memberId,
+        permissions: new Set(),
+        position: 0,
+      };
     }
     const grants = await this.database
       .select({ permission: rolePermissions.permission, position: roles.position })

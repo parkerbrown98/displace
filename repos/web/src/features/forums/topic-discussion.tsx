@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { useSession } from "@/features/auth/session-provider";
+import { ReportButton } from "@/features/moderation/report-button";
 import { usePlaceWorkspace, placeErrorMessage } from "@/features/places/place-access";
 import type { PlaceContract } from "@/features/places/place-contract";
 import type { PostContract, PostPageContract, TopicContract } from "@/features/public-content/public-contracts";
@@ -104,6 +105,7 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
           <button aria-pressed={followed} className="secondary-button" onClick={() => void toggleFollow()} type="button"><Star size={16} />{followed ? "Following" : "Follow"}</button>
           <button aria-pressed={saved} className="secondary-button" onClick={() => void toggleSave()} type="button"><Bookmark size={16} />{saved ? "Saved" : "Save"}</button>
           <button className="secondary-button" onClick={() => void markTopicUnread(place.id, topic.id)} type="button"><EyeOff size={16} />Mark unread</button>
+          <ReportButton label="topic" placeId={place.id} targetId={topic.id} targetType="topic" />
           {isTopicAuthor || canModerate ? <button className="icon-button" onClick={() => setEditingTitle((value) => !value)} title="Edit topic title" type="button"><Edit3 size={16} /></button> : null}
           {canModerate ? <>
             <button aria-pressed={topic.status === "locked"} className="icon-button" onClick={() => void setTopicLock(place.id, topic.id, topic.status !== "locked").then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Lock status could not be changed.")))} title={topic.status === "locked" ? "Unlock topic" : "Lock topic"} type="button"><Lock size={16} /></button>
@@ -169,6 +171,7 @@ function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, pos
       {!post.isDeleted && session.status === "authenticated" ? <footer className="post-actions">
         {["like", "helpful", "insightful"].map((reaction) => { const summary = post.reactions.find((item) => item.reaction === reaction); return <button aria-pressed={summary?.reacted ?? false} key={reaction} onClick={() => void react(reaction, !(summary?.reacted ?? false))} type="button">{reaction}{summary?.count ? ` ${summary.count}` : ""}</button>; })}
         <button aria-pressed={saved} onClick={() => void setPostSave(placeId, post.id, !saved).then(() => setSaved(!saved)).catch((cause) => setError(placeErrorMessage(cause, "Save status could not be changed.")))} type="button"><Bookmark size={14} />{saved ? "Saved" : "Save"}</button>
+        <ReportButton label={`post ${number}`} placeId={placeId} targetId={post.id} targetType="post" />
         {canEdit ? <button onClick={() => setEditing(true)} type="button"><Edit3 size={14} />Edit</button> : null}
         {canEdit ? <button onClick={() => void remove()} type="button"><Trash2 size={14} />Delete</button> : null}
         {canModerate ? <button onClick={() => void listPostRevisions(placeId, post.id).then(setRevisions).catch((cause) => setError(placeErrorMessage(cause, "Revisions could not be loaded.")))} type="button"><History size={14} />History</button> : null}

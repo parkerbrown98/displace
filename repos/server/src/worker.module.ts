@@ -9,6 +9,7 @@ import { AuthMailWorkerService } from './auth/auth-mail-worker.service.js';
 import { ConfigurationModule } from './config/configuration.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ForumsRepository } from './forums/forums.repository.js';
+import { ModerationMaintenanceWorker } from './moderation/moderation-maintenance.worker.js';
 import { TopicViewCounterWorker } from './forums/topic-view-counter.worker.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { SearchIndexWorker } from './search/search-index.worker.js';
@@ -26,6 +27,7 @@ import { WorkerLifetimeService } from './worker-lifetime.service.js';
     MediaWorkerService,
     ObjectStorageService,
     ForumsRepository,
+    ModerationMaintenanceWorker,
     SearchIndexWorker,
     SearchService,
     TopicViewCounterWorker,

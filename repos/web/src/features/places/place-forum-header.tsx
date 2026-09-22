@@ -8,12 +8,13 @@ import type { ChatChannelContract } from "@/features/chat/chat-contracts";
 import { listVoiceRooms } from "@/features/voice/voice-client";
 import { useSession } from "@/features/auth/session-provider";
 import { NotificationIndicator } from "@/features/notifications/notification-indicator";
+import { ReportButton } from "@/features/moderation/report-button";
 import { routes } from "@/lib/routes";
 import { PlaceMembershipActions } from "./place-access";
 import { getPlaceContext } from "./place-client";
 import type { PlaceContract } from "./place-contract";
 
-type PlaceSection = "chat" | "forums" | "members" | "settings" | "voice";
+type PlaceSection = "chat" | "forums" | "members" | "moderation" | "settings" | "voice";
 
 interface PlaceForumHeaderProps {
   active?: PlaceSection;
@@ -32,6 +33,7 @@ export function PlaceForumHeader({
 }: PlaceForumHeaderProps) {
 	const session = useSession();
   const settingsVisible = useSettingsVisibility(place.id, showSettings);
+  const moderationVisible = useModerationVisibility(place.id);
 
   return (
     <header className="place-toolbar">
@@ -43,12 +45,14 @@ export function PlaceForumHeader({
         <PlaceNavLink active={active === "forums"} href={routes.place(place.slug)}>Forums</PlaceNavLink>
         <PlaceNavLink active={active === "members"} href={routes.placeMembers(place.slug)}>Members</PlaceNavLink>
         <VoiceNavLink active={active === "voice"} place={place} />
+        {moderationVisible ? <PlaceNavLink active={active === "moderation"} href={routes.placeModeration(place.slug)}>Moderation</PlaceNavLink> : null}
         {settingsVisible ? <PlaceNavLink active={active === "settings"} href={routes.placeSettings(place.slug)}>Settings</PlaceNavLink> : null}
         <ChatNavLink active={active === "chat"} currentSection={currentSection} place={place} />
       </nav>
       <div className="place-toolbar-actions">
         <span className="place-membership"><Users size={16} aria-hidden="true" /> {place.joinPolicy === "open" ? "Open membership" : "Membership by request"}</span>
         <PlaceSearch />
+        <ReportButton label={place.name} placeId={place.id} targetId={place.id} targetType="place" />
         {session.status === "authenticated" ? <Link className="icon-button notification-button" href={routes.notifications} title="Notifications">
           <Bell size={19} />
           <NotificationIndicator />
@@ -90,6 +94,20 @@ function useSettingsVisibility(placeId: string, showSettings: boolean) {
   }, [placeId, session.status, showSettings]);
 
   return showSettings || authorizedSettingsVisible;
+}
+
+function useModerationVisibility(placeId: string) {
+  const session = useSession();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (session.status !== "authenticated") return;
+    let active = true;
+    void getPlaceContext(placeId)
+      .then((context) => { if (active) setVisible(context.viewer.permissions.includes("moderation.manage")); })
+      .catch(() => { if (active) setVisible(false); });
+    return () => { active = false; };
+  }, [placeId, session.status]);
+  return visible;
 }
 
 function PlaceSearch() {

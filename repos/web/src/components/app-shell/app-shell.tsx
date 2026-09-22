@@ -9,6 +9,8 @@ import {
   Plus,
   Search,
   Settings,
+  Shield,
+  Wrench,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -55,6 +57,12 @@ export function AppShell({ activeNavigation, activePlaceSlug, children }: AppShe
           </Link> : null}
           {authenticated ? <Link className={`nav-item${currentNavigation === "saved" ? " active" : ""}`} href={routes.saved}>
             <Bookmark size={18} /> Saved
+          </Link> : null}
+          {authenticated ? <Link className={`nav-item${pathname.startsWith(routes.moderation) ? " active" : ""}`} href={routes.moderation}>
+            <Shield size={18} /> Moderation
+          </Link> : null}
+          {session.user?.isInstanceAdmin ? <Link className={`nav-item${pathname.startsWith(routes.administration) ? " active" : ""}`} href={routes.administration}>
+            <Wrench size={18} /> Administration
           </Link> : null}
         </nav>
 

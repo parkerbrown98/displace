@@ -59,6 +59,17 @@ Set `WEB_PORT` when port 3000 is occupied, for example `WEB_PORT=3010 pnpm test:
 
 Place management routes include `/places/new`, `/places/[placeSlug]/settings`, `/places/[placeSlug]/members`, `/places/[placeSlug]/members/[memberId]`, and `/places/[placeSlug]/invites/accept`. Navigation and mutation controls use capabilities returned by the place context API; forbidden mutations refresh that context rather than inferring access from role names.
 
+## Moderation And Administration
+
+Authenticated users can report places, members, topics, posts, and chat messages from their resource views. Members with the server-provided `moderation.manage` capability can work the place queue at `/places/[placeSlug]/moderation`; the global `/moderation` route directs moderators to their place-scoped work. Instance administrators can manage non-secret settings and account status at `/admin`. All actions remain subject to API authorization even when a control is already capability-gated in the interface.
+
+Run the real API-backed moderation journey in either supported viewport:
+
+```bash
+pnpm exec playwright test e2e/moderation.spec.ts --project=desktop-chromium --workers=1
+pnpm exec playwright test e2e/moderation.spec.ts --project=mobile-chromium --workers=1
+```
+
 ## Uploads and Media
 
 Image uploads request a short-lived intent from the API, send the file directly from the browser to the configured S3-compatible endpoint, complete the intent, and wait for server-side validation and processing. Profile, place, and forum content store asset IDs only. Display URLs are short-lived, authorization-aware URLs returned by the API; the web app never constructs object-storage paths.

@@ -1,5 +1,8 @@
-import { FeatureRoute } from "@/components/feature-route";
+import type { Metadata } from "next";
+import { AdminDashboard } from "@/features/moderation/admin-dashboard";
+
+export const metadata: Metadata = { title: "Administration", robots: { follow: false, index: false } };
 
 export default function AdminPage() {
-  return <FeatureRoute eyebrow="Instance" title="Administration" description="Manage instance-wide policy and configuration." />;
+  return <AdminDashboard />;
 }

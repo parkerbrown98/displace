@@ -1,0 +1,1 @@
+CREATE INDEX "moderation_reports_resolved_by_user_id_idx" ON "moderation_reports" USING btree ("resolved_by_user_id");

@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { ForumsModule } from './forums/forums.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
+import { ModerationModule } from './moderation/moderation.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PlacesModule } from './places/places.module.js';
 import { PlatformModule } from './platform/platform.module.js';
@@ -24,6 +25,7 @@ import { VoiceModule } from './voice/voice.module.js';
     ChatModule,
     AssetsModule,
     ForumsModule,
+    ModerationModule,
     JobsModule,
     NotificationsModule,
     SearchModule,

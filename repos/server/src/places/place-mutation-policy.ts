@@ -1,7 +1,8 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { DatabaseTransaction } from '../database/database.types.js';
 import {
   memberRoles,
+  memberSanctions,
   placeMembers,
   places,
   rolePermissions,
@@ -45,6 +46,22 @@ export async function loadPlaceMutationPolicy(
     )
     .limit(1);
   if (!membership) {
+    return undefined;
+  }
+  const [timeout] = await transaction
+    .select({ id: memberSanctions.id })
+    .from(memberSanctions)
+    .where(
+      and(
+        eq(memberSanctions.placeId, placeId),
+        eq(memberSanctions.userId, userId),
+        eq(memberSanctions.type, 'timeout'),
+        isNull(memberSanctions.revokedAt),
+        gt(memberSanctions.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
+  if (timeout) {
     return undefined;
   }
   const grants = await transaction

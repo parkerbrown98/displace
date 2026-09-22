@@ -95,6 +95,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 10: Moderation, Safety, and Administration
 
+**Status:** Complete as of 2026-09-22.
+
 10. Implement comprehensive place moderation and instance administration. *Depends on steps 4, 5, and 8.*
     - Add reports, report evidence snapshots, moderator notes, warnings, member timeouts, place bans, content hide/restore, topic lock/pin/move, chat deletion, and instance-level account suspension.
     - Centralize every action in a policy engine, require reason codes where appropriate, record actor/target/scope/before-after metadata in an append-only audit log, and notify affected users without exposing private moderator notes.

@@ -135,6 +135,9 @@ export class UserProfileDto {
 
   @ApiProperty()
   emailVerified: boolean;
+
+  @ApiProperty()
+  isInstanceAdmin: boolean;
 }
 
 export class PublicProfileDto {

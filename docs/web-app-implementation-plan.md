@@ -124,6 +124,8 @@ This plan is intentionally coordinated with the [server API implementation plan]
 
 ### Phase 10: Moderation and Instance Administration
 
+**Status:** Complete as of 2026-09-22.
+
 **Server alignment:** Build in parallel with API phase 10 once role/capability UI primitives are available.
 
 1. Implement report creation from topics, posts, chat messages, members, and places. Capture user-visible evidence only through server-returned resource data and clearly separate reporter notes from moderator-private notes.

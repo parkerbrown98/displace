@@ -17,6 +17,7 @@ export interface AuthUserRecord {
   emailVerified: boolean;
   handle: string;
   id: string;
+  isInstanceAdmin: boolean;
   passwordHash: string | null;
   status: 'active' | 'suspended' | 'deleted';
 }
@@ -100,6 +101,7 @@ export class AuthRepository {
           displayName: users.displayName,
           handle: users.handle,
           id: users.id,
+          isInstanceAdmin: users.isInstanceAdmin,
           passwordHash: users.passwordHash,
           status: users.status,
         });
@@ -187,6 +189,7 @@ export class AuthRepository {
         emailVerified: userEmails.verifiedAt,
         handle: users.handle,
         id: users.id,
+        isInstanceAdmin: users.isInstanceAdmin,
         passwordHash: users.passwordHash,
         status: users.status,
       })
@@ -210,6 +213,7 @@ export class AuthRepository {
         emailVerified: userEmails.verifiedAt,
         handle: users.handle,
         id: users.id,
+        isInstanceAdmin: users.isInstanceAdmin,
         passwordHash: users.passwordHash,
         status: users.status,
       })
@@ -618,6 +622,7 @@ export class AuthRepository {
           displayName: users.displayName,
           handle: users.handle,
           id: users.id,
+          isInstanceAdmin: users.isInstanceAdmin,
           passwordHash: users.passwordHash,
           status: users.status,
         });

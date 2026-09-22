@@ -44,16 +44,40 @@ describe("AppShell", () => {
         emailVerified: true,
         handle: "ada",
         id: "user-1",
+        isInstanceAdmin: false,
       },
     });
 
     render(<AppShell><main>Member content</main></AppShell>);
 
     expect(screen.getByRole("link", { name: "Saved" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Moderation" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Administration" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Your places" })).toBeInTheDocument();
     expect(screen.getByTestId("place-switcher")).toBeInTheDocument();
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.getByText("@ada")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+  });
+
+  it("shows instance administration only to instance administrators", () => {
+    session.mockReturnValue({
+      refreshProfile: vi.fn(),
+      signInAccount: vi.fn(),
+      signOutAccount: vi.fn(),
+      status: "authenticated",
+      user: {
+        displayName: "Ada Lovelace",
+        email: "ada@example.test",
+        emailVerified: true,
+        handle: "ada",
+        id: "user-1",
+        isInstanceAdmin: true,
+      },
+    });
+
+    render(<AppShell><main>Admin content</main></AppShell>);
+
+    expect(screen.getByRole("link", { name: "Administration" })).toHaveAttribute("href", "/admin");
   });
 });

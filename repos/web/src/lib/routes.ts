@@ -18,6 +18,7 @@ export const routes = {
   member: (username: string) => `/members/${username}`,
   place: (placeSlug: string) => `/places/${placeSlug}`,
   placeSettings: (placeSlug: string) => `/places/${placeSlug}/settings`,
+  placeModeration: (placeSlug: string) => `/places/${placeSlug}/moderation`,
   placeMembers: (placeSlug: string) => `/places/${placeSlug}/members`,
   placeMember: (placeSlug: string, memberId: string) => `/places/${placeSlug}/members/${memberId}`,
   acceptPlaceInvite: (placeSlug: string) => `/places/${placeSlug}/invites/accept`,

@@ -92,6 +92,12 @@ Authenticated place members list authorized rooms under `GET /api/v1/places/:pla
 
 `POST /api/v1/voice/webhook` accepts signed LiveKit `application/webhook+json` events and publishes authorization-safe room invalidations over Socket.IO. `LIVEKIT_URL` is the internal API-to-LiveKit control endpoint; `LIVEKIT_PUBLIC_URL` is the browser-reachable `ws:`/`wss:` signaling endpoint returned with join tokens. Production requires `LIVEKIT_PUBLIC_URL` to use `wss:`. Voice media flows directly between browsers and LiveKit and is never proxied through this API.
 
+## Moderation And Administration
+
+Verified members can report places, members, topics, posts, and chat messages through `POST /api/v1/places/:placeId/reports`. Members with `moderation.manage` can use the place-scoped moderation endpoints to filter and assign reports, add private notes, resolve cases, apply single or bounded bulk actions, and revoke active sanctions. Every mutation rechecks authoritative place permissions and role hierarchy, records the action and audit metadata transactionally, and creates affected-user notifications without exposing private notes.
+
+Instance administrators use `/api/v1/admin/settings` for non-secret instance configuration and `/api/v1/admin/users/:userId/suspend` or `/restore` for account status changes. Administrator status is loaded from the database for every request. Create or promote the first administrator with `pnpm db:initial-admin` as described below; there is no public bootstrap endpoint.
+
 ## Configuration
 
 Configuration is validated at startup. The repository root [`.env.example`](../../.env.example) documents development values for HTTP limits, CORS, trusted proxies, service connections, signing secrets, SMTP, OIDC, and single-place mode. Production startup rejects development credentials, non-HTTPS public URLs and CORS origins, incomplete OIDC/SMTP credentials, and an unrestricted trusted-proxy setting.

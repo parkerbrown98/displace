@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { ReportButton } from "@/features/moderation/report-button";
 import { routes } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
 import { PlaceForumHeader } from "./place-forum-header";
@@ -119,7 +120,7 @@ function MemberProfileContent({ context, memberId }: { context: PlaceContextCont
   const frame = (content: React.ReactNode) => <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="members" place={context.place} showMembershipActions={false} /><nav className="breadcrumbs place-page-breadcrumbs" aria-label="Breadcrumb"><Link href={routes.place(context.place.slug)}>Forums</Link><span>/</span><Link href={routes.placeMembers(context.place.slug)}>Members</Link></nav>{content}</main>;
   if (failed) return frame(<div className="place-page-state"><StatusPanel title="Member unavailable" description="This member could not be found in the place." /></div>);
   if (!member) return frame(<div className="place-page-state"><LoadingPanel label="Loading member" /></div>);
-  return frame(<><header className="member-profile"><span className="member-avatar large" aria-hidden="true">{initials(member.displayName)}</span><div><p className="eyebrow">{member.status} member</p><h2>{member.displayName}</h2><p>@{member.handle}</p></div></header><section className="settings-section"><p className="eyebrow">Membership</p><h2>Place roles</h2><div className="member-roles">{member.roles.map((role) => <span key={role.id}>{role.name}</span>)}</div><p className="settings-muted">{member.joinedAt ? `Joined ${formatDate(member.joinedAt)}` : "Membership is awaiting approval."}</p></section></>);
+  return frame(<><header className="member-profile"><span className="member-avatar large" aria-hidden="true">{initials(member.displayName)}</span><div><p className="eyebrow">{member.status} member</p><h2>{member.displayName}</h2><p>@{member.handle}</p></div><ReportButton label={member.displayName} placeId={context.place.id} targetId={member.id} targetType="member" /></header><section className="settings-section"><p className="eyebrow">Membership</p><h2>Place roles</h2><div className="member-roles">{member.roles.map((role) => <span key={role.id}>{role.name}</span>)}</div><p className="settings-muted">{member.joinedAt ? `Joined ${formatDate(member.joinedAt)}` : "Membership is awaiting approval."}</p></section></>);
 }
 
 function initials(value: string): string { return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase(); }

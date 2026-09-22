@@ -6,6 +6,7 @@ export const userProfileFixture: UserProfile = {
   displayName: "Parker",
   email: "parker@example.com",
   emailVerified: true,
+  isInstanceAdmin: false,
 };
 
 export const accountSessionsFixture: AccountSession[] = [

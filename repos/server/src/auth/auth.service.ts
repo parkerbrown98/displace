@@ -535,6 +535,7 @@ export class AuthService {
       emailVerified: user.emailVerified,
       handle: user.handle,
       id: user.id,
+      isInstanceAdmin: user.isInstanceAdmin,
     };
   }
 
