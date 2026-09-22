@@ -85,3 +85,11 @@ export class AssetReferenceDto {
   @ApiProperty()
   kind!: string;
 }
+
+export class CurrentAssetReferenceDto {
+  @ApiProperty({ format: 'uuid', nullable: true })
+  assetId!: string | null;
+
+  @ApiProperty()
+  kind!: string;
+}

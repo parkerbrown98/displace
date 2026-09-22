@@ -27,6 +27,11 @@ export interface AssetReferenceContract {
   kind: string;
 }
 
+export interface CurrentAssetReferenceContract {
+  assetId: string | null;
+  kind: string;
+}
+
 export type UploadStage = "requesting" | "uploading" | "processing" | "ready";
 
 export interface UploadProgress {

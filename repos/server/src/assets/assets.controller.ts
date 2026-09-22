@@ -30,6 +30,7 @@ import {
   AssetDto,
   AssetReferenceDto,
   CreateUploadIntentDto,
+  CurrentAssetReferenceDto,
   SetAssetReferenceDto,
   UploadIntentDto,
 } from './assets.dto.js';
@@ -74,6 +75,17 @@ export class AssetsController {
     return this.assets.completeUpload(place.id, user.id, intentId);
   }
 
+  @Get('profile-images/:kind')
+  @RequirePermissions('upload.read')
+  @ApiOkResponse({ type: CurrentAssetReferenceDto })
+  getProfileImage(
+    @CurrentPlace() place: AuthorizedPlace,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('kind', new ParseEnumPipe(UserImageKind)) kind: UserImageKind,
+  ) {
+    return this.assets.getUserImage(place.id, user.id, kind);
+  }
+
   @Put('profile-images/:kind')
   @RequirePermissions('upload.create')
   @ApiOkResponse({ type: AssetReferenceDto })
@@ -84,6 +96,16 @@ export class AssetsController {
     @Body() input: SetAssetReferenceDto,
   ) {
     return this.assets.setUserImage(place.id, user.id, kind, input.assetId);
+  }
+
+  @Get('place-images/:kind')
+  @RequirePermissions('upload.read')
+  @ApiOkResponse({ type: CurrentAssetReferenceDto })
+  getPlaceImage(
+    @CurrentPlace() place: AuthorizedPlace,
+    @Param('kind', new ParseEnumPipe(PlaceImageKind)) kind: PlaceImageKind,
+  ) {
+    return this.assets.getPlaceImage(place.id, kind);
   }
 
   @Put('place-images/:kind')

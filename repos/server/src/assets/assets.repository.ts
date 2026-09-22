@@ -146,6 +146,39 @@ export class AssetsRepository implements AssetsRepositoryPort {
     return asset;
   }
 
+  async findUserImage(
+    placeId: string,
+    userId: string,
+    kind: 'avatar' | 'banner',
+  ) {
+    const [reference] = await this.database
+      .select({ assetId: userProfileAssets.assetId, kind: userProfileAssets.kind })
+      .from(userProfileAssets)
+      .where(
+        and(
+          eq(userProfileAssets.placeId, placeId),
+          eq(userProfileAssets.userId, userId),
+          eq(userProfileAssets.kind, kind),
+        ),
+      )
+      .limit(1);
+    return reference;
+  }
+
+  async findPlaceImage(placeId: string, kind: 'icon' | 'banner') {
+    const [reference] = await this.database
+      .select({ assetId: placeProfileAssets.assetId, kind: placeProfileAssets.kind })
+      .from(placeProfileAssets)
+      .where(
+        and(
+          eq(placeProfileAssets.placeId, placeId),
+          eq(placeProfileAssets.kind, kind),
+        ),
+      )
+      .limit(1);
+    return reference;
+  }
+
   async setUserImage(
     placeId: string,
     userId: string,

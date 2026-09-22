@@ -195,6 +195,20 @@ export class AssetsService {
     return this.toAsset(asset);
   }
 
+  async getUserImage(
+    placeId: string,
+    userId: string,
+    kind: 'avatar' | 'banner',
+  ) {
+    const reference = await this.assets.findUserImage(placeId, userId, kind);
+    return { assetId: reference?.assetId ?? null, kind };
+  }
+
+  async getPlaceImage(placeId: string, kind: 'icon' | 'banner') {
+    const reference = await this.assets.findPlaceImage(placeId, kind);
+    return { assetId: reference?.assetId ?? null, kind };
+  }
+
   async setUserImage(
     placeId: string,
     userId: string,

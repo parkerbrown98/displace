@@ -3,6 +3,7 @@ import type {
   AssetContract,
   AssetDownloadContract,
   AssetReferenceContract,
+  CurrentAssetReferenceContract,
   UploadIntentContract,
 } from "./asset-contract";
 
@@ -41,6 +42,20 @@ export function getAssetDownload(
   return authenticatedRead(
     `${assetPath(placeId)}/${encodeURIComponent(assetId)}/download`,
   );
+}
+
+export function getProfileImage(
+  placeId: string,
+  kind: "avatar" | "banner",
+): Promise<CurrentAssetReferenceContract> {
+  return authenticatedRead(`${assetPath(placeId)}/profile-images/${kind}`);
+}
+
+export function getPlaceImage(
+  placeId: string,
+  kind: "icon" | "banner",
+): Promise<CurrentAssetReferenceContract> {
+  return authenticatedRead(`${assetPath(placeId)}/place-images/${kind}`);
 }
 
 export function setProfileImage(

@@ -99,6 +99,13 @@ test("uploads and assigns a place image through object storage", async ({ page, 
   const image = uploader.getByRole("img", { name: "Selected upload preview" });
   await expect(image).toBeVisible();
   await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  const restoredReference = page.waitForResponse((response) =>
+    response.request().method() === "GET" && response.url().includes("/assets/place-images/icon"),
+  );
+  await page.getByRole("button", { name: "Save place" }).click();
+  expect((await restoredReference).status()).toBe(200);
+  await expect(image).toBeVisible();
+  await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
 });
 
 test("returns through sign-in to accept a place invitation", async ({ page, request }, testInfo) => {

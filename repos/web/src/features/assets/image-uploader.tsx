@@ -3,14 +3,17 @@
 import { ImagePlus, RefreshCw, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/problem-details";
-import { getAssetDownload } from "./asset-client";
+import { getAssetDownload, getPlaceImage, getProfileImage } from "./asset-client";
 import type { AssetContract, UploadProgress } from "./asset-contract";
 import { uploadAsset } from "./upload-controller";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 
+type CurrentImage = "place-banner" | "place-icon" | "profile-avatar" | "profile-banner";
+
 interface ImageUploaderProps {
+  currentImage?: CurrentImage;
   description: string;
   label: string;
   onUploaded(asset: AssetContract): Promise<void> | void;
@@ -19,6 +22,7 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({
+  currentImage,
   description,
   label,
   onUploaded,
@@ -27,6 +31,7 @@ export function ImageUploader({
 }: ImageUploaderProps) {
   const input = useRef<HTMLInputElement>(null);
   const abortController = useRef<AbortController>(null);
+  const previewRequest = useRef(0);
   const [file, setFile] = useState<File>();
   const [previewUrl, setPreviewUrl] = useState<string>();
   const [progress, setProgress] = useState<UploadProgress>();
@@ -40,7 +45,26 @@ export function ImageUploader({
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    if (!currentImage) return;
+    const request = ++previewRequest.current;
+    const reference = getCurrentImageReference(placeId, currentImage);
+    void reference
+      .then((current) => current.assetId ? getAssetDownload(placeId, current.assetId) : undefined)
+      .then((download) => {
+        if (previewRequest.current === request) setPreviewUrl(download?.url);
+      })
+      .catch((cause: unknown) => {
+        if (previewRequest.current !== request) return;
+        setError(cause instanceof ApiError
+          ? cause.problem.detail ?? cause.problem.title
+          : "The saved image could not be loaded.");
+      });
+    return () => { previewRequest.current += 1; };
+    }, [currentImage, placeId]);
+
   function select(nextFile?: File) {
+    previewRequest.current += 1;
     setError(undefined);
     setProgress(undefined);
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
@@ -173,4 +197,11 @@ function progressLabel(progress: UploadProgress): string {
   if (progress.stage === "uploading") return `Uploading ${progress.percent}%`;
   if (progress.stage === "processing") return "Checking and processing image";
   return "Image ready";
+}
+
+function getCurrentImageReference(placeId: string, currentImage: CurrentImage) {
+  if (currentImage === "place-banner") return getPlaceImage(placeId, "banner");
+  if (currentImage === "place-icon") return getPlaceImage(placeId, "icon");
+  if (currentImage === "profile-banner") return getProfileImage(placeId, "banner");
+  return getProfileImage(placeId, "avatar");
 }

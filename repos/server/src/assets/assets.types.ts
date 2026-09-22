@@ -50,6 +50,15 @@ export interface AssetsRepositoryPort {
     now: Date,
   ): Promise<AssetRecord>;
   findAsset(assetId: string, placeId: string): Promise<AssetRecord | undefined>;
+  findPlaceImage(
+    placeId: string,
+    kind: 'icon' | 'banner',
+  ): Promise<{ assetId: string; kind: string } | undefined>;
+  findUserImage(
+    placeId: string,
+    userId: string,
+    kind: 'avatar' | 'banner',
+  ): Promise<{ assetId: string; kind: string } | undefined>;
   findIntent(
     intentId: string,
     placeId: string,

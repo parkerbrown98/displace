@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
-import { setProfileImage } from "@/features/assets/asset-client";
+import { getProfileImage, setProfileImage } from "@/features/assets/asset-client";
 import { ImageUploader } from "@/features/assets/image-uploader";
 import { getPlaceContext, listMyPlaces } from "@/features/places/place-client";
 import { routes } from "@/lib/routes";
@@ -85,9 +85,13 @@ function ProfileImageSettings() {
         const available = contexts
           .filter((context) => context?.viewer.permissions.includes("upload.create"))
           .map((context) => ({ id: context!.place.id, name: context!.place.name }));
+        const references = await Promise.all(available.map((place) =>
+          getProfileImage(place.id, "avatar").catch(() => ({ assetId: null })),
+        ));
+        const currentPlace = available[references.findIndex((reference) => reference.assetId)];
         if (active) {
           setPlaces(available);
-          setPlaceId(available[0]?.id ?? "");
+          setPlaceId(currentPlace?.id ?? available[0]?.id ?? "");
         }
       })
       .catch(() => { if (active) setFailed(true); });
@@ -112,6 +116,7 @@ function ProfileImageSettings() {
             </label>
           ) : null}
           <ImageUploader
+            currentImage="profile-avatar"
             description="JPEG, PNG, or WebP up to 25 MB. Square images work best."
             label="Profile photo"
             onUploaded={async (asset) => { await setProfileImage(placeId, "avatar", asset.id); }}

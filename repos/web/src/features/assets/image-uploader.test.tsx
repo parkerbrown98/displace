@@ -2,15 +2,20 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/problem-details";
-import { getAssetDownload } from "./asset-client";
+import { getAssetDownload, getPlaceImage } from "./asset-client";
 import { ImageUploader } from "./image-uploader";
 import { uploadAsset } from "./upload-controller";
 
-vi.mock("./asset-client", () => ({ getAssetDownload: vi.fn() }));
+vi.mock("./asset-client", () => ({
+  getAssetDownload: vi.fn(),
+  getPlaceImage: vi.fn(),
+  getProfileImage: vi.fn(),
+}));
 vi.mock("./upload-controller", () => ({ uploadAsset: vi.fn() }));
 
 describe("ImageUploader", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.stubGlobal("URL", {
       ...URL,
       createObjectURL: vi.fn(() => "blob:preview"),
@@ -59,6 +64,30 @@ describe("ImageUploader", () => {
 
     await waitFor(() => expect(onUploaded).toHaveBeenCalledWith(expect.objectContaining({ id: "asset-id" })));
     expect(screen.getByRole("status")).toHaveTextContent("Image ready");
+  });
+
+  it("restores a persisted image when the uploader remounts", async () => {
+    vi.mocked(getPlaceImage).mockResolvedValue({ assetId: "saved-asset-id", kind: "banner" });
+    vi.mocked(getAssetDownload).mockResolvedValue({
+      expiresInSeconds: 300,
+      url: "https://objects.example.test/saved-banner.png",
+    });
+
+    render(
+      <ImageUploader
+        currentImage="place-banner"
+        description="Shown on the place header."
+        label="Place banner"
+        onUploaded={vi.fn()}
+        placeId="place-id"
+        shape="landscape"
+      />,
+    );
+
+    expect(await screen.findByRole("img", { name: "Selected upload preview" })).toHaveAttribute(
+      "src",
+      "https://objects.example.test/saved-banner.png",
+    );
   });
 
   it.each([

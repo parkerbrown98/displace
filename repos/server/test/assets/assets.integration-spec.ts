@@ -87,6 +87,15 @@ describe('asset persistence', () => {
       await expect(
         repository.setPlaceImage(secondPlace.id, 'icon', asset.id, now),
       ).resolves.toBeUndefined();
+      await expect(
+        repository.findUserImage(firstPlace.id, owner.id, 'avatar'),
+      ).resolves.toMatchObject({ assetId: asset.id, kind: 'avatar' });
+      await expect(
+        repository.findPlaceImage(firstPlace.id, 'icon'),
+      ).resolves.toMatchObject({ assetId: asset.id, kind: 'icon' });
+      await expect(
+        repository.findPlaceImage(secondPlace.id, 'icon'),
+      ).resolves.toBeUndefined();
     });
   });
 });

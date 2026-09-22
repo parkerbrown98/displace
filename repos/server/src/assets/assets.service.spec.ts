@@ -44,6 +44,8 @@ describe('AssetsService', () => {
   const assets: AssetsRepositoryPort = {
     completeIntent,
     findAsset,
+    findPlaceImage: vi.fn(),
+    findUserImage: vi.fn(),
     findIntent,
     reserveIntent,
     setPlaceImage: vi.fn(),
@@ -190,5 +192,28 @@ describe('AssetsService', () => {
       status: 'quarantined',
     });
     expect(enqueue).toHaveBeenCalledWith(completedAsset.id, 'place-id');
+  });
+
+  it('returns nullable current image references', async () => {
+    vi.mocked(assets.findPlaceImage).mockResolvedValue({
+      assetId: completedAsset.id,
+      kind: 'icon',
+    });
+    vi.mocked(assets.findUserImage).mockResolvedValue(undefined);
+    const service = new AssetsService(
+      assets,
+      storage,
+      mediaQueue,
+      config,
+      clock,
+    );
+
+    await expect(service.getPlaceImage('place-id', 'icon')).resolves.toEqual({
+      assetId: completedAsset.id,
+      kind: 'icon',
+    });
+    await expect(
+      service.getUserImage('place-id', 'user-id', 'avatar'),
+    ).resolves.toEqual({ assetId: null, kind: 'avatar' });
   });
 });
