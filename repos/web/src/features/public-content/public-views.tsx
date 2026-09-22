@@ -65,8 +65,8 @@ interface PlaceViewProps {
 
 export function PlaceView({ feed, navigation, place, tag, topics }: PlaceViewProps) {
   return (
-    <main className="public-main forum-portal" id="main-content">
-      <PlaceForumHeader active="forums" place={place} />
+    <main className="public-main place-workspace-page forum-portal" id="main-content">
+      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
       <div className="forum-portal-grid">
         <div className="forum-portal-content">
           <ForumNavigation navigation={navigation} placeSlug={place.slug} topics={topics.items} />

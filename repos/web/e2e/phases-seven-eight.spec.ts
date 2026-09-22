@@ -60,6 +60,11 @@ test("indexes public content and delivers chat mentions over the live stack", as
 
     await signIn(page, owner);
   await page.goto(`/places/${community.placeSlug}`);
+  await expect(page.getByPlaceholder("Search discussions")).toHaveCount(0);
+      await expect(page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Settings" })).toBeVisible();
+  await page.getByRole("button", { name: "Search discussions" }).click();
+  await expect(page.getByPlaceholder("Search discussions")).toBeVisible();
+  await page.getByTitle("Close search").click();
   await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Chat" }).click();
     await expect(page.locator(".chat-heading h1")).toContainText("Live room");
     await expect(page.locator(".chat-live-status")).toHaveText("Live");

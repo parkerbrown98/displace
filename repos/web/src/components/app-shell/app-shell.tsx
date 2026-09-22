@@ -96,7 +96,10 @@ export function AppShell({ activeNavigation, activePlaceSlug, children }: AppShe
 }
 
 export function ShellTopbar() {
+  const pathname = usePathname();
   const session = useSession();
+  const isPlaceRoute = pathname.startsWith("/places/");
+  if (isPlaceRoute) return null;
   return (
     <header className="topbar">
       <form className="search-box" action={routes.search} role="search">
