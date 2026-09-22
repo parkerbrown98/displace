@@ -105,7 +105,7 @@ export class CreateChatMessageDto {
   body: string;
 
   @ApiProperty({ format: 'uuid' })
-  @IsUUID('7')
+  @IsUUID()
   clientCommandId: string;
 }
 

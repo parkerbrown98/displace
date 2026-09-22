@@ -13,6 +13,8 @@ import {
 } from '../database/schema/index.js';
 import type { CreateChatChannelDto, UpdateChatChannelDto } from './chat.dto.js';
 
+const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export interface ChatMessageCursor {
   createdAt: Date;
   id: string;
@@ -31,6 +33,9 @@ export class ChatRepository {
   }
 
   async findChannel(placeId: string, identifier: string) {
+    const identifierFilter = UUID_V7_PATTERN.test(identifier)
+      ? eq(chatChannels.id, identifier)
+      : eq(chatChannels.slug, identifier);
     const [channel] = await this.database
       .select()
       .from(chatChannels)
@@ -38,7 +43,7 @@ export class ChatRepository {
         and(
           eq(chatChannels.placeId, placeId),
           isNull(chatChannels.archivedAt),
-          or(eq(chatChannels.id, identifier), eq(chatChannels.slug, identifier)),
+          identifierFilter,
         ),
       )
       .limit(1);

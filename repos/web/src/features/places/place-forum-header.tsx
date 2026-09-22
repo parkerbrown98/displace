@@ -2,6 +2,10 @@
 
 import { Users } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { listChatChannels } from "@/features/chat/chat-client";
+import type { ChatChannelContract } from "@/features/chat/chat-contracts";
+import { useSession } from "@/features/auth/session-provider";
 import { routes } from "@/lib/routes";
 import { PlaceMembershipActions } from "./place-access";
 import type { PlaceContract } from "./place-contract";
@@ -37,10 +41,40 @@ export function PlaceForumHeader({
         <PlaceNavLink active={active === "forums"} href={routes.place(place.slug)}>Forums</PlaceNavLink>
         <PlaceNavLink active={active === "members"} href={routes.placeMembers(place.slug)}>Members</PlaceNavLink>
         {showSettings ? <PlaceNavLink active={active === "settings"} href={routes.placeSettings(place.slug)}>Settings</PlaceNavLink> : null}
-        {currentSection ? <PlaceNavLink active={active === "chat"} href={currentSection.href}>{currentSection.label}</PlaceNavLink> : null}
+        <ChatNavLink active={active === "chat"} currentSection={currentSection} place={place} />
       </nav>
     </header>
   );
+}
+
+function ChatNavLink({
+  active,
+  currentSection,
+  place,
+}: {
+  active: boolean;
+  currentSection?: { href: string; label: string };
+  place: PlaceContract;
+}) {
+  const session = useSession();
+  const [channel, setChannel] = useState<ChatChannelContract>();
+
+  useEffect(() => {
+    if (currentSection || session.status !== "authenticated") return;
+    let activeRequest = true;
+    void listChatChannels(place.id)
+      .then((channels) => {
+        if (activeRequest) setChannel(channels.at(0));
+      })
+      .catch(() => {
+        if (activeRequest) setChannel(undefined);
+      });
+    return () => { activeRequest = false; };
+  }, [currentSection, place.id, session.status]);
+
+  if (currentSection) return <PlaceNavLink active={active} href={currentSection.href}>{currentSection.label}</PlaceNavLink>;
+  if (!channel) return null;
+  return <PlaceNavLink active={active} href={routes.chat(place.slug, channel.slug)}>Chat</PlaceNavLink>;
 }
 
 function PlaceNavLink({ active, children, href }: { active: boolean; children: React.ReactNode; href: string }) {

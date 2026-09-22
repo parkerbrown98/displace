@@ -53,7 +53,8 @@ export class SearchService {
 
   constructor(
     @Inject(DATABASE) private readonly database: Database,
-    config: ConfigService<AppEnvironment, true>,
+    @Inject(ConfigService) config: ConfigService<AppEnvironment, true>,
+    @Inject(CursorCodecService)
     private readonly cursors: CursorCodecService,
   ) {
     this.client = new Meilisearch({
@@ -142,7 +143,7 @@ export class SearchService {
   async reindex(): Promise<void> {
     await this.ensureIndex();
     const clear = this.index.deleteAllDocuments();
-    await clear.waitTask();
+    await this.waitForTask(clear);
     const [placeRecords, topicRecords, postRecords] = await Promise.all([
       this.database.select({ id: places.id }).from(places),
       this.database.select({ id: topics.id }).from(topics),
@@ -155,6 +156,10 @@ export class SearchService {
 
   private get index() {
     return this.client.index<SearchDocument>(SEARCH_INDEX_NAME);
+  }
+
+  private documentId(type: SearchDocument['type'], id: string): string {
+    return `${type}-${id}`;
   }
 
   private async indexEvent(
@@ -186,13 +191,13 @@ export class SearchService {
       await this.upsert(document);
       return;
     }
-    await this.remove(`topic:${topicId}`);
+    await this.remove(this.documentId('topic', topicId));
     const topicPosts = await this.database
       .select({ id: posts.id })
       .from(posts)
       .where(eq(posts.topicId, topicId));
     if (topicPosts.length > 0) {
-      await this.remove(topicPosts.map((post) => `post:${post.id}`));
+      await this.remove(topicPosts.map((post) => this.documentId('post', post.id)));
     }
   }
 
@@ -202,7 +207,7 @@ export class SearchService {
       await this.upsert(document);
       return;
     }
-    await this.remove(`post:${postId}`);
+    await this.remove(this.documentId('post', postId));
   }
 
   private async syncPlace(placeId: string): Promise<void> {
@@ -210,7 +215,7 @@ export class SearchService {
     if (document) {
       await this.upsert(document);
     } else {
-      await this.remove(`place:${placeId}`);
+      await this.remove(this.documentId('place', placeId));
     }
     const placeTopics = await this.database
       .select({ id: topics.id })
@@ -250,7 +255,7 @@ export class SearchService {
     if (!place) return undefined;
     return {
       createdAt: place.createdAt.toISOString(),
-      id: `place:${place.id}`,
+      id: this.documentId('place', place.id),
       placeId: place.id,
       placeSlug: place.placeSlug,
       text: place.text,
@@ -292,7 +297,7 @@ export class SearchService {
     return {
       createdAt: topic.createdAt.toISOString(),
       forumId: topic.forumId,
-      id: `topic:${topic.id}`,
+      id: this.documentId('topic', topic.id),
       placeId: topic.placeId,
       placeSlug: topic.placeSlug,
       text: topicPosts.map((post) => post.plainText).join('\n'),
@@ -334,7 +339,7 @@ export class SearchService {
     return {
       createdAt: post.createdAt.toISOString(),
       forumId: post.forumId,
-      id: `post:${post.id}`,
+      id: this.documentId('post', post.id),
       placeId: post.placeId,
       placeSlug: post.placeSlug,
       postId: post.id,
@@ -419,14 +424,29 @@ export class SearchService {
 
   private async upsert(document: SearchDocument): Promise<void> {
     const task = this.index.addDocuments([document], { primaryKey: 'id' });
-    await task.waitTask();
+    await this.waitForTask(task);
   }
 
   private async remove(ids: string | string[]): Promise<void> {
     const task = Array.isArray(ids)
       ? this.index.deleteDocuments(ids)
       : this.index.deleteDocument(ids);
-    await task.waitTask();
+    await this.waitForTask(task);
+  }
+
+  private async waitForTask(task: {
+    waitTask(): Promise<{
+      error: { message?: string } | null;
+      status: string;
+      type: string;
+    }>;
+  }): Promise<void> {
+    const result = await task.waitTask();
+    if (result.status !== 'succeeded') {
+      throw new Error(
+        `Meilisearch ${result.type} failed: ${result.error?.message ?? result.status}`,
+      );
+    }
   }
 
   private async markFailed(eventId: string, error: unknown): Promise<void> {

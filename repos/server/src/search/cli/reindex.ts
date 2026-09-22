@@ -4,7 +4,9 @@ import { SearchReindexModule } from '../search-reindex.module.js';
 import { SearchService } from '../search.service.js';
 
 validateEnvironment(process.env);
-const application = await NestFactory.createApplicationContext(SearchReindexModule);
+const application = await NestFactory.createApplicationContext(SearchReindexModule, {
+  bufferLogs: true,
+});
 
 try {
   await application.get(SearchService).reindex();

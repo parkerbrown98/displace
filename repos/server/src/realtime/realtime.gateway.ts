@@ -55,6 +55,7 @@ export class RealtimeGateway implements OnGatewayInit {
     if (!body.channelId) throw new WsException('Chat channel is required.');
     const channel = await this.chat.getChannel(place.id, body.channelId, client.data.userId);
     await client.join(`chat:${channel.id}`);
+    client.emit('chat.joined', { channelId: channel.id });
     return { channelId: channel.id };
   }
 

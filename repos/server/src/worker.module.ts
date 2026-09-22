@@ -10,12 +10,13 @@ import { ConfigurationModule } from './config/configuration.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ForumsRepository } from './forums/forums.repository.js';
 import { TopicViewCounterWorker } from './forums/topic-view-counter.worker.js';
+import { PlatformModule } from './platform/platform.module.js';
 import { SearchIndexWorker } from './search/search-index.worker.js';
 import { SearchService } from './search/search.service.js';
 import { WorkerLifetimeService } from './worker-lifetime.service.js';
 
 @Module({
-  imports: [ConfigurationModule, DatabaseModule],
+  imports: [ConfigurationModule, DatabaseModule, PlatformModule],
   providers: [
     AssetMaintenanceWorker,
     AssetsRepository,

@@ -27,6 +27,7 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string>();
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const typingStop = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -47,8 +48,15 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
     const socket = realtimeSocket();
     if (!socket) return;
     const join = () => {
+      setRealtimeConnected(false);
       socket.emit("place.join", { placeId: place.id });
       socket.emit("chat.join", { channelId: page.channel.id, placeId: place.id });
+    };
+    const connect = () => join();
+    const joined = (event: { channelId: string }) => {
+      if (event.channelId !== page.channel.id) return;
+      setRealtimeConnected(true);
+      void listChatMessages(place.id, page.channel.id).then((latest) => setMessages(latest.items)).catch(() => setRealtimeConnected(false));
     };
     const created = (message: ChatMessageContract) => {
       if (message.channelId !== page.channel.id) return;
@@ -62,13 +70,18 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
       if (event.channelId !== page.channel.id || event.userId === session.user?.id) return;
       setTypingUsers((current) => event.active ? [...new Set([...current, event.userId])] : current.filter((userId) => userId !== event.userId));
     };
-    socket.on("connect", join);
+    const disconnect = () => setRealtimeConnected(false);
+    socket.on("connect", connect);
+    socket.on("disconnect", disconnect);
+    socket.on("chat.joined", joined);
     socket.on("chat.message.created", created);
     socket.on("chat.message.updated", updated);
     socket.on("chat.typing", typing);
-    if (socket.connected) join();
+    if (socket.connected) connect();
     return () => {
-      socket.off("connect", join);
+      socket.off("connect", connect);
+      socket.off("disconnect", disconnect);
+      socket.off("chat.joined", joined);
       socket.off("chat.message.created", created);
       socket.off("chat.message.updated", updated);
       socket.off("chat.typing", typing);
@@ -122,7 +135,7 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
     <section className="chat-layout" aria-label="Chat workspace">
       <aside className="chat-channel-list"><p className="eyebrow">Channels</p>{channels.map((channel) => <Link className={`chat-channel-link${channel.id === page.channel.id ? " active" : ""}`} href={routes.chat(place.slug, channel.slug)} key={channel.id}><Hash size={15} />{channel.name}</Link>)}</aside>
       <section className="chat-conversation" aria-label={`${page.channel.name} chat`}>
-        <header className="chat-heading"><div><p className="eyebrow">Live discussion</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status">Live</span></header>
+        <header className="chat-heading"><div><p className="eyebrow">Live discussion</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status">{realtimeConnected ? "Live" : "Connecting"}</span></header>
         {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
         <div className="chat-message-list">{messages.length ? messages.map((message) => <ChatMessage canManage={page.permissions.canManage} currentUserId={session.user?.id} editing={editingId === message.id} key={message.id} message={message} onCancel={() => setEditingId(undefined)} onDelete={() => void remove(message.id)} onEdit={() => setEditingId(message.id)} onSave={saveEdit} />) : <p className="chat-empty">No messages yet. Start the conversation.</p>}</div>
         {typingUsers.length ? <p className="chat-typing" role="status">Someone is typing...</p> : null}

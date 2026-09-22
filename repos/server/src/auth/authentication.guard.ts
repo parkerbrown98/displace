@@ -16,6 +16,9 @@ export class AccessAuthenticationGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (context.getType() === 'ws') {
+      return true;
+    }
     const request = context.switchToHttp().getRequest<AuthorizedRequest>();
     const authorization = request.headers.authorization;
     if (!authorization) {

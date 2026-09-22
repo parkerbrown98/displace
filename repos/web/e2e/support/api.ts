@@ -59,7 +59,7 @@ export async function requestPasswordReset(request: APIRequestContext, user: E2e
 export async function createCommunity(request: APIRequestContext, user: E2eUser, testInfo: TestInfo, options: { joinPolicy?: "open" | "approval" | "invite_only"; withTopic?: boolean } = {}): Promise<E2eCommunity> {
   const authentication = await login(request, user);
   const placeSlug = uniqueValue("place", testInfo).replaceAll("_", "-").slice(0, 48);
-  const placeName = `Studio ${placeSlug.slice(-6)}`;
+  const placeName = `Studio ${placeSlug.slice(-6).replaceAll("-", "")}`;
   const placeResponse = await authorized(request, authentication.accessToken, "POST", "/places", {
     description: "A browser-tested community.",
     joinPolicy: options.joinPolicy ?? "open",
