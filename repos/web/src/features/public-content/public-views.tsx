@@ -16,6 +16,7 @@ import type {
   TopicContract,
   TopicPageContract,
 } from "./public-contracts";
+import { ForumLiveSpaces } from "./forum-live-spaces";
 import { ForumMemberPreview } from "./forum-member-preview";
 
 export function DiscoveryView({ joinPolicy, page, query }: { joinPolicy?: string; page: PlacePageContract; query?: string }) {
@@ -198,6 +199,7 @@ function ForumPortalRail({ place, topics }: { place: PlaceContract; topics: Topi
         ))}</div> : <p className="portal-panel-empty">No recent conversations.</p>}
       </section>
       <ForumMemberPreview placeId={place.id} placeName={place.name} placeSlug={place.slug} />
+      <ForumLiveSpaces placeId={place.id} placeSlug={place.slug} />
     </aside>
   );
 }

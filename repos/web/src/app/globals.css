@@ -2566,6 +2566,69 @@ textarea:focus-visible {
 	font-size: 10px;
 }
 
+.portal-space-list {
+	display: grid;
+}
+
+.portal-space-list > a {
+	display: grid;
+	grid-template-columns: 34px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 15px;
+	border-bottom: 1px solid var(--line);
+}
+
+.portal-space-list > a:last-child {
+	border-bottom: 0;
+}
+
+.portal-space-list > a:hover strong,
+.portal-space-list > a:hover > svg {
+	color: var(--coral);
+}
+
+.portal-space-icon {
+	display: grid;
+	width: 34px;
+	aspect-ratio: 1;
+	place-items: center;
+	color: var(--teal);
+	background: color-mix(in srgb, var(--teal) 10%, transparent);
+	border-radius: 50%;
+}
+
+.portal-space-icon.voice {
+	color: #9a6534;
+	background: #f6eadc;
+}
+
+.portal-space-list > a > span:nth-child(2) {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+.portal-space-list strong,
+.portal-space-list small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.portal-space-list strong {
+	font-size: 12px;
+}
+
+.portal-space-list small {
+	color: var(--muted);
+	font-size: 10px;
+}
+
+.portal-space-list > a > svg {
+	color: var(--muted);
+}
+
 .forum-subroute > .breadcrumbs {
 	margin-top: 30px;
 }
