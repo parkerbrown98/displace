@@ -3505,21 +3505,7 @@ textarea:focus-visible {
 }
 
 .public-topics-empty {
-	padding: 38px 16px 42px;
 	border-bottom: 1px solid var(--line);
-}
-
-.public-topics-empty h3 {
-	margin: 0;
-	font-family: Georgia, "Times New Roman", serif;
-	font-size: 21px;
-	font-weight: 500;
-}
-
-.public-topics-empty p {
-	margin: 9px 0 0;
-	color: var(--muted);
-	line-height: 1.6;
 }
 
 .topic-flags {
