@@ -18,10 +18,17 @@ export function PlaceVoicePanel({ onRoomsChanged, place, selectedRoomId }: { onR
   const [rooms, setRooms] = useState<VoiceRoomContract[]>();
   const [selectedId, setSelectedId] = useState<string>();
   const [error, setError] = useState<string>();
+  const roomsRef = useRef<VoiceRoomContract[] | undefined>(undefined);
   const updateRooms = useCallback((items: VoiceRoomContract[]) => {
+    roomsRef.current = items;
     setRooms(items);
     onRoomsChanged?.(items);
   }, [onRoomsChanged]);
+  const updateRoomParticipants = useCallback((roomId: string, participants: VoiceParticipantContract[]) => {
+    const current = roomsRef.current;
+    if (!current) return;
+    updateRooms(current.map((room) => room.id === roomId ? { ...room, participants } : room));
+  }, [updateRooms]);
 
   useEffect(() => {
     let active = true;
@@ -48,11 +55,11 @@ export function PlaceVoicePanel({ onRoomsChanged, place, selectedRoomId }: { onR
   const selected = rooms.find((room) => room.id === (selectedRoomId ?? selectedId)) ?? rooms[0]!;
 
   return <section className="live-voice-stage" aria-label="Voice channel">
-      <VoiceSession key={selected.id} onRoomsChanged={updateRooms} placeId={place.id} room={selected} />
+      <VoiceSession key={selected.id} onParticipantsChanged={updateRoomParticipants} onRoomsChanged={updateRooms} placeId={place.id} room={selected} />
     </section>;
 }
 
-function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (rooms: VoiceRoomContract[]) => void; placeId: string; room: VoiceRoomContract }) {
+function VoiceSession({ onParticipantsChanged, onRoomsChanged, placeId, room }: { onParticipantsChanged: (roomId: string, participants: VoiceParticipantContract[]) => void; onRoomsChanged: (rooms: VoiceRoomContract[]) => void; placeId: string; room: VoiceRoomContract }) {
   const liveRoom = useRef<Room | null>(null);
   const media = useRef<HTMLDivElement>(null);
   const [connection, setConnection] = useState<ConnectionState>("disconnected");
@@ -95,7 +102,11 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
     try {
       const ticket = await createVoiceJoinToken(placeId, room.id);
       const next = new Room({ adaptiveStream: true, dynacast: true });
-      const sync = () => setParticipants(participantsFrom(next));
+      const sync = () => {
+        const nextParticipants = participantsFrom(next);
+        setParticipants(nextParticipants);
+        onParticipantsChanged(room.id, nextParticipants);
+      };
       next.on(RoomEvent.ParticipantConnected, sync);
       next.on(RoomEvent.ParticipantDisconnected, sync);
       next.on(RoomEvent.TrackMuted, sync);
@@ -145,7 +156,17 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
     }
   }
 
-  async function leave() { await liveRoom.current?.disconnect(); liveRoom.current = null; setConnection("disconnected"); setParticipants(room.participants); setMicrophoneEnabled(false); }
+  async function leave() {
+    const current = liveRoom.current;
+    const localIdentity = current?.localParticipant.identity;
+    const remainingParticipants = participants.filter((participant) => participant.identity !== localIdentity);
+    await current?.disconnect();
+    liveRoom.current = null;
+    setConnection("disconnected");
+    setParticipants(remainingParticipants);
+    onParticipantsChanged(room.id, remainingParticipants);
+    setMicrophoneEnabled(false);
+  }
   async function toggleMicrophone() {
     if (!liveRoom.current || !publishAllowed) return;
     const enabled = !microphoneEnabled;

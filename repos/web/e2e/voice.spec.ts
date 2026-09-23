@@ -38,6 +38,7 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
   });
   await page.getByRole("button", { name: "Join room" }).click();
   await expect(page.locator(".voice-connection")).toHaveText("connected", { timeout: 20_000 });
+  await expect(page.getByLabel(`${room.name} participants`).getByText(member.displayName)).toBeVisible();
   await page.evaluate(() => (window as typeof window & { releaseVoiceMicrophone?: () => void }).releaseVoiceMicrophone?.());
   await expect(page.getByRole("button", { name: "Mute microphone" })).toBeEnabled();
   await page.getByRole("button", { name: "Mute microphone" }).click();
@@ -66,4 +67,5 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
   await page.getByRole("button", { name: new RegExp(room.name) }).click();
   await page.locator(".voice-controls").getByRole("button", { name: "Leave" }).click();
   await expect(page.locator(".voice-connection")).toHaveText("disconnected");
+  await expect(page.getByLabel(`${room.name} participants`)).toHaveCount(0);
 });

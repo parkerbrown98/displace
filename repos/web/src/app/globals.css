@@ -550,10 +550,10 @@ textarea:focus-visible {
 
 .voice-heading {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
-	padding: 22px 24px 18px;
+	gap: 18px;
+	padding: 18px 22px 15px;
 	border-bottom: 1px solid var(--line);
 }
 
@@ -583,9 +583,9 @@ textarea:focus-visible {
 }
 
 .voice-heading h2 {
-	margin: 3px 0;
+	margin: 3px 0 0;
 	font-family: Georgia, "Times New Roman", serif;
-	font-size: 28px;
+	font-size: 26px;
 	font-weight: 500;
 }
 
@@ -1209,7 +1209,7 @@ textarea:focus-visible {
 	margin-top: 20px;
 }
 
-.voice-room {
+.voice-list .voice-room {
 	padding: 14px;
 	background: var(--paper-raised);
 	border: 1px solid var(--line);
@@ -1232,12 +1232,12 @@ textarea:focus-visible {
 	border-radius: 50%;
 }
 
-.voice-room h3 {
+.voice-list .voice-room h3 {
 	margin: 0;
 	font-size: 13px;
 }
 
-.voice-room p {
+.voice-list .voice-room p {
 	margin: 3px 0 0;
 	color: var(--muted);
 	font-size: 10px;
