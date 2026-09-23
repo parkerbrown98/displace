@@ -39,7 +39,7 @@ export function createForumGroup(placeId: string, input: ForumGroupInput): Promi
   return authenticatedMutation(`${placePath(placeId)}/forum-groups`, { body: input, method: "POST" });
 }
 
-export function updateForumGroup(placeId: string, groupId: string, input: ForumGroupInput): Promise<ForumGroupContract> {
+export function updateForumGroup(placeId: string, groupId: string, input: Partial<ForumGroupInput>): Promise<ForumGroupContract> {
   return authenticatedMutation(`${placePath(placeId)}/forum-groups/${encodeURIComponent(groupId)}`, { body: input, method: "PATCH" });
 }
 
@@ -51,7 +51,7 @@ export function createForum(placeId: string, input: ForumInput): Promise<ForumCo
   return authenticatedMutation(`${placePath(placeId)}/forums`, { body: input, method: "POST" });
 }
 
-export function updateForum(placeId: string, forumId: string, input: ForumInput): Promise<ForumContract> {
+export function updateForum(placeId: string, forumId: string, input: Partial<ForumInput>): Promise<ForumContract> {
   return authenticatedMutation(`${placePath(placeId)}/forums/${encodeURIComponent(forumId)}`, { body: input, method: "PATCH" });
 }
 

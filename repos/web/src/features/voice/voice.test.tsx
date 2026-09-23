@@ -72,6 +72,7 @@ describe("voice experience", () => {
     render(<ToastProvider><VoiceRoomSettings context={placeContextFixture} onForbidden={vi.fn()} /></ToastProvider>);
 
     await screen.findByText("No voice rooms yet.");
+  await user.click(screen.getByRole("button", { name: "New room" }));
     await user.clear(screen.getByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "Town Hall");
     await user.clear(screen.getByLabelText("Room slug"));

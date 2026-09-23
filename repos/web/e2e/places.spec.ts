@@ -33,15 +33,15 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await settingsNavigation.getByRole("link", { name: "Forums" }).click();
   await expect(page).toHaveURL(new RegExp(`/places/${slug}/settings/forums$`));
 
-  const groupCreator = page.locator("details.forum-admin-create").filter({ hasText: "Create forum group" });
-  await groupCreator.locator("summary").click();
+  await page.getByRole("button", { name: "New group" }).click();
+  const groupCreator = page.getByRole("dialog", { name: "New forum group" });
   await groupCreator.getByLabel("Group name").fill("General");
   await groupCreator.getByLabel("Description").fill("Community conversations.");
   await groupCreator.getByRole("button", { name: "Create group" }).click();
   await expect(page.getByText("Forum group created.")).toBeVisible();
 
-  const forumCreator = page.locator("details.forum-admin-create").filter({ hasText: "Create forum" }).last();
-  await forumCreator.locator("summary").click();
+  await page.getByRole("button", { name: "New forum" }).click();
+  const forumCreator = page.getByRole("dialog", { name: "New forum" });
   await forumCreator.getByLabel("Forum name").fill("General discussion");
   await forumCreator.getByLabel("Description").fill("A place to start talking.");
   await forumCreator.getByRole("button", { name: "Create forum" }).click();

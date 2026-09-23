@@ -2,8 +2,11 @@
 
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
+import { SettingsDialog } from "@/components/ui/settings-dialog";
+import { SortableList } from "@/components/ui/sortable-list";
 import { toast } from "@/components/ui/toast";
 import type { PlaceContextContract } from "@/features/places/place-contract";
 import { placePermissions } from "@/features/places/place-contract";
@@ -65,28 +68,13 @@ export function ForumSettings({
 
   return (
     <section className="settings-section" id="forums">
-      <p className="eyebrow">Discussion structure</p>
-      <h2>Forums and tags</h2>
-      <p className="settings-muted">Organize forums into ordered groups and define the tags members can apply to topics.</p>
+      <header className="settings-section-title-row"><div><p className="eyebrow">Discussion structure</p><h2>Forums and tags</h2><p className="settings-muted">Drag groups and forums into the order members should see. Open an item only when you need to edit its access or details.</p></div>{navigation ? <div className="settings-section-actions"><NewForumGroupForm disabled={Boolean(pendingAction)} nextPosition={navigation.groups.length} onCreate={(input) => run("new-group", () => createForumGroup(context.place.id, input), "Forum group created.")} /><NewForumForm disabled={Boolean(pendingAction)} groups={navigation.groups} onCreate={(input) => run("new-forum", () => createForum(context.place.id, input), "Forum created.")} /></div> : null}</header>
       {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : null}
 
       {navigation ? <>
         <div className="forum-admin-list">
-          {navigation.groups.map((group) => (
-            <ForumGroupEditor
-              disabled={Boolean(pendingAction)}
-              group={group}
-              groups={navigation.groups}
-              key={group.id}
-              onDelete={() => run(`delete-group-${group.id}`, () => deleteForumGroup(context.place.id, group.id), "Forum group deleted.")}
-              onSave={(input) => run(`group-${group.id}`, () => updateForumGroup(context.place.id, group.id, input), "Forum group saved.")}
-              placeId={context.place.id}
-              run={run}
-            />
-          ))}
+          <SortableList disabled={Boolean(pendingAction)} items={navigation.groups} label="Forum group order" onReorder={async (groups) => { await run("reorder-groups", () => Promise.all(groups.map((group, position) => group.position === position ? Promise.resolve() : updateForumGroup(context.place.id, group.id, { position }))), "Forum groups reordered."); }} renderItem={(group, handle) => <div className="settings-order-row">{handle}<ForumGroupEditor disabled={Boolean(pendingAction)} group={group} groups={navigation.groups} onDelete={() => run(`delete-group-${group.id}`, () => deleteForumGroup(context.place.id, group.id), "Forum group deleted.")} onSave={(input) => run(`group-${group.id}`, () => updateForumGroup(context.place.id, group.id, input), "Forum group saved.")} placeId={context.place.id} run={run} /></div>} />
         </div>
-        <NewForumGroupForm disabled={Boolean(pendingAction)} onCreate={(input) => run("new-group", () => createForumGroup(context.place.id, input), "Forum group created.")} />
-        <NewForumForm disabled={Boolean(pendingAction)} groups={navigation.groups} onCreate={(input) => run("new-forum", () => createForum(context.place.id, input), "Forum created.")} />
         <div className="forum-tag-admin">
           <h3>Topic tags</h3>
           {navigation.tags.length ? <ul className="forum-tag-list">{navigation.tags.map((tag) => <li key={tag.id}>
@@ -128,10 +116,10 @@ function ForumGroupEditor({
     <form className="settings-form forum-admin-form" onSubmit={submit}>
       <FormField defaultValue={group.name} label="Group name" maxLength={120} name="name" required />
       <label className="form-field">Description<textarea defaultValue={group.description} maxLength={2000} name="description" rows={3} /></label>
-      <FormField defaultValue={group.position} label="Position" min={0} name="position" type="number" required />
+      <input name="position" type="hidden" value={group.position} />
       <div className="button-row"><button className="secondary-button" disabled={disabled} type="submit"><Save size={16} /> Save group</button><button className="danger-button" disabled={disabled} onClick={() => { if (window.confirm(`Delete ${group.name}? Empty groups are removed immediately.`)) void onDelete(); }} type="button"><Trash2 size={16} /> Delete group</button></div>
     </form>
-    {group.forums.length ? <div className="forum-admin-forums">{group.forums.map((forum) => <ForumEditor disabled={disabled} forum={forum} groups={groups} key={forum.id} onDelete={() => run(`delete-forum-${forum.id}`, () => deleteForum(placeId, forum.id), "Forum archived.")} onSave={(input) => run(`forum-${forum.id}`, () => updateForum(placeId, forum.id, input), "Forum saved.")} />)}</div> : <p className="settings-muted forum-admin-empty">This group has no forums.</p>}
+    {group.forums.length ? <div className="forum-admin-forums"><SortableList disabled={disabled} items={group.forums} label={`${group.name} forum order`} onReorder={async (forums) => { await run(`reorder-forums-${group.id}`, () => Promise.all(forums.map((forum, position) => forum.position === position ? Promise.resolve() : updateForum(placeId, forum.id, { position }))), "Forums reordered."); }} renderItem={(forum, handle) => <div className="settings-order-row">{handle}<ForumEditor disabled={disabled} forum={forum} groups={groups} onDelete={() => run(`delete-forum-${forum.id}`, () => deleteForum(placeId, forum.id), "Forum archived.")} onSave={(input) => run(`forum-${forum.id}`, () => updateForum(placeId, forum.id, input), "Forum saved.")} /></div>} /></div> : <p className="settings-muted forum-admin-empty">This group has no forums.</p>}
   </details>;
 }
 
@@ -146,22 +134,27 @@ function ForumEditor({ disabled, forum, groups, onDelete, onSave }: { disabled: 
   </form></details>;
 }
 
-function NewForumGroupForm({ disabled, onCreate }: { disabled: boolean; onCreate: (input: { name: string; description: string; position: number }) => Promise<boolean> }) {
+function NewForumGroupForm({ disabled, nextPosition, onCreate }: { disabled: boolean; nextPosition: number; onCreate: (input: { name: string; description: string; position: number }) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    if (await onCreate(groupInput(new FormData(form)))) form.reset();
+    const data = new FormData(form);
+    if (await onCreate({ description: String(data.get("description") ?? ""), name: String(data.get("name") ?? ""), position: nextPosition })) { form.reset(); setOpen(false); }
   }
-  return <details className="forum-admin-create"><summary><Plus size={16} /> <strong>Create forum group</strong></summary><form className="settings-form forum-admin-form" onSubmit={submit}><FormField label="Group name" maxLength={120} name="name" required /><label className="form-field">Description<textarea maxLength={2000} name="description" rows={3} /></label><FormField defaultValue={0} label="Position" min={0} name="position" type="number" required /><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create group</button></form></details>;
+  return <SettingsDialog description="Create a section that keeps related forums together." onOpenChange={setOpen} open={open} title="New forum group" trigger={<button className="secondary-button" disabled={disabled} type="button"><Plus size={16} /> New group</button>}><form className="settings-form settings-dialog-form" onSubmit={submit}><FormField label="Group name" maxLength={120} name="name" required /><label className="form-field">Description<textarea maxLength={2000} name="description" rows={3} /></label><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create group</button></form></SettingsDialog>;
 }
 
 function NewForumForm({ disabled, groups, onCreate }: { disabled: boolean; groups: ForumGroupContract[]; onCreate: (input: ForumInput) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    if (await onCreate(forumInput(new FormData(form)))) form.reset();
+    const input = forumInput(new FormData(form));
+    input.position = groups.find((group) => group.id === input.groupId)?.forums.length ?? 0;
+    if (await onCreate(input)) { form.reset(); setOpen(false); }
   }
-  return <details className="forum-admin-create"><summary><Plus size={16} /> <strong>Create forum</strong></summary>{groups.length ? <form className="settings-form forum-admin-form" onSubmit={submit}><ForumFields groups={groups} /><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create forum</button></form> : <p className="settings-muted forum-admin-empty">Create a forum group first.</p>}</details>;
+  return <SettingsDialog description="Choose where the forum belongs and who can participate." onOpenChange={setOpen} open={open} title="New forum" trigger={<button className="primary-button" disabled={disabled || !groups.length} title={groups.length ? undefined : "Create a forum group first"} type="button"><Plus size={16} /> New forum</button>}>{groups.length ? <form className="settings-form settings-dialog-form" onSubmit={submit}><ForumFields groups={groups} /><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create forum</button></form> : null}</SettingsDialog>;
 }
 
 function ForumFields({ forum, groups }: { forum?: ForumContract; groups: ForumGroupContract[] }) {
@@ -169,7 +162,7 @@ function ForumFields({ forum, groups }: { forum?: ForumContract; groups: ForumGr
     <label className="form-field">Group<Select defaultValue={forum?.groupId} name="groupId" options={groups.map((group) => ({ label: group.name, value: group.id }))} required /></label>
     <FormField defaultValue={forum?.name} label="Forum name" maxLength={120} name="name" required />
     <label className="form-field">Description<textarea defaultValue={forum?.description} maxLength={2000} name="description" rows={3} /></label>
-    <FormField defaultValue={forum?.position ?? 0} label="Position" min={0} name="position" type="number" required />
+    {forum ? <input name="position" type="hidden" value={forum.position} /> : null}
     <label className="form-field">Visibility<Select defaultValue={forum?.visibility ?? "public"} name="visibility" options={[{ label: "Public", value: "public" }, { label: "Members only", value: "members" }]} /></label>
     <PermissionSelect defaultValue={forum?.readPermission} label="Read permission" name="readPermission" />
     <PermissionSelect defaultValue={forum?.writePermission} label="Write permission" name="writePermission" />
@@ -187,7 +180,7 @@ function NewForumTagForm({ disabled, onCreate }: { disabled: boolean; onCreate: 
     const data = new FormData(form);
     if (await onCreate({ color: String(data.get("color")), name: String(data.get("name")), slug: String(data.get("slug")) })) form.reset();
   }
-  return <form className="settings-form forum-tag-form" onSubmit={submit}><FormField label="Tag name" maxLength={50} name="name" required /><FormField label="Tag slug" maxLength={50} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><label className="form-field">Color<input defaultValue="#2563eb" name="color" type="color" /></label><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create tag</button></form>;
+  return <form className="settings-form forum-tag-form" onSubmit={submit}><FormField label="Tag name" maxLength={50} name="name" required /><FormField label="Tag slug" maxLength={50} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><ColorPicker label="Color" name="color" /><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create tag</button></form>;
 }
 
 function groupInput(form: FormData) {

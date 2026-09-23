@@ -86,7 +86,7 @@ export async function createPlaceRole(placeId: string, input: RoleWriteInput): P
   return authenticatedMutation<PlaceRoleContract>(`/places/${encodeURIComponent(placeId)}/roles`, { body: input, method: "POST" });
 }
 
-export async function updatePlaceRole(placeId: string, roleId: string, input: RoleWriteInput): Promise<PlaceRoleContract> {
+export async function updatePlaceRole(placeId: string, roleId: string, input: Partial<RoleWriteInput>): Promise<PlaceRoleContract> {
   return authenticatedMutation<PlaceRoleContract>(`/places/${encodeURIComponent(placeId)}/roles/${encodeURIComponent(roleId)}`, { body: input, method: "PATCH" });
 }
 

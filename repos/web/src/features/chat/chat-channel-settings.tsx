@@ -4,6 +4,8 @@ import { Archive, Plus, Save } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
+import { SettingsDialog } from "@/components/ui/settings-dialog";
+import { SortableList } from "@/components/ui/sortable-list";
 import { toast } from "@/components/ui/toast";
 import { placeErrorMessage } from "@/features/places/place-access";
 import { placePermissions, type PlaceContextContract, type PlacePermission } from "@/features/places/place-contract";
@@ -53,10 +55,8 @@ export function ChatChannelSettings({
 
   return (
     <section className="settings-section" id="chat">
-      <p className="eyebrow">Live conversation</p>
-      <h2>Chat channels</h2>
-      <p className="settings-muted">Create the spaces members use for real-time conversation and control who can read or post in each one.</p>
-      {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : <>{channels?.length ? <div className="role-list">{channels.map((channel) => <ChatChannelEditor channel={channel} disabled={Boolean(pendingAction)} key={channel.id} onArchive={() => run(`archive-${channel.id}`, () => archiveChatChannel(context.place.id, channel.id), "Channel archived.")} onSave={(input) => run(`channel-${channel.id}`, () => updateChatChannel(context.place.id, channel.id, input), "Channel saved.")} />)}</div> : <p className="settings-muted">No chat channels yet. Create a General channel to make Chat available to members.</p>}<NewChatChannelForm disabled={Boolean(pendingAction)} onCreate={(input) => run("new-channel", () => createChatChannel(context.place.id, input), "Channel created.")} /></>}
+      <header className="settings-section-title-row"><div><p className="eyebrow">Live conversation</p><h2>Chat channels</h2><p className="settings-muted">Drag channels into the order members should see. Open one to adjust access or archive it.</p></div>{channels ? <NewChatChannelForm disabled={Boolean(pendingAction)} nextPosition={channels.length} onCreate={(input) => run("new-channel", () => createChatChannel(context.place.id, input), "Channel created.")} /> : null}</header>
+      {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : <>{channels?.length ? <SortableList disabled={Boolean(pendingAction)} items={channels} label="Chat channel order" onReorder={async (orderedChannels) => { await run("reorder-channels", () => Promise.all(orderedChannels.map((channel, position) => channel.position === position ? Promise.resolve() : updateChatChannel(context.place.id, channel.id, { position }))), "Channels reordered."); }} renderItem={(channel, handle) => <div className="settings-order-row">{handle}<ChatChannelEditor channel={channel} disabled={Boolean(pendingAction)} onArchive={() => run(`archive-${channel.id}`, () => archiveChatChannel(context.place.id, channel.id), "Channel archived.")} onSave={(input) => run(`channel-${channel.id}`, () => updateChatChannel(context.place.id, channel.id, input), "Channel saved.")} /></div>} /> : <p className="settings-muted settings-empty-note">No chat channels yet. Create a General channel to make Chat available to members.</p>}</>}
     </section>
   );
 }
@@ -77,33 +77,34 @@ function ChatChannelEditor({
     void onSave(channelUpdateInput(new FormData(event.currentTarget)));
   }
 
-  return <details className="role-editor"><summary><span><strong>#{channel.name}</strong></span><small>{channel.visibility} · position {channel.position}</small></summary><form className="settings-form" onSubmit={submit}><ChannelFields channel={channel} /><div className="button-row"><button className="secondary-button" disabled={disabled} type="submit"><Save size={16} /> Save channel</button><button className="danger-button" disabled={disabled} onClick={() => { if (window.confirm(`Archive ${channel.name}? Existing messages will remain available to administrators.`)) void onArchive(); }} type="button"><Archive size={16} /> Archive</button></div></form></details>;
+  return <details className="role-editor"><summary><span><strong>#{channel.name}</strong></span><small>{channel.visibility}</small></summary><form className="settings-form" onSubmit={submit}><ChannelFields channel={channel} /><div className="button-row"><button className="secondary-button" disabled={disabled} type="submit"><Save size={16} /> Save channel</button><button className="danger-button" disabled={disabled} onClick={() => { if (window.confirm(`Archive ${channel.name}? Existing messages will remain available to administrators.`)) void onArchive(); }} type="button"><Archive size={16} /> Archive</button></div></form></details>;
 }
 
-function NewChatChannelForm({ disabled, onCreate }: { disabled: boolean; onCreate: (input: CreateChatChannelInput) => Promise<boolean> }) {
+function NewChatChannelForm({ disabled, nextPosition, onCreate }: { disabled: boolean; nextPosition: number; onCreate: (input: CreateChatChannelInput) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    if (await onCreate(channelCreateInput(new FormData(form)))) form.reset();
+    if (await onCreate(channelCreateInput(new FormData(form), nextPosition))) { form.reset(); setOpen(false); }
   }
 
-  return <details className="role-editor new-role" open><summary><span><Plus size={16} /> <strong>Create channel</strong></span></summary><form className="settings-form" onSubmit={submit}><FormField defaultValue="General" label="Channel name" maxLength={120} name="name" required /><FormField defaultValue="general" hint="Lowercase letters, numbers, and hyphens." label="Channel slug" maxLength={80} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><ChannelFields /><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create channel</button></form></details>;
+  return <SettingsDialog description="Set a recognizable name and choose who can read and post." onOpenChange={setOpen} open={open} title="New chat channel" trigger={<button className="primary-button" disabled={disabled} type="button"><Plus size={16} /> New channel</button>}><form className="settings-form settings-dialog-form" onSubmit={submit}><FormField defaultValue="General" label="Channel name" maxLength={120} name="name" required /><FormField defaultValue="general" hint="Lowercase letters, numbers, and hyphens." label="Channel slug" maxLength={80} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><ChannelFields /><button className="primary-button" disabled={disabled} type="submit"><Plus size={16} /> Create channel</button></form></SettingsDialog>;
 }
 
 function ChannelFields({ channel }: { channel?: ChatChannelContract }) {
-  return <><FormField defaultValue={channel?.position ?? 0} label="Position" min={0} name="position" type="number" required /><label className="form-field">Visibility<Select defaultValue={channel?.visibility ?? "members"} name="visibility" options={[{ label: "Members only", value: "members" }, { label: "Public", value: "public" }]} /></label><PermissionSelect defaultValue={channel?.readPermission} label="Read permission" name="readPermission" /><PermissionSelect defaultValue={channel?.sendPermission} label="Send permission" name="sendPermission" /></>;
+  return <>{channel ? <input name="position" type="hidden" value={channel.position} /> : null}<label className="form-field">Visibility<Select defaultValue={channel?.visibility ?? "members"} name="visibility" options={[{ label: "Members only", value: "members" }, { label: "Public", value: "public" }]} /></label><PermissionSelect defaultValue={channel?.readPermission} label="Read permission" name="readPermission" /><PermissionSelect defaultValue={channel?.sendPermission} label="Send permission" name="sendPermission" /></>;
 }
 
 function PermissionSelect({ defaultValue, label, name }: { defaultValue?: string | null; label: string; name: string }) {
   return <label className="form-field">{label}<Select defaultValue={defaultValue ?? ""} name={name} options={[{ label: "No additional permission", value: "" }, ...placePermissions.map((permission) => ({ label: permission.replace(".", " "), value: permission }))]} /></label>;
 }
 
-function channelCreateInput(form: FormData): CreateChatChannelInput {
+function channelCreateInput(form: FormData, position: number): CreateChatChannelInput {
   const readPermission = permissionFrom(form, "readPermission");
   const sendPermission = permissionFrom(form, "sendPermission");
   return {
     name: String(form.get("name") ?? ""),
-    position: Number(form.get("position") ?? 0),
+    position,
     ...(readPermission ? { readPermission } : {}),
     ...(sendPermission ? { sendPermission } : {}),
     slug: String(form.get("slug") ?? ""),

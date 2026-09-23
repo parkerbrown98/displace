@@ -11,7 +11,7 @@ export function createVoiceRoom(placeId: string, input: CreateVoiceRoomInput): P
   return authenticatedMutation(`${voicePath(placeId)}/rooms`, { body: input, method: "POST" });
 }
 
-export function updateVoiceRoom(placeId: string, roomId: string, input: VoiceRoomInput): Promise<VoiceRoomContract> {
+export function updateVoiceRoom(placeId: string, roomId: string, input: Partial<VoiceRoomInput>): Promise<VoiceRoomContract> {
   return authenticatedMutation(`${voicePath(placeId)}/rooms/${encodeURIComponent(roomId)}`, { body: input, method: "PATCH" });
 }
 

@@ -6,7 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
+import { SettingsDialog } from "@/components/ui/settings-dialog";
+import { SortableList } from "@/components/ui/sortable-list";
 import { StatusPanel } from "@/components/ui/status-panel";
+import { TagInput } from "@/components/ui/tag-input";
 import { toast } from "@/components/ui/toast";
 import { setPlaceImage } from "@/features/assets/asset-client";
 import type { AssetContract } from "@/features/assets/asset-contract";
@@ -158,6 +161,9 @@ function PlaceSettingsFrame({ children, context, reload }: { children: ReactNode
 function RolesSettings({ context, onForbidden }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void> }) {
   const [roles, setRoles] = useState<PlaceRoleContract[]>([]);
   const [rolesFailed, setRolesFailed] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  async function refreshRoles() { setRoles((await listPlaceRoles(context.place.id)).items); }
 
   useEffect(() => {
     let active = true;
@@ -165,7 +171,25 @@ function RolesSettings({ context, onForbidden }: { context: PlaceContextContract
     return () => { active = false; };
   }, [context.place.id]);
 
-  return <section className="settings-section" id="roles"><p className="eyebrow">Authorization</p><h2>Roles and permissions</h2><p className="settings-muted">Roles can only grant permissions and positions below your own. System roles are read-only.</p>{rolesFailed ? <p className="form-message form-message-error" role="alert">Roles could not be loaded.</p> : <div className="role-list">{roles.map((role) => <RoleEditor key={role.id} onChanged={async () => setRoles((await listPlaceRoles(context.place.id)).items)} onForbidden={onForbidden} placeId={context.place.id} role={role} />)}</div>}<NewRoleForm onCreated={(role) => setRoles((items) => [...items, role].sort((a, b) => a.position - b.position))} onForbidden={onForbidden} placeId={context.place.id} /></section>;
+  const systemRoles = roles.filter((role) => role.isSystem);
+  const customRoles = roles.filter((role) => !role.isSystem);
+  const nextPosition = Math.max(20, ...customRoles.map((role) => role.position + 1));
+
+  async function reorderRoles(orderedRoles: PlaceRoleContract[]) {
+    const positions = [...customRoles].sort((a, b) => a.position - b.position).map((role) => role.position);
+    setReordering(true);
+    try {
+      await Promise.all(orderedRoles.map((role, index) => role.position === positions[index] ? Promise.resolve() : updatePlaceRole(context.place.id, role.id, { position: positions[index] })));
+      await refreshRoles();
+      toast.success("Roles reordered.");
+    } catch (error) {
+      await onForbidden(error);
+      await refreshRoles();
+      toast.error(placeErrorMessage(error, "Roles could not be reordered."));
+    } finally { setReordering(false); }
+  }
+
+  return <section className="settings-section" id="roles"><header className="settings-section-title-row"><div><p className="eyebrow">Authorization</p><h2>Roles and permissions</h2><p className="settings-muted">System roles define the built-in hierarchy. Drag custom roles to change their order, then open one to edit its permissions.</p></div><NewRoleForm nextPosition={nextPosition} onCreated={(role) => setRoles((items) => [...items, role].sort((a, b) => a.position - b.position))} onForbidden={onForbidden} placeId={context.place.id} /></header>{rolesFailed ? <p className="form-message form-message-error" role="alert">Roles could not be loaded.</p> : <div className="role-groups">{customRoles.length ? <section className="settings-list-group" aria-labelledby="custom-roles-heading"><h3 id="custom-roles-heading">Custom roles</h3><SortableList disabled={reordering} items={customRoles} label="Custom role order" onReorder={reorderRoles} renderItem={(role, handle) => <div className="settings-order-row">{handle}<RoleEditor onChanged={refreshRoles} onForbidden={onForbidden} placeId={context.place.id} role={role} /></div>} /></section> : <p className="settings-muted settings-empty-note">No custom roles yet.</p>}<section className="settings-list-group" aria-labelledby="system-roles-heading"><div><h3 id="system-roles-heading">System roles</h3><p className="settings-muted">Built in and fixed in place.</p></div><div className="role-list">{systemRoles.map((role) => <RoleEditor key={role.id} onChanged={refreshRoles} onForbidden={onForbidden} placeId={context.place.id} role={role} />)}</div></section></div>}</section>;
 }
 
 function availableSettingsSections(context: PlaceContextContract) {
@@ -203,14 +227,29 @@ function PlacePolicyFields({ place }: { place?: PlaceContextContract["place"] })
 }
 
 function PreferenceForm({ context, onForbidden, onSaved }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void>; onSaved: () => Promise<void> }) {
+  const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = new FormData(event.currentTarget);
-    const tags = String(form.get("tags") ?? "").split(",").map((tag) => tag.trim()).filter(Boolean);
+    event.preventDefault(); setPending(true); const form = new FormData(event.currentTarget);
+    const tags = form.getAll("tags").map(String);
     try { await updatePlaceSettings(context.place.id, { ...context.place.settings, locale: String(form.get("locale") ?? "en-US"), tags, topicSort: String(form.get("topicSort") ?? "activity") }); await onSaved(); toast.success("Place preferences saved."); }
     catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "Preferences could not be saved.")); }
+    finally { setPending(false); }
   }
   const tags = Array.isArray(context.place.settings.tags) ? context.place.settings.tags.filter((tag): tag is string => typeof tag === "string") : [];
-  return <section className="settings-section" id="preferences"><p className="eyebrow">Defaults and discovery</p><h2>Community preferences</h2><form className="settings-form compact-form" onSubmit={submit}><label className="form-field">Discovery tags<input defaultValue={tags.join(", ")} maxLength={200} name="tags" placeholder="game-design, accessibility, indie" /><small>Up to 8 comma-separated tags. Spaces become hyphens.</small></label><label className="form-field">Locale<Select defaultValue={String(context.place.settings.locale ?? "en-US")} name="locale" options={[{ label: "English (United States)", value: "en-US" }, { label: "English (United Kingdom)", value: "en-GB" }]} /></label><label className="form-field">Default topic order<Select defaultValue={String(context.place.settings.topicSort ?? "activity")} name="topicSort" options={[{ label: "Recent activity", value: "activity" }, { label: "Newest topics", value: "created" }]} /></label><button className="secondary-button" type="submit">Save preferences</button></form></section>;
+  return <section className="settings-section settings-section-organized" id="preferences">
+    <header className="settings-section-heading"><div><p className="eyebrow">Defaults and discovery</p><h2>Community preferences</h2><p className="settings-muted">Help people find this place and choose how conversations appear by default.</p></div></header>
+    <form className="settings-preferences-form" onSubmit={submit}>
+      <section className="settings-preference-group" aria-labelledby="discovery-preferences-heading">
+        <div><h3 id="discovery-preferences-heading">Discoverability</h3><p>Use a few focused tags that describe what this community is actually about.</p></div>
+        <TagInput initialTags={tags} label="Discovery tags" maxTags={8} name="tags" />
+      </section>
+      <section className="settings-preference-group" aria-labelledby="display-preferences-heading">
+        <div><h3 id="display-preferences-heading">Reading defaults</h3><p>Set the language conventions and the first topic order members see.</p></div>
+        <div className="settings-preference-fields"><label className="form-field">Locale<Select defaultValue={String(context.place.settings.locale ?? "en-US")} name="locale" options={[{ label: "English (United States)", value: "en-US" }, { label: "English (United Kingdom)", value: "en-GB" }]} /></label><label className="form-field">Default topic order<Select defaultValue={String(context.place.settings.topicSort ?? "activity")} name="topicSort" options={[{ label: "Recent activity", value: "activity" }, { label: "Newest topics", value: "created" }]} /></label></div>
+      </section>
+      <footer className="settings-form-actions"><button className="primary-button" disabled={pending} type="submit"><Save size={16} />{pending ? "Saving..." : "Save preferences"}</button></footer>
+    </form>
+  </section>;
 }
 
 function RoleEditor({ onChanged, onForbidden, placeId, role }: { onChanged: () => Promise<void>; onForbidden: (error: unknown) => Promise<void>; placeId: string; role: PlaceRoleContract }) {
@@ -223,16 +262,17 @@ function RoleEditor({ onChanged, onForbidden, placeId, role }: { onChanged: () =
     try { await deletePlaceRole(placeId, role.id); await onChanged(); }
     catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "Role could not be deleted.")); }
   }
-  return <details className="role-editor"><summary><span><Shield size={16} /> <strong>{role.name}</strong></span><small>{role.permissions.length} permissions · position {role.position}</small></summary><form className="settings-form" onSubmit={submit}><FormField defaultValue={role.name} disabled={role.isSystem} label="Role name" name="name" required /><FormField defaultValue={role.position} disabled={role.isSystem} label="Position" min={0} name="position" type="number" required /><PermissionGrid disabled={role.isSystem} selected={role.permissions} />{!role.isSystem ? <div className="button-row"><button className="secondary-button" type="submit"><Save size={16} /> Save role</button><button className="danger-button" onClick={() => void remove()} type="button"><Trash2 size={16} /> Delete</button></div> : <p className="settings-muted">System role permissions cannot be changed.</p>}</form></details>;
+  return <details className="role-editor"><summary><span><Shield size={16} /> <strong>{role.name}</strong></span><small>{role.permissions.length} permissions</small></summary><form className="settings-form" onSubmit={submit}><FormField defaultValue={role.name} disabled={role.isSystem} label="Role name" name="name" required /><input name="position" type="hidden" value={role.position} /><PermissionGrid disabled={role.isSystem} selected={role.permissions} />{!role.isSystem ? <div className="button-row"><button className="secondary-button" type="submit"><Save size={16} /> Save role</button><button className="danger-button" onClick={() => void remove()} type="button"><Trash2 size={16} /> Delete</button></div> : <p className="settings-muted">System role permissions cannot be changed.</p>}</form></details>;
 }
 
-function NewRoleForm({ onCreated, onForbidden, placeId }: { onCreated: (role: PlaceRoleContract) => void; onForbidden: (error: unknown) => Promise<void>; placeId: string }) {
+function NewRoleForm({ nextPosition, onCreated, onForbidden, placeId }: { nextPosition: number; onCreated: (role: PlaceRoleContract) => void; onForbidden: (error: unknown) => Promise<void>; placeId: string }) {
+  const [open, setOpen] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = new FormData(event.currentTarget);
-    try { const role = await createPlaceRole(placeId, { name: String(form.get("name")), position: Number(form.get("position")), permissions: permissionsFrom(form) }); onCreated(role); event.currentTarget.reset(); toast.success("Role created."); }
+    try { const role = await createPlaceRole(placeId, { name: String(form.get("name")), position: nextPosition, permissions: permissionsFrom(form) }); onCreated(role); event.currentTarget.reset(); setOpen(false); toast.success("Role created."); }
     catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "Role could not be created.")); }
   }
-  return <details className="role-editor new-role"><summary><span><Plus size={16} /> <strong>Create custom role</strong></span></summary><form className="settings-form" onSubmit={submit}><FormField label="Role name" maxLength={80} name="name" required /><FormField defaultValue={20} label="Position" min={0} name="position" type="number" required /><PermissionGrid selected={[]} /><button className="primary-button" type="submit">Create role</button></form></details>;
+  return <SettingsDialog description="Name the role and select only the permissions its members need." onOpenChange={setOpen} open={open} title="New custom role" trigger={<button className="primary-button" type="button"><Plus size={16} /> New role</button>}><form className="settings-form settings-dialog-form" onSubmit={submit}><FormField label="Role name" maxLength={80} name="name" required /><PermissionGrid selected={[]} /><button className="primary-button" type="submit"><Plus size={16} /> Create role</button></form></SettingsDialog>;
 }
 
 function PermissionGrid({ disabled = false, selected }: { disabled?: boolean; selected: readonly string[] }) {

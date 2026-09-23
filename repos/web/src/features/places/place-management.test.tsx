@@ -136,11 +136,13 @@ describe("place management", () => {
   it("configures tags used for public discovery", async () => {
     const user = userEvent.setup();
     render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} section="preferences" /></SessionProvider>);
-    await user.type(await screen.findByLabelText(/Discovery tags/), "Game Design, Accessibility");
+    const tagInput = await screen.findByLabelText("Add discovery tags");
+    await user.type(tagInput, "Game Design{Enter}");
+    await user.type(tagInput, "Accessibility{Enter}");
     await user.click(screen.getByRole("button", { name: "Save preferences" }));
 
     await waitFor(() => expect(updatedSettings).toMatchObject({
-      settings: { locale: "en-US", tags: ["Game Design", "Accessibility"], topicSort: "activity" },
+      settings: { locale: "en-US", tags: ["game-design", "accessibility"], topicSort: "activity" },
     }));
   });
 
@@ -165,20 +167,18 @@ describe("place management", () => {
     render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} section="forums" /></SessionProvider>);
     expect(await screen.findByRole("heading", { name: "Forums and tags" })).toBeInTheDocument();
 
-    const groupCreator = screen.getByText("Create forum group", { selector: "strong" }).closest("details");
-    expect(groupCreator).not.toBeNull();
-    await user.click(within(groupCreator!).getByText("Create forum group", { selector: "strong" }));
-    await user.type(within(groupCreator!).getByLabelText("Group name"), "Community");
-    await user.type(within(groupCreator!).getByLabelText("Description"), "General conversations.");
-    await user.click(within(groupCreator!).getByRole("button", { name: "Create group" }));
-    await waitFor(() => expect(createdForumGroup).toMatchObject({ name: "Community", description: "General conversations.", position: 0 }));
+    await user.click(screen.getByRole("button", { name: "New group" }));
+    const groupCreator = screen.getByRole("dialog", { name: "New forum group" });
+    await user.type(within(groupCreator).getByLabelText("Group name"), "Community");
+    await user.type(within(groupCreator).getByLabelText("Description"), "General conversations.");
+    await user.click(within(groupCreator).getByRole("button", { name: "Create group" }));
+    await waitFor(() => expect(createdForumGroup).toMatchObject({ name: "Community", description: "General conversations.", position: forumNavigationFixture.groups.length }));
 
-    const forumCreator = screen.getByText("Create forum", { selector: "strong" }).closest("details");
-    expect(forumCreator).not.toBeNull();
-    await user.click(within(forumCreator!).getByText("Create forum", { selector: "strong" }));
-    await user.type(within(forumCreator!).getByLabelText("Forum name"), "Introductions");
-    await user.type(within(forumCreator!).getByLabelText("Description"), "Meet the community.");
-    await user.click(within(forumCreator!).getByRole("button", { name: "Create forum" }));
+    await user.click(screen.getByRole("button", { name: "New forum" }));
+    const forumCreator = screen.getByRole("dialog", { name: "New forum" });
+    await user.type(within(forumCreator).getByLabelText("Forum name"), "Introductions");
+    await user.type(within(forumCreator).getByLabelText("Description"), "Meet the community.");
+    await user.click(within(forumCreator).getByRole("button", { name: "Create forum" }));
     await waitFor(() => expect(createdForum).toMatchObject({
       groupId: forumNavigationFixture.groups[0]?.id,
       name: "Introductions",
