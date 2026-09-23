@@ -52,7 +52,7 @@ export function ForumAuthoringActions({ placeId, placeSlug }: { placeId: string;
   const canManageForums = workspace.context?.viewer.permissions.includes("forum.manage");
   if (!canCreateTopics && !canManageForums) return null;
   return <div className="forum-authoring-actions">
-    {canManageForums ? <Link className="secondary-button" href={`${routes.placeSettings(placeSlug)}#forums`}><Settings size={16} /> Manage forums</Link> : null}
+    {canManageForums ? <Link className="secondary-button" href={routes.placeSettingsSection(placeSlug, "forums")}><Settings size={16} /> Manage forums</Link> : null}
     {canCreateTopics ? <Link className="primary-button" href={routes.createTopic(placeSlug)}><Plus size={16} /> New topic</Link> : null}
   </div>;
 }

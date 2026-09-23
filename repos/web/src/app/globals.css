@@ -1506,7 +1506,8 @@ textarea:focus-visible {
 	font-weight: 800;
 }
 
-.settings-layout > nav a:hover {
+.settings-layout > nav a:hover,
+.settings-layout > nav a[aria-current="page"] {
 	color: var(--ink);
 	background: #e8e7df;
 	border-left-color: var(--coral);
@@ -4378,7 +4379,8 @@ textarea:focus-visible {
 		border-left: 0;
 	}
 
-	.settings-layout > nav a:hover {
+	.settings-layout > nav a:hover,
+	.settings-layout > nav a[aria-current="page"] {
 		border-bottom-color: var(--coral);
 		border-left: 0;
 	}

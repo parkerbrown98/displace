@@ -1,3 +1,5 @@
+export type PlaceSettingsSection = "archive" | "chat" | "forums" | "identity" | "preferences" | "roles" | "voice";
+
 export const routes = {
   home: "/",
   discover: "/discover",
@@ -20,6 +22,8 @@ export const routes = {
   member: (username: string) => `/members/${username}`,
   place: (placeSlug: string) => `/places/${placeSlug}`,
   placeSettings: (placeSlug: string) => `/places/${placeSlug}/settings`,
+  placeSettingsSection: (placeSlug: string, section: PlaceSettingsSection) =>
+    `/places/${placeSlug}/settings/${section}`,
   placeModeration: (placeSlug: string) => `/places/${placeSlug}/moderation`,
   placeMembers: (placeSlug: string) => `/places/${placeSlug}/members`,
   placeMember: (placeSlug: string, memberId: string) => `/places/${placeSlug}/members/${memberId}`,

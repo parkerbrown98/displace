@@ -26,8 +26,12 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await page.getByRole("combobox", { name: /Join policy/ }).click();
   await page.getByRole("option", { name: "Approval required" }).click();
   await page.getByRole("button", { name: "Create place" }).click();
-  await expect(page).toHaveURL(new RegExp(`/places/${slug}/settings$`));
+  await expect(page).toHaveURL(new RegExp(`/places/${slug}/settings/identity$`));
+  const settingsNavigation = page.getByRole("navigation", { name: "Place settings sections" });
+  await settingsNavigation.getByRole("link", { name: "Roles" }).click();
   await expect(page.getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
+  await settingsNavigation.getByRole("link", { name: "Forums" }).click();
+  await expect(page).toHaveURL(new RegExp(`/places/${slug}/settings/forums$`));
 
   const groupCreator = page.locator("details.forum-admin-create").filter({ hasText: "Create forum group" });
   await groupCreator.locator("summary").click();
@@ -43,6 +47,7 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await forumCreator.getByRole("button", { name: "Create forum" }).click();
   await expect(page.getByText("Forum created.")).toBeVisible();
 
+  await settingsNavigation.getByRole("link", { name: "Roles" }).click();
   const ownerRole = page.locator("details").filter({ hasText: "Owner" });
   await ownerRole.locator("summary").click();
   await expect(ownerRole.getByText("System role permissions cannot be changed.")).toBeVisible();
@@ -59,6 +64,27 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await page.getByRole("textbox", { name: "Reply" }).fill("This reply was created through the browser interface.");
   await page.getByRole("button", { name: "Publish reply" }).click();
   await expect(page.getByText("This reply was created through the browser interface.")).toBeVisible();
+});
+
+test("navigates place settings as subpages", async ({ page, request }, testInfo) => {
+  const owner = await registerVerifiedUser(request, testInfo, "settings_owner");
+  const community = await createCommunity(request, owner, testInfo, { withTopic: false });
+  await signIn(page, owner);
+  await openHydrated(page, `/places/${community.placeSlug}/settings`);
+
+  await expect(page).toHaveURL(new RegExp(`/places/${community.placeSlug}/settings/identity$`));
+  await expect(page.getByRole("heading", { name: "Identity and policy" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Community preferences" })).not.toBeVisible();
+
+  const settingsNavigation = page.getByRole("navigation", { name: "Place settings sections" });
+  await settingsNavigation.getByRole("link", { name: "Preferences" }).click();
+  await expect(page).toHaveURL(new RegExp(`/places/${community.placeSlug}/settings/preferences$`));
+  await expect(page.getByRole("heading", { name: "Community preferences" })).toBeVisible();
+
+  await settingsNavigation.getByRole("link", { name: "Forums" }).click();
+  await expect(page).toHaveURL(new RegExp(`/places/${community.placeSlug}/settings/forums$`));
+  await expect(page.getByRole("heading", { name: "Forums and tags" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Community preferences" })).not.toBeVisible();
 });
 
 test("reviews membership requests", async ({ page, request }, testInfo) => {
@@ -79,7 +105,7 @@ test("uploads and assigns a place image through object storage", async ({ page, 
   const owner = await registerVerifiedUser(request, testInfo, "media_owner");
   const community = await createCommunity(request, owner, testInfo, { withTopic: false });
   await signIn(page, owner);
-  await openHydrated(page, `/places/${community.placeSlug}/settings`);
+  await openHydrated(page, `/places/${community.placeSlug}/settings/identity`);
   const uploader = page.locator(".image-uploader").filter({ hasText: "Place icon" });
 
   await uploader.getByLabel("Choose place icon").setInputFiles({

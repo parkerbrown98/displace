@@ -10,11 +10,14 @@ import { forumNavigationFixture } from "@/features/public-content/public-fixture
 import { memberFixture, pendingMemberFixture, placeContextFixture, placeContractFixture, placeInvitesFixture, placeMembersFixture, placeRolesFixture } from "./place-fixtures";
 import { InviteAcceptance, PlaceMembershipActions } from "./place-access";
 import { PlaceMembers } from "./place-members";
-import { CreatePlacePanel, PlaceSettings } from "./place-settings";
+import { CreatePlacePanel, PlaceSettings, PlaceSettingsIndex, PlaceSettingsLayout } from "./place-settings";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/places/game-makers/settings/identity",
+  useRouter: () => router,
+}));
 
 describe("place management", () => {
   let createdForumGroup: unknown;
@@ -89,7 +92,7 @@ describe("place management", () => {
 
   it("configures tags used for public discovery", async () => {
     const user = userEvent.setup();
-    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} /></SessionProvider>);
+    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} section="preferences" /></SessionProvider>);
     await user.type(await screen.findByLabelText(/Discovery tags/), "Game Design, Accessibility");
     await user.click(screen.getByRole("button", { name: "Save preferences" }));
 
@@ -100,7 +103,7 @@ describe("place management", () => {
 
   it("shows role capabilities and protects the owner in member management", async () => {
     const user = userEvent.setup();
-    const { unmount } = render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} /></SessionProvider>);
+    const { unmount } = render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} section="roles" /></SessionProvider>);
     expect(await screen.findByRole("heading", { name: "Place settings" })).toBeInTheDocument();
     await user.click(await screen.findByText("Owner"));
     expect(screen.getAllByText("System role permissions cannot be changed.").length).toBeGreaterThan(0);
@@ -116,7 +119,7 @@ describe("place management", () => {
 
   it("creates forum groups and forums from place settings", async () => {
     const user = userEvent.setup();
-    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} /></SessionProvider>);
+    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} section="forums" /></SessionProvider>);
     expect(await screen.findByRole("heading", { name: "Forums and tags" })).toBeInTheDocument();
 
     const groupCreator = screen.getByText("Create forum group", { selector: "strong" }).closest("details");
@@ -138,6 +141,32 @@ describe("place management", () => {
       name: "Introductions",
       visibility: "public",
     }));
+  });
+
+  it("renders settings as routed subpages", async () => {
+    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} /></SessionProvider>);
+
+    expect(await screen.findByRole("heading", { name: "Identity and policy" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Community preferences" })).not.toBeInTheDocument();
+    const settingsNavigation = screen.getByRole("navigation", { name: "Place settings sections" });
+    expect(within(settingsNavigation).getByRole("link", { name: "Preferences" })).toHaveAttribute("href", "/places/game-makers/settings/preferences");
+    expect(within(settingsNavigation).getByRole("link", { name: "Forums" })).toHaveAttribute("href", "/places/game-makers/settings/forums");
+  });
+
+  it("opens the first section allowed by the viewer's capabilities", async () => {
+    mockServer.use(
+      http.get("http://localhost:3001/api/v1/places/game-makers/context", () => HttpResponse.json({
+        ...placeContextFixture,
+        viewer: { ...placeContextFixture.viewer, permissions: ["forum.manage"] },
+      })),
+    );
+
+    render(<SessionProvider><PlaceSettingsLayout placeId="game-makers"><PlaceSettingsIndex /></PlaceSettingsLayout></SessionProvider>);
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/places/game-makers/settings/forums"));
+    const settingsNavigation = screen.getByRole("navigation", { name: "Place settings sections" });
+    expect(within(settingsNavigation).getByRole("link", { name: "Forums" })).toBeInTheDocument();
+    expect(within(settingsNavigation).queryByRole("link", { name: "Identity" })).not.toBeInTheDocument();
   });
 
   it("accepts an invitation and navigates to the place", async () => {

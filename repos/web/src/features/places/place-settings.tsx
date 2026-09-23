@@ -1,8 +1,9 @@
 "use client";
 
 import { Archive, Plus, Save, Shield, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { StatusPanel } from "@/components/ui/status-panel";
@@ -13,7 +14,7 @@ import { useSession } from "@/features/auth/session-provider";
 import { ChatChannelSettings } from "@/features/chat/chat-channel-settings";
 import { VoiceRoomSettings } from "@/features/voice/voice-room-settings";
 import { ForumSettings } from "@/features/forums/forum-settings";
-import { routes } from "@/lib/routes";
+import { routes, type PlaceSettingsSection } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
 import { PlaceForumHeader } from "./place-forum-header";
 import { notifyPlaceIconUpdated } from "./place-icon";
@@ -32,6 +33,23 @@ import {
 import { placePermissions, type PlaceContextContract, type PlacePermission, type PlaceRoleContract } from "./place-contract";
 
 type Notice = { kind: "error" | "success"; text: string } | null;
+
+interface PlaceSettingsWorkspace {
+  context: PlaceContextContract;
+  refreshAfterForbidden: (error: unknown) => Promise<void>;
+  reload: () => Promise<void>;
+}
+
+const PlaceSettingsContext = createContext<PlaceSettingsWorkspace | null>(null);
+const settingsSections: Array<{ label: string; permission: PlacePermission; section: PlaceSettingsSection }> = [
+  { label: "Identity", permission: "place.manage", section: "identity" },
+  { label: "Preferences", permission: "place.manage", section: "preferences" },
+  { label: "Forums", permission: "forum.manage", section: "forums" },
+  { label: "Chat", permission: "chat.manage", section: "chat" },
+  { label: "Voice", permission: "voice.manage", section: "voice" },
+  { label: "Roles", permission: "role.manage", section: "roles" },
+  { label: "Archive", permission: "place.manage", section: "archive" },
+];
 
 export function CreatePlacePanel() {
   const session = useSession();
@@ -72,48 +90,94 @@ export function CreatePlacePanel() {
   </main>;
 }
 
-export function PlaceSettings({ placeId }: { placeId: string }) {
-  return <PlaceWorkspaceGate placeId={placeId} returnTo={routes.placeSettings(placeId)}>{({ context, reload }) => <PlaceSettingsContent context={context} reload={reload} />}</PlaceWorkspaceGate>;
+export function PlaceSettingsLayout({ children, placeId }: { children: ReactNode; placeId: string }) {
+  const pathname = usePathname();
+  return <PlaceWorkspaceGate placeId={placeId} returnTo={pathname}>{({ context, reload }) => <PlaceSettingsFrame context={context} reload={reload}>{children}</PlaceSettingsFrame>}</PlaceWorkspaceGate>;
 }
 
-function PlaceSettingsContent({ context, reload }: { context: PlaceContextContract; reload: () => Promise<void> }) {
-  const canManagePlace = context.viewer.permissions.includes("place.manage");
-  const canManageChat = context.viewer.permissions.includes("chat.manage");
-  const canManageVoice = context.viewer.permissions.includes("voice.manage");
-  const canManageRoles = context.viewer.permissions.includes("role.manage");
-  const canManageForums = context.viewer.permissions.includes("forum.manage");
-  const [roles, setRoles] = useState<PlaceRoleContract[]>([]);
-  const [rolesFailed, setRolesFailed] = useState(false);
+export function PlaceSettings({ placeId, section = "identity" }: { placeId: string; section?: PlaceSettingsSection }) {
+  return <PlaceSettingsLayout placeId={placeId}><PlaceSettingsSectionContent section={section} /></PlaceSettingsLayout>;
+}
+
+export function PlaceSettingsIndex() {
+  const router = useRouter();
+  const { context } = usePlaceSettings();
+  const firstSection = availableSettingsSections(context)[0];
 
   useEffect(() => {
-    if (!canManageRoles) return;
-    let active = true;
-    void listPlaceRoles(context.place.id).then((page) => { if (active) setRoles(page.items); }).catch(() => { if (active) setRolesFailed(true); });
-    return () => { active = false; };
-  }, [canManageRoles, context.place.id]);
+    if (firstSection) router.replace(routes.placeSettingsSection(context.place.slug, firstSection.section));
+  }, [context.place.slug, firstSection, router]);
 
-  if (!canManagePlace && !canManageRoles && !canManageForums && !canManageChat && !canManageVoice) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, role, chat, or voice management." /></div></main>;
+  return <section className="settings-section"><p className="settings-muted">Opening place settings...</p></section>;
+}
+
+export function PlaceSettingsSectionContent({ section }: { section: PlaceSettingsSection }) {
+  const workspace = usePlaceSettings();
+  const { context, refreshAfterForbidden, reload } = workspace;
+  const permitted = settingsSections.some((item) => item.section === section && context.viewer.permissions.includes(item.permission));
+
+  if (!permitted) {
+    const fallback = availableSettingsSections(context)[0];
+    return <StatusPanel title="Section unavailable" description="Your current role does not grant access to this settings section." action={fallback ? <Link className="secondary-button" href={routes.placeSettingsSection(context.place.slug, fallback.section)}>Open available settings</Link> : undefined} />;
+  }
+
+  switch (section) {
+    case "identity": return <IdentityForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} />;
+    case "preferences": return <PreferenceForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} />;
+    case "forums": return <ForumSettings context={context} onForbidden={refreshAfterForbidden} />;
+    case "chat": return <ChatChannelSettings context={context} onForbidden={refreshAfterForbidden} />;
+    case "voice": return <VoiceRoomSettings context={context} onForbidden={refreshAfterForbidden} />;
+    case "roles": return <RolesSettings context={context} onForbidden={refreshAfterForbidden} />;
+    case "archive": return <ArchiveSection context={context} onForbidden={refreshAfterForbidden} />;
+  }
+}
+
+function PlaceSettingsFrame({ children, context, reload }: { children: ReactNode; context: PlaceContextContract; reload: () => Promise<void> }) {
+  const pathname = usePathname();
+  const availableSections = availableSettingsSections(context);
+
+  if (availableSections.length === 0) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, role, chat, or voice management." /></div></main>;
 
   async function refreshAfterForbidden(error: unknown) {
     if (isForbiddenPlaceError(error)) await reload();
   }
 
-  return <main className="public-main place-workspace-page" id="main-content">
-    <PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings />
-    <header className="place-page-heading"><p className="eyebrow">Administration</p><h2>Place settings</h2><p>Identity, discussion structure, access policy, roles, and ownership-sensitive operations.</p></header>
-    <div className="settings-layout">
-      <nav aria-label="Place settings sections">{canManagePlace ? <><a href="#identity">Identity</a><a href="#preferences">Preferences</a></> : null}{canManageForums ? <a href="#forums">Forums</a> : null}{canManageChat ? <a href="#chat">Chat</a> : null}{canManageVoice ? <a href="#voice">Voice</a> : null}{canManageRoles ? <a href="#roles">Roles</a> : null}{canManagePlace ? <a href="#archive">Archive</a> : null}</nav>
-      <div className="settings-sections">
-        {canManagePlace ? <IdentityForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} /> : null}
-        {canManagePlace ? <PreferenceForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} /> : null}
-        {canManageForums ? <ForumSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
-        {canManageChat ? <ChatChannelSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
-        {canManageVoice ? <VoiceRoomSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
-        {canManageRoles ? <section className="settings-section" id="roles"><p className="eyebrow">Authorization</p><h2>Roles and permissions</h2><p className="settings-muted">Roles can only grant permissions and positions below your own. System roles are read-only.</p>{rolesFailed ? <p className="form-message form-message-error" role="alert">Roles could not be loaded.</p> : <div className="role-list">{roles.map((role) => <RoleEditor key={role.id} onChanged={async () => setRoles((await listPlaceRoles(context.place.id)).items)} onForbidden={refreshAfterForbidden} placeId={context.place.id} role={role} />)}</div>}<NewRoleForm onCreated={(role) => setRoles((items) => [...items, role].sort((a, b) => a.position - b.position))} onForbidden={refreshAfterForbidden} placeId={context.place.id} /></section> : null}
-        {canManagePlace ? <ArchiveSection context={context} onForbidden={refreshAfterForbidden} /> : null}
+  return <PlaceSettingsContext.Provider value={{ context, refreshAfterForbidden, reload }}>
+    <main className="public-main place-workspace-page" id="main-content">
+      <PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings />
+      <header className="place-page-heading"><p className="eyebrow">Administration</p><h2>Place settings</h2><p>Manage one part of your community at a time.</p></header>
+      <div className="settings-layout">
+        <nav aria-label="Place settings sections">{availableSections.map((item) => {
+          const href = routes.placeSettingsSection(context.place.slug, item.section);
+          return <Link aria-current={pathname === href ? "page" : undefined} href={href} key={item.section}>{item.label}</Link>;
+        })}</nav>
+        <div className="settings-sections">{children}</div>
       </div>
-    </div>
-  </main>;
+    </main>
+  </PlaceSettingsContext.Provider>;
+}
+
+function RolesSettings({ context, onForbidden }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void> }) {
+  const [roles, setRoles] = useState<PlaceRoleContract[]>([]);
+  const [rolesFailed, setRolesFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void listPlaceRoles(context.place.id).then((page) => { if (active) setRoles(page.items); }).catch(() => { if (active) setRolesFailed(true); });
+    return () => { active = false; };
+  }, [context.place.id]);
+
+  return <section className="settings-section" id="roles"><p className="eyebrow">Authorization</p><h2>Roles and permissions</h2><p className="settings-muted">Roles can only grant permissions and positions below your own. System roles are read-only.</p>{rolesFailed ? <p className="form-message form-message-error" role="alert">Roles could not be loaded.</p> : <div className="role-list">{roles.map((role) => <RoleEditor key={role.id} onChanged={async () => setRoles((await listPlaceRoles(context.place.id)).items)} onForbidden={onForbidden} placeId={context.place.id} role={role} />)}</div>}<NewRoleForm onCreated={(role) => setRoles((items) => [...items, role].sort((a, b) => a.position - b.position))} onForbidden={onForbidden} placeId={context.place.id} /></section>;
+}
+
+function availableSettingsSections(context: PlaceContextContract) {
+  return settingsSections.filter((item) => context.viewer.permissions.includes(item.permission));
+}
+
+function usePlaceSettings() {
+  const workspace = useContext(PlaceSettingsContext);
+  if (!workspace) throw new Error("Place settings must be rendered inside PlaceSettingsLayout.");
+  return workspace;
 }
 
 function IdentityForm({ context, onForbidden, onSaved }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void>; onSaved: () => Promise<void> }) {
