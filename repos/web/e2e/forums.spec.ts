@@ -22,7 +22,7 @@ test("authors and manages a discussion through the API", async ({ page, request 
   await signIn(page, owner);
 
   await openHydrated(page, `/places/${community.placeSlug}/topics/new`);
-  await page.getByLabel("Forum").selectOption(community.forumId);
+  await expect(page.getByRole("combobox", { name: "Forum" })).toContainText(/.+/);
   await page.getByLabel("Title").fill(title);
   await page.getByRole("textbox", { name: "Opening post" }).fill("Opening thought for the browser journey. ");
   await page.getByRole("button", { name: "Mention member" }).click();

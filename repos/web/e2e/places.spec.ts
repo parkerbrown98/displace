@@ -23,7 +23,8 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await page.getByLabel("Name", { exact: true }).fill("Tabletop Studio");
   await page.getByLabel("Slug").fill(slug);
   await page.getByLabel("Description").fill("A community for tabletop makers.");
-  await page.getByRole("combobox", { name: /Join policy/ }).selectOption("approval");
+  await page.getByRole("combobox", { name: /Join policy/ }).click();
+  await page.getByRole("option", { name: "Approval required" }).click();
   await page.getByRole("button", { name: "Create place" }).click();
   await expect(page).toHaveURL(new RegExp(`/places/${slug}/settings$`));
   await expect(page.getByRole("heading", { name: "Roles and permissions" })).toBeVisible();
@@ -50,7 +51,7 @@ test("creates and manages a place with capability-driven controls", async ({ pag
   await expect(page.getByRole("link", { name: /General discussion/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Manage forums" })).toBeVisible();
   await page.getByRole("link", { name: "New topic" }).click();
-  await page.getByLabel("Forum").selectOption({ label: "General discussion" });
+  await expect(page.getByRole("combobox", { name: "Forum" })).toContainText("General discussion");
   await page.getByLabel("Title").fill("Welcome to the studio");
   await page.getByRole("textbox", { name: "Opening post" }).fill("This topic was created through the browser interface.");
   await page.getByRole("button", { name: "Publish topic" }).click();
