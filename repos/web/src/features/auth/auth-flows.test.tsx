@@ -12,7 +12,10 @@ import { SignInPanel } from "./sign-in-panel";
 
 const router = vi.hoisted(() => ({ refresh: vi.fn(), replace: vi.fn() }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/settings/profile",
+  useRouter: () => router,
+}));
 
 describe("authentication journeys", () => {
   afterEach(() => {
@@ -94,7 +97,7 @@ describe("authentication journeys", () => {
     );
     await signIn({ identifier: "parker", password: "correct horse battery staple" });
     const user = userEvent.setup();
-    render(<SessionProvider><AccountSettings /></SessionProvider>);
+    render(<SessionProvider><AccountSettings section="sessions" /></SessionProvider>);
 
     expect(await screen.findByText("Safari on iPhone")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Revoke Safari on iPhone" }));
@@ -103,5 +106,23 @@ describe("authentication journeys", () => {
     await user.click(screen.getByRole("button", { name: "Sign out everywhere" }));
     expect(await screen.findByRole("heading", { name: "Sign in required" })).toBeInTheDocument();
     expect(router.replace).toHaveBeenCalledWith("/");
+  });
+
+  it("renders account settings as routed subpages", async () => {
+    mockServer.use(
+      http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(createAuthenticationFixture())),
+      http.post("http://localhost:3001/api/v1/auth/refresh", () => HttpResponse.json(createAuthenticationFixture())),
+      http.get("http://localhost:3001/api/v1/auth/me", () => HttpResponse.json(userProfileFixture)),
+    );
+    await signIn({ identifier: "parker", password: "correct horse battery staple" });
+
+    render(<SessionProvider><AccountSettings /></SessionProvider>);
+
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Email" })).not.toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", { name: "Account settings sections" });
+    expect(navigation).toContainElement(screen.getByRole("link", { name: "Profile image" }));
+    expect(screen.getByRole("link", { name: "Profile image" })).toHaveAttribute("href", "/settings/profile-image");
+    expect(screen.getByRole("link", { name: "Sessions" })).toHaveAttribute("href", "/settings/sessions");
   });
 });

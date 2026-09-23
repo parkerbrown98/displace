@@ -1,4 +1,5 @@
 export type PlaceSettingsSection = "archive" | "chat" | "forums" | "identity" | "preferences" | "roles" | "voice";
+export type AccountSettingsSection = "email" | "password" | "profile" | "profile-image" | "sessions";
 
 export const routes = {
   home: "/",
@@ -13,6 +14,7 @@ export const routes = {
   oidcCallback: "/auth/callback",
   sessionExpired: "/session-expired",
   settings: "/settings",
+  accountSettingsSection: (section: AccountSettingsSection) => `/settings/${section}`,
   notifications: "/notifications",
   moderation: "/moderation",
   administration: "/admin",

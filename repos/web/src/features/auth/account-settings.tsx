@@ -2,73 +2,117 @@
 
 import { Laptop, LogOut, Smartphone, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
 import { getProfileImage, setProfileImage } from "@/features/assets/asset-client";
 import { ImageUploader } from "@/features/assets/image-uploader";
 import { getPlaceContext, listMyPlaces } from "@/features/places/place-client";
-import { routes } from "@/lib/routes";
-import type { AccountSession } from "./auth-contracts";
+import { routes, type AccountSettingsSection } from "@/lib/routes";
+import type { AccountSession, UserProfile } from "./auth-contracts";
 import { changeEmail, changePassword, listSessions, revokeSession, updateProfile } from "./auth-client";
 import { authErrorMessage } from "./auth-error-message";
 import { useSession } from "./session-provider";
 
 type Notice = { kind: "error" | "success"; text: string } | null;
 
-export function AccountSettings() {
-  const router = useRouter();
-  const session = useSession();
-  const [sessions, setSessions] = useState<AccountSession[]>([]);
-  const [sessionsFailed, setSessionsFailed] = useState(false);
+interface AccountSettingsWorkspace {
+  refreshProfile: () => Promise<void>;
+  signOutAccount: (all?: boolean) => Promise<void>;
+  user: UserProfile;
+}
 
-  useEffect(() => {
-    if (session.status !== "authenticated") return;
-    let active = true;
-    void listSessions()
-      .then((items) => { if (active) setSessions(items); })
-      .catch(() => { if (active) setSessionsFailed(true); });
-    return () => { active = false; };
-  }, [session.status]);
+const AccountSettingsContext = createContext<AccountSettingsWorkspace | null>(null);
+const accountSettingsSections: Array<{ label: string; section: AccountSettingsSection }> = [
+  { label: "Profile", section: "profile" },
+  { label: "Profile image", section: "profile-image" },
+  { label: "Email", section: "email" },
+  { label: "Password", section: "password" },
+  { label: "Sessions", section: "sessions" },
+];
+
+export function AccountSettingsLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const session = useSession();
 
   if (session.status === "loading") return <main className="settings-main" id="main-content"><LoadingPanel label="Loading account" /></main>;
   if (session.status === "unavailable") return <main className="settings-main" id="main-content"><StatusPanel title="Account unavailable" description="Your account could not be loaded. Try again shortly." tone="error" /></main>;
   if (session.status === "anonymous" || !session.user) {
-    return <main className="settings-main" id="main-content"><StatusPanel title="Sign in required" description="Sign in to manage your account and active sessions." action={<Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.settings)}`}>Sign in</Link>} /></main>;
+    return <main className="settings-main" id="main-content"><StatusPanel title="Sign in required" description="Sign in to manage your account and active sessions." action={<Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(pathname)}`}>Sign in</Link>} /></main>;
   }
 
+  return (
+    <AccountSettingsContext.Provider value={{ refreshProfile: session.refreshProfile, signOutAccount: session.signOutAccount, user: session.user }}>
+      <main className="settings-main" id="main-content">
+        <header className="settings-heading">
+          <p className="eyebrow">Account</p><h1>Settings</h1>
+          <p>Manage one part of your account at a time.</p>
+        </header>
+        <div className="settings-layout">
+          <nav aria-label="Account settings sections">{accountSettingsSections.map((item) => {
+            const href = routes.accountSettingsSection(item.section);
+            return <Link aria-current={pathname === href ? "page" : undefined} href={href} key={item.section}>{item.label}</Link>;
+          })}</nav>
+          <div className="settings-sections">{children}</div>
+        </div>
+      </main>
+    </AccountSettingsContext.Provider>
+  );
+}
+
+export function AccountSettings({ section = "profile" }: { section?: AccountSettingsSection }) {
+  return <AccountSettingsLayout><AccountSettingsSectionContent section={section} /></AccountSettingsLayout>;
+}
+
+export function AccountSettingsIndex() {
+  const router = useRouter();
+  useAccountSettings();
+  useEffect(() => { router.replace(routes.accountSettingsSection("profile")); }, [router]);
+  return <section className="settings-section"><p className="settings-muted">Opening account settings...</p></section>;
+}
+
+export function AccountSettingsSectionContent({ section }: { section: AccountSettingsSection }) {
+  const workspace = useAccountSettings();
+  switch (section) {
+    case "profile": return <ProfileSettings user={workspace.user} onSaved={workspace.refreshProfile} />;
+    case "profile-image": return <ProfileImageSettings />;
+    case "email": return <EmailSettings email={workspace.user.email} verified={workspace.user.emailVerified} />;
+    case "password": return <PasswordSettings />;
+    case "sessions": return <SessionSettings />;
+  }
+}
+
+function SessionSettings() {
+  const router = useRouter();
+  const { signOutAccount } = useAccountSettings();
+  const [sessions, setSessions] = useState<AccountSession[]>([]);
+  const [sessionsFailed, setSessionsFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void listSessions().then((items) => { if (active) setSessions(items); }).catch(() => { if (active) setSessionsFailed(true); });
+    return () => { active = false; };
+  }, []);
+
   async function leave(all: boolean) {
-    await session.signOutAccount(all);
+    await signOutAccount(all);
     router.replace(routes.home);
     router.refresh();
   }
 
-  return (
-    <main className="settings-main" id="main-content">
-      <header className="settings-heading">
-        <p className="eyebrow">Account</p><h1>Settings</h1>
-        <p>Manage your public identity, credentials, and signed-in devices.</p>
-      </header>
-      <div className="settings-layout">
-        <nav aria-label="Settings sections">
-          <a href="#profile">Profile</a><a href="#profile-image">Profile image</a><a href="#email">Email</a><a href="#password">Password</a><a href="#sessions">Sessions</a>
-        </nav>
-        <div className="settings-sections">
-          <ProfileSettings user={session.user} onSaved={session.refreshProfile} />
-          <ProfileImageSettings />
-          <EmailSettings email={session.user.email} verified={session.user.emailVerified} />
-          <PasswordSettings />
-          <section className="settings-section" id="sessions">
-            <div className="settings-section-heading"><div><p className="eyebrow">Security</p><h2>Active sessions</h2></div><button className="danger-button" onClick={() => void leave(true)} type="button"><LogOut size={16} aria-hidden="true" /> Sign out everywhere</button></div>
-            {sessionsFailed ? <p className="form-message form-message-error" role="alert">Sessions could not be loaded.</p> : <SessionList sessions={sessions} onRevoke={async (id) => { await revokeSession(id); setSessions((items) => items.filter((item) => item.id !== id)); }} />}
-            <button className="secondary-button" onClick={() => void leave(false)} type="button">Sign out on this device</button>
-          </section>
-        </div>
-      </div>
-    </main>
-  );
+  return <section className="settings-section" id="sessions">
+    <div className="settings-section-heading"><div><p className="eyebrow">Security</p><h2>Active sessions</h2></div><button className="danger-button" onClick={() => void leave(true)} type="button"><LogOut size={16} aria-hidden="true" /> Sign out everywhere</button></div>
+    {sessionsFailed ? <p className="form-message form-message-error" role="alert">Sessions could not be loaded.</p> : <SessionList sessions={sessions} onRevoke={async (id) => { await revokeSession(id); setSessions((items) => items.filter((item) => item.id !== id)); }} />}
+    <button className="secondary-button" onClick={() => void leave(false)} type="button">Sign out on this device</button>
+  </section>;
+}
+
+function useAccountSettings() {
+  const workspace = useContext(AccountSettingsContext);
+  if (!workspace) throw new Error("Account settings must be rendered inside AccountSettingsLayout.");
+  return workspace;
 }
 
 function ProfileImageSettings() {

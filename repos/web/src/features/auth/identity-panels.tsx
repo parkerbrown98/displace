@@ -106,7 +106,7 @@ export function OidcCallbackPanel() {
 }
 
 export function SessionExpiredPanel() {
-  return <div className="auth-form"><p className="auth-intro">Your session ended. Sign in again to continue without losing your destination.</p><Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.settings)}`}>Sign in again</Link></div>;
+  return <div className="auth-form"><p className="auth-intro">Your session ended. Sign in again to continue without losing your destination.</p><Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.accountSettingsSection("sessions"))}`}>Sign in again</Link></div>;
 }
 
 function AuthSuccess({ children, title }: { children: React.ReactNode; title: string }) {

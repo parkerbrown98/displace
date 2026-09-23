@@ -45,8 +45,15 @@ test("returns from an expired session and manages signed-in devices", async ({ p
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page).toHaveURL(/\/settings\/sessions$/);
   await expect(page.getByRole("heading", { name: "Active sessions" })).toBeVisible();
+  const settingsNavigation = page.getByRole("navigation", { name: "Account settings sections" });
+  await settingsNavigation.getByRole("link", { name: "Profile", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/profile$/);
+  await expect(page.getByRole("heading", { name: "Profile", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Active sessions" })).not.toBeVisible();
+  await settingsNavigation.getByRole("link", { name: "Sessions" }).click();
+  await expect(page).toHaveURL(/\/settings\/sessions$/);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Active sessions" })).toBeVisible();
   await page.getByRole("button", { name: "Revoke Safari on iPhone" }).click();
