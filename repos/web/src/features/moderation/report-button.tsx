@@ -1,5 +1,6 @@
 "use client";
 
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Flag, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Select } from "@/components/ui/select";
@@ -39,15 +40,26 @@ export function ReportButton({ label, placeId, targetId, targetType }: { label: 
   }
 
   return <span className="report-control">
-    <button className="icon-button" onClick={() => { setOpen(true); setNotice(undefined); }} title={`Report ${label}`} type="button"><Flag size={15} /><span className="sr-only">Report {label}</span></button>
-    {open ? <span aria-labelledby={`report-title-${targetId}`} aria-modal="true" className="report-dialog" role="dialog">
-      <span className="report-dialog-heading"><strong id={`report-title-${targetId}`}>Report {label}</strong><button className="icon-button" onClick={() => setOpen(false)} title="Close report" type="button"><X size={15} /><span className="sr-only">Close</span></button></span>
-      <form onSubmit={submit}>
-        <label className="form-field">Reason<Select defaultValue="" name="reasonCode" options={[{ disabled: true, label: "Select reason", value: "" }, ...reportReasonCodes.map((reason) => ({ label: reason.replaceAll("_", " "), value: reason }))]} required /></label>
-        <label className="form-field">Details<textarea maxLength={4000} name="details" rows={4} /></label>
-        {notice ? <span className={`form-message${notice.error ? " form-message-error" : " form-message-success"}`} role={notice.error ? "alert" : "status"}>{notice.text}</span> : null}
-        <button className="primary-button" disabled={pending} type="submit"><Flag size={15} />{pending ? "Submitting..." : "Submit report"}</button>
-      </form>
-    </span> : null}
+    <DialogPrimitive.Root open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (nextOpen) setNotice(undefined); }}>
+      <DialogPrimitive.Trigger asChild>
+        <button className="icon-button" title={`Report ${label}`} type="button"><Flag size={15} /><span className="sr-only">Report {label}</span></button>
+      </DialogPrimitive.Trigger>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="report-dialog-overlay" />
+        <DialogPrimitive.Content className="report-dialog">
+          <span className="report-dialog-heading">
+            <DialogPrimitive.Title>Report {label}</DialogPrimitive.Title>
+            <DialogPrimitive.Close asChild><button className="icon-button" title="Close report" type="button"><X size={15} /><span className="sr-only">Close</span></button></DialogPrimitive.Close>
+          </span>
+          <DialogPrimitive.Description className="report-dialog-description">Send this item to the moderation team for review.</DialogPrimitive.Description>
+          <form onSubmit={submit}>
+            <label className="form-field">Reason<Select defaultValue="" name="reasonCode" options={[{ disabled: true, label: "Select reason", value: "" }, ...reportReasonCodes.map((reason) => ({ label: reason.replaceAll("_", " "), value: reason }))]} required /></label>
+            <label className="form-field">Details<textarea maxLength={4000} name="details" rows={4} /></label>
+            {notice ? <span className={`form-message${notice.error ? " form-message-error" : " form-message-success"}`} role={notice.error ? "alert" : "status"}>{notice.text}</span> : null}
+            <button className="primary-button" disabled={pending} type="submit"><Flag size={15} />{pending ? "Submitting..." : "Submit report"}</button>
+          </form>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   </span>;
 }

@@ -60,4 +60,17 @@ describe("ReportButton", () => {
     render(<ReportButton label="topic" placeId="place-id" targetId="topic-id" targetType="topic" />);
     expect(screen.queryByRole("button", { name: "Report topic" })).not.toBeInTheDocument();
   });
+
+  it("dismisses with Escape and restores focus to the report trigger", async () => {
+    const user = userEvent.setup();
+    render(<ReportButton label="topic" placeId="place-id" targetId="topic-id" targetType="topic" />);
+    const trigger = screen.getByRole("button", { name: "Report topic" });
+
+    await user.click(trigger);
+    expect(screen.getByRole("dialog", { name: "Report topic" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Report topic" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
 });
