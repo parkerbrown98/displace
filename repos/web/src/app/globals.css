@@ -243,6 +243,17 @@ textarea:focus-visible {
 	background: #e8e7df;
 }
 
+.destructive-icon-button {
+	color: #8c3528;
+	border: 1px solid #d9afa6;
+}
+
+.destructive-icon-button:hover {
+	color: white;
+	background: #a84635;
+	border-color: #a84635;
+}
+
 .place-list {
 	margin-top: 8px;
 }

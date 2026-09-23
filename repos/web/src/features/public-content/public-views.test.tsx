@@ -10,7 +10,7 @@ const sessionState = vi.hoisted(() => ({ authenticated: false }));
 
 vi.mock("@/features/auth/session-provider", () => ({
   useSession: () => sessionState.authenticated
-    ? { status: "authenticated", user: { id: "viewer-id" } }
+    ? { status: "authenticated", user: { id: "01990000-7000-8000-8000-000000000301" } }
     : { status: "anonymous", user: null },
 }));
 
@@ -87,6 +87,9 @@ describe("public content rendering", () => {
     const headingCard = screen.getByRole("heading", { name: topic.title }).closest("header");
     expect(headingCard).not.toBeNull();
     expect(within(headingCard!).getByRole("region", { name: "Topic actions" })).toBeInTheDocument();
+    const deleteButton = within(headingCard!).getByTitle("Delete topic");
+    expect(deleteButton).toHaveClass("icon-button", "destructive-icon-button");
+    expect(deleteButton.querySelector("svg")).not.toBeNull();
     sessionState.authenticated = false;
   });
 });

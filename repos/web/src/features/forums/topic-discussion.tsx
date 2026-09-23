@@ -117,7 +117,7 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
                 <button aria-pressed={topic.status === "locked"} className="icon-button" onClick={() => void setTopicLock(place.id, topic.id, topic.status !== "locked").then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Lock status could not be changed.")))} title={topic.status === "locked" ? "Unlock topic" : "Lock topic"} type="button"><Lock size={16} /></button>
                 <button aria-pressed={topic.isPinned} className="icon-button" onClick={() => void setTopicPin(place.id, topic.id, !topic.isPinned).then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Pin status could not be changed.")))} title={topic.isPinned ? "Unpin topic" : "Pin topic"} type="button"><Pin size={16} /></button>
               </> : null}
-              {isTopicAuthor || canModerate ? <button className="icon-button danger-button" onClick={() => void removeTopic()} title="Delete topic" type="button"><Trash2 size={16} /></button> : null}
+              {isTopicAuthor || canModerate ? <button className="icon-button destructive-icon-button" onClick={() => void removeTopic()} title="Delete topic" type="button"><Trash2 aria-hidden="true" size={16} /></button> : null}
             </section>
           ) : null}
         </div>
