@@ -73,6 +73,20 @@ describe('places lifecycle', () => {
     await assets.markReady(banner.id, 'image/png', 'skipped', {}, []);
     await assets.setPlaceImage(openPlace.id, 'banner', banner.id, now);
 
+    const iconReservation = await assets.reserveIntent({
+      expectedMimeType: 'image/png',
+      expectedSizeBytes: 1_024,
+      expiresAt: new Date(now.getTime() + 15 * 60 * 1_000),
+      objectKey: `uploads/${openPlace.id}/icon`,
+      originalFileName: 'icon.png',
+      placeId: openPlace.id,
+      userId: owner.id,
+    }, { placeBytes: 10_000, userBytes: 10_000 }, now);
+    if (!iconReservation.intent) throw new Error('Expected an icon upload intent.');
+    const icon = await assets.completeIntent(iconReservation.intent.id, openPlace.id, now);
+    await assets.markReady(icon.id, 'image/png', 'skipped', {}, []);
+    await assets.setPlaceImage(openPlace.id, 'icon', icon.id, now);
+
     const anonymousRead = await app.inject({
       method: 'GET',
       url: `/api/v1/places/${openPlace.slug}`,
@@ -96,6 +110,14 @@ describe('places lifecycle', () => {
     expect(publicBanner.statusCode).toBe(307);
     expect(publicBanner.headers['cross-origin-resource-policy']).toBe('cross-origin');
     expect(publicBanner.headers.location).toContain('banner');
+
+    const publicIcon = await app.inject({
+      method: 'GET',
+      url: `/api/v1/public/places/${openPlace.id}/images/icon`,
+    });
+    expect(publicIcon.statusCode).toBe(307);
+    expect(publicIcon.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(publicIcon.headers.location).toContain('icon');
 
     const anonymousContext = await app.inject({
       method: 'GET',

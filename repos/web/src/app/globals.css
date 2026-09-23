@@ -281,6 +281,11 @@ textarea:focus-visible {
 .place-switcher-mark-1 { background: var(--coral); }
 .place-switcher-mark-2 { color: var(--ink); background: var(--mustard); }
 
+.place-icon-image {
+	display: block;
+	object-fit: cover;
+}
+
 .profile-row {
 	display: flex;
 	align-items: center;

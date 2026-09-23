@@ -66,6 +66,17 @@ export class PublicPlaceImagesController {
   @Header('Cross-Origin-Resource-Policy', 'cross-origin')
   @Redirect(undefined, HttpStatus.TEMPORARY_REDIRECT)
   async getBanner(@Param('placeId', UUID_V7_PIPE) placeId: string) {
+    return this.getImage(placeId, 'banner');
+  }
+
+  @Get('icon')
+  @Header('Cross-Origin-Resource-Policy', 'cross-origin')
+  @Redirect(undefined, HttpStatus.TEMPORARY_REDIRECT)
+  async getIcon(@Param('placeId', UUID_V7_PIPE) placeId: string) {
+    return this.getImage(placeId, 'icon');
+  }
+
+  private async getImage(placeId: string, kind: 'banner' | 'icon') {
     const place = await this.places.findByIdentifier(placeId);
     const configuredSlug = this.config.get('SINGLE_PLACE_SLUG', { infer: true });
     if (
@@ -75,11 +86,11 @@ export class PublicPlaceImagesController {
       (this.config.get('SINGLE_PLACE_MODE', { infer: true }) &&
         place.slug !== configuredSlug)
     ) {
-      throw new NotFoundException('Place banner was not found.');
+      throw new NotFoundException(`Place ${kind} was not found.`);
     }
-    const reference = await this.assets.getPlaceImage(place.id, 'banner');
+    const reference = await this.assets.getPlaceImage(place.id, kind);
     if (!reference.assetId) {
-      throw new NotFoundException('Place banner was not found.');
+      throw new NotFoundException(`Place ${kind} was not found.`);
     }
     const download = await this.assets.createDownloadUrl(
       place.id,

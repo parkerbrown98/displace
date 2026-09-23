@@ -13,6 +13,7 @@ import { routes } from "@/lib/routes";
 import { PlaceMembershipActions } from "./place-access";
 import { getPlaceContext } from "./place-client";
 import type { PlaceContract } from "./place-contract";
+import { PlaceIcon } from "./place-icon";
 
 type PlaceSection = "chat" | "forums" | "members" | "moderation" | "settings" | "voice";
 
@@ -38,7 +39,7 @@ export function PlaceForumHeader({
   return (
     <header className="place-toolbar">
       <div className="place-toolbar-identity">
-        <span className="place-toolbar-mark" aria-hidden="true">{initials(place.name)}</span>
+        <PlaceIcon className="place-toolbar-mark" place={place} />
         <div className="place-toolbar-title"><p className="eyebrow">{place.visibility} community</p><h1>{place.name}</h1></div>
       </div>
       <nav className="place-toolbar-nav" aria-label={`${place.name} navigation`}>
@@ -146,8 +147,4 @@ function ChatNavLink({
 
 function PlaceNavLink({ active, children, href }: { active: boolean; children: React.ReactNode; href: string }) {
   return <Link aria-current={active ? "page" : undefined} className={active ? "active" : undefined} href={href}>{children}</Link>;
-}
-
-function initials(value: string): string {
-  return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }

@@ -97,6 +97,12 @@ test("uploads and assigns a place image through object storage", async ({ page, 
   expect(directUploadResponse.status(), await directUploadResponse.text()).toBeLessThan(300);
 
   await expect(uploader.getByRole("status")).toContainText("Image ready", { timeout: 30_000 });
+  const headerIcon = page.locator(".place-toolbar-identity > img.place-toolbar-mark");
+  const switcherIcon = page.locator(`.place-list a[href="/places/${community.placeSlug}"] img.place-switcher-mark`);
+  await expect(headerIcon).toBeVisible();
+  await expect(switcherIcon).toHaveCount(1);
+  await expect.poll(() => headerIcon.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  await expect.poll(() => switcherIcon.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   const image = uploader.getByRole("img", { name: "Selected upload preview" });
   await expect(image).toBeVisible();
   await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);

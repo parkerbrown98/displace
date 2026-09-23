@@ -16,6 +16,7 @@ import { ForumSettings } from "@/features/forums/forum-settings";
 import { routes } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
 import { PlaceForumHeader } from "./place-forum-header";
+import { notifyPlaceIconUpdated } from "./place-icon";
 import {
   archivePlace,
   createPlace,
@@ -126,7 +127,10 @@ function IdentityForm({ context, onForbidden, onSaved }: { context: PlaceContext
     finally { setPending(false); }
   }
   async function assignImage(kind: "banner" | "icon", asset: AssetContract) {
-    try { await setPlaceImage(context.place.id, kind, asset.id); }
+    try {
+      await setPlaceImage(context.place.id, kind, asset.id);
+      if (kind === "icon") notifyPlaceIconUpdated(context.place.id);
+    }
     catch (error) { await onForbidden(error); throw error; }
   }
   const canUpload = context.viewer.permissions.includes("upload.create");

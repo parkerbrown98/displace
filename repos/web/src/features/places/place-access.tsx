@@ -10,6 +10,7 @@ import { ApiError } from "@/lib/api/problem-details";
 import { routes } from "@/lib/routes";
 import type { PlaceContextContract, PlaceContract } from "./place-contract";
 import { acceptPlaceInvite, getPlaceContext, joinPlace, leavePlace, listMyPlaces, singlePlaceSlug } from "./place-client";
+import { PlaceIcon } from "./place-icon";
 
 export function usePlaceWorkspace(placeId: string) {
   const session = useSession();
@@ -96,7 +97,7 @@ export function PlaceMembershipActions({ place }: { place: PlaceContract }) {
 
 export function PlaceSwitcher({ activeSlug }: { activeSlug?: string }) {
   const session = useSession();
-  const [places, setPlaces] = useState<Array<{ name: string; slug: string }>>([]);
+  const [places, setPlaces] = useState<PlaceContract[]>([]);
   const configuredSlug = singlePlaceSlug();
   useEffect(() => {
     if (session.status !== "authenticated") return;
@@ -106,7 +107,7 @@ export function PlaceSwitcher({ activeSlug }: { activeSlug?: string }) {
   }, [session.status]);
   const visible = places.filter((place) => !configuredSlug || place.slug === configuredSlug);
   return <div className="place-list">{visible.map((place, index) => <Link className={`place-item${place.slug === activeSlug ? " active" : ""}`} href={routes.place(place.slug)} key={place.slug}>
-    <span className={`place-switcher-mark place-switcher-mark-${index % 3}`} aria-hidden="true">{initials(place.name)}</span><span>{place.name}</span>
+    <PlaceIcon className={`place-switcher-mark place-switcher-mark-${index % 3}`} place={place} /><span>{place.name}</span>
   </Link>)}</div>;
 }
 
@@ -129,8 +130,4 @@ export function InviteAcceptance({ placeSlug, token }: { placeSlug: string; toke
 export function placeErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return error.problem.detail ?? error.problem.title;
   return fallback;
-}
-
-function initials(value: string): string {
-  return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
