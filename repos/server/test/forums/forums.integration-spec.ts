@@ -242,7 +242,13 @@ describe('forum lifecycle', () => {
 
     const postsResponse = await request(member, 'GET', `/places/${place.id}/topics/${topic.id}/posts?limit=1`);
     expect(postsResponse.statusCode).toBe(200);
-    const firstPost = postsResponse.json<{ items: Array<{ id: string; sanitizedHtml: string; version: number }> }>().items[0]!;
+    const firstPost = postsResponse.json<{ items: Array<{ author: { displayName: string; handle: string; id: string; joinedAt: string }; id: string; sanitizedHtml: string; version: number }> }>().items[0]!;
+    expect(firstPost.author).toMatchObject({
+      displayName: expect.any(String),
+      handle: member.handle,
+      id: member.id,
+      joinedAt: expect.any(String),
+    });
     expect(firstPost.sanitizedHtml).toContain('&lt;welcome&gt;');
     expect(firstPost.version).toBe(1);
 
@@ -263,7 +269,8 @@ describe('forum lifecycle', () => {
       { 'idempotency-key': replyKey },
     );
     expect(replyResponse.statusCode).toBe(201);
-    const reply = replyResponse.json<{ id: string; reactions: unknown[]; version: number }>();
+    const reply = replyResponse.json<{ author: { handle: string; id: string }; id: string; reactions: unknown[]; version: number }>();
+    expect(reply.author).toEqual(expect.objectContaining({ handle: member.handle, id: member.id }));
     expect(reply.reactions).toEqual([]);
     const replyReplay = await request(
       member,
@@ -279,7 +286,7 @@ describe('forum lifecycle', () => {
       expectedVersion: 1,
     });
     expect(editResponse.statusCode).toBe(200);
-    expect(editResponse.json()).toMatchObject({ plainText: 'Edited post', reactions: [], version: 2 });
+    expect(editResponse.json()).toMatchObject({ author: { handle: member.handle, id: member.id }, plainText: 'Edited post', reactions: [], version: 2 });
     const staleEdit = await request(member, 'PATCH', `/places/${place.id}/posts/${reply.id}`, {
       document: document('Stale edit'),
       expectedVersion: 1,

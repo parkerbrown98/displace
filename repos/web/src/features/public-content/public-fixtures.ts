@@ -86,6 +86,12 @@ export const postPageFixture: PostPageContract = {
       id: "01990000-7000-8000-8000-000000000401",
       topicId: publicIds.weeklyTopic,
       authorUserId: "01990000-7000-8000-8000-000000000301",
+      author: {
+        displayName: "Mara Vale",
+        handle: "mara_v",
+        id: "01990000-7000-8000-8000-000000000301",
+        joinedAt: "2025-06-12T09:00:00.000Z",
+      },
       document: {
         type: "doc",
         version: 1,
@@ -112,6 +118,12 @@ export const postPageFixture: PostPageContract = {
       id: "01990000-7000-8000-8000-000000000402",
       topicId: publicIds.weeklyTopic,
       authorUserId: "01990000-7000-8000-8000-000000000302",
+      author: {
+        displayName: "Theo Grant",
+        handle: "theo_g",
+        id: "01990000-7000-8000-8000-000000000302",
+        joinedAt: "2025-08-03T11:20:00.000Z",
+      },
       document: null,
       sanitizedHtml: null,
       plainText: null,

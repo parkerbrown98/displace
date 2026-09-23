@@ -100,22 +100,35 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
 
   return (
     <>
-      {session.status === "authenticated" ? (
-        <section className="topic-member-toolbar" aria-label="Topic actions">
-          <button aria-pressed={followed} className="secondary-button" onClick={() => void toggleFollow()} type="button"><Star size={16} />{followed ? "Following" : "Follow"}</button>
-          <button aria-pressed={saved} className="secondary-button" onClick={() => void toggleSave()} type="button"><Bookmark size={16} />{saved ? "Saved" : "Save"}</button>
-          <button className="secondary-button" onClick={() => void markTopicUnread(place.id, topic.id)} type="button"><EyeOff size={16} />Mark unread</button>
-          <ReportButton label="topic" placeId={place.id} targetId={topic.id} targetType="topic" />
-          {isTopicAuthor || canModerate ? <button className="icon-button" onClick={() => setEditingTitle((value) => !value)} title="Edit topic title" type="button"><Edit3 size={16} /></button> : null}
-          {canModerate ? <>
-            <button aria-pressed={topic.status === "locked"} className="icon-button" onClick={() => void setTopicLock(place.id, topic.id, topic.status !== "locked").then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Lock status could not be changed.")))} title={topic.status === "locked" ? "Unlock topic" : "Lock topic"} type="button"><Lock size={16} /></button>
-            <button aria-pressed={topic.isPinned} className="icon-button" onClick={() => void setTopicPin(place.id, topic.id, !topic.isPinned).then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Pin status could not be changed.")))} title={topic.isPinned ? "Unpin topic" : "Pin topic"} type="button"><Pin size={16} /></button>
-          </> : null}
-          {isTopicAuthor || canModerate ? <button className="icon-button danger-button" onClick={() => void removeTopic()} title="Delete topic" type="button"><Trash2 size={16} /></button> : null}
-        </section>
-      ) : null}
-      {editingTitle ? <form className="topic-title-form" onSubmit={renameTopic}><label className="form-field">Topic title<input defaultValue={topic.title} maxLength={300} name="title" required /></label><button className="primary-button" type="submit">Save title</button></form> : null}
-      {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
+      <header className="topic-header">
+        <div className="topic-header-top">
+          <div className="topic-flags">
+            {topic.isPinned ? <span><Pin size={14} aria-hidden="true" /> Pinned</span> : null}
+            {topic.status === "locked" ? <span><Lock size={14} aria-hidden="true" /> Locked</span> : null}
+          </div>
+          {session.status === "authenticated" ? (
+            <section className="topic-member-toolbar" aria-label="Topic actions">
+              <button aria-pressed={followed} className="secondary-button" onClick={() => void toggleFollow()} type="button"><Star size={16} />{followed ? "Following" : "Follow"}</button>
+              <button aria-pressed={saved} className="secondary-button" onClick={() => void toggleSave()} type="button"><Bookmark size={16} />{saved ? "Saved" : "Save"}</button>
+              <button className="secondary-button" onClick={() => void markTopicUnread(place.id, topic.id)} type="button"><EyeOff size={16} />Mark unread</button>
+              <ReportButton label="topic" placeId={place.id} targetId={topic.id} targetType="topic" />
+              {isTopicAuthor || canModerate ? <button className="icon-button" onClick={() => setEditingTitle((value) => !value)} title="Edit topic title" type="button"><Edit3 size={16} /></button> : null}
+              {canModerate ? <>
+                <button aria-pressed={topic.status === "locked"} className="icon-button" onClick={() => void setTopicLock(place.id, topic.id, topic.status !== "locked").then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Lock status could not be changed.")))} title={topic.status === "locked" ? "Unlock topic" : "Lock topic"} type="button"><Lock size={16} /></button>
+                <button aria-pressed={topic.isPinned} className="icon-button" onClick={() => void setTopicPin(place.id, topic.id, !topic.isPinned).then(setTopic).catch((cause) => setError(placeErrorMessage(cause, "Pin status could not be changed.")))} title={topic.isPinned ? "Unpin topic" : "Pin topic"} type="button"><Pin size={16} /></button>
+              </> : null}
+              {isTopicAuthor || canModerate ? <button className="icon-button danger-button" onClick={() => void removeTopic()} title="Delete topic" type="button"><Trash2 size={16} /></button> : null}
+            </section>
+          ) : null}
+        </div>
+        <h1>{topic.title}</h1>
+        <div className="topic-summary">
+          <span>{topic.replyCount} replies</span><span>{formatCount(topic.viewCount)} views</span>
+          <time dateTime={topic.createdAt}>{formatPublicDate(topic.createdAt)}</time>
+        </div>
+        {editingTitle ? <form className="topic-title-form" onSubmit={renameTopic}><label className="form-field">Topic title<input defaultValue={topic.title} maxLength={300} name="title" required /></label><button className="primary-button" type="submit">Save title</button></form> : null}
+        {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
+      </header>
       <section className="post-list" aria-label="Posts">
         {posts.map((post, index) => <DiscussionPost canModerate={canModerate} canUpload={canUpload} key={post.id} number={index + 1} onChange={(next) => setPosts((current) => current.map((item) => item.id === next.id ? next : item))} placeId={place.id} post={post} />)}
       </section>
@@ -133,6 +146,7 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
 
 function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, post }: { canModerate: boolean; canUpload: boolean; number: number; onChange: (post: PostContract) => void; placeId: string; post: PostContract }) {
   const session = useSession();
+  const author = post.author;
   const [editing, setEditing] = useState(false);
   const [document, setDocument] = useState<RichTextDocumentContract>();
   const [editorEmpty, setEditorEmpty] = useState(false);
@@ -167,8 +181,16 @@ function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, pos
   return (
     <article className={`post${post.isDeleted ? " post-deleted" : ""}`}>
       <aside className="post-profile">
-        <Avatar initials={post.isDeleted ? "-" : "CM"} size="small" />
-        <strong>{post.isDeleted ? "Deleted member" : "Community member"}</strong>
+        <Avatar initials={post.isDeleted ? "-" : author ? initials(author.displayName) : "CM"} size="small" />
+        <div className="post-profile-details">
+          {post.isDeleted ? <strong>Deleted member</strong> : <>
+            {author ? <>
+              <Link className="post-profile-name" href={routes.member(author.handle)}><strong>{author.displayName}</strong></Link>
+              <span className="post-profile-handle">@{author.handle}</span>
+              <time dateTime={author.joinedAt}>Joined {new Date(author.joinedAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })}</time>
+            </> : <strong>Community member</strong>}
+          </>}
+        </div>
       </aside>
       <div className="post-content">
         <header className="post-content-header"><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time><a href={`#post-${post.id}`} id={`post-${post.id}`} aria-label={`Post ${number}`}>#{number}</a></header>
@@ -186,4 +208,16 @@ function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, pos
       </div>
     </article>
   );
+}
+
+function initials(value: string): string {
+  return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+function formatCount(value: number): string {
+  return new Intl.NumberFormat("en", { notation: value >= 1_000 ? "compact" : "standard" }).format(value);
+}
+
+function formatPublicDate(value: string): string {
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value));
 }

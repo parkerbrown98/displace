@@ -340,13 +340,20 @@ export class ForumsService {
     );
     const hasMore = records.length > query.limit;
     const pageRecords = records.slice(0, query.limit);
-    const reactionSummaries = await this.forums.listReactionSummaries(
-      placeId,
-      pageRecords.map((post) => post.id),
-      userId,
-    );
+    const [reactionSummaries, authors] = await Promise.all([
+      this.forums.listReactionSummaries(
+        placeId,
+        pageRecords.map((post) => post.id),
+        userId,
+      ),
+      this.forums.listPostAuthors(
+        pageRecords.map((post) => post.authorUserId),
+      ),
+    ]);
+    const authorsById = new Map(authors.map((author) => [author.id, author]));
     const items = pageRecords.map((post) => ({
       ...this.toPost(post),
+      author: this.requirePostAuthor(authorsById.get(post.authorUserId)),
       reactions: reactionSummaries
         .filter((item) => item.postId === post.id)
         .map(({ count, reacted, reaction }) => ({ count, reacted, reaction })),
@@ -385,7 +392,7 @@ export class ForumsService {
       idempotency,
       now,
     );
-    if (replay !== undefined) return replay;
+    if (replay !== undefined) return this.withPostAuthor(replay);
     const topic = await this.requireTopic(placeId, topicId);
     await this.requireWrite(placeId, topic.forumId, userId, 'post.create');
     const result = await this.forums.reply(
@@ -402,7 +409,7 @@ export class ForumsService {
       idempotency,
       now,
     );
-    return result;
+    return this.withPostAuthor(result);
   }
 
   async updateTopic(
@@ -644,13 +651,17 @@ export class ForumsService {
         record.post.id,
       ]);
     }
-    const reactions = (
-      await Promise.all(
+    const [reactions, authors] = await Promise.all([
+      Promise.all(
         [...postIdsByPlace].map(([placeId, postIds]) =>
           this.forums.listReactionSummaries(placeId, postIds, userId),
         ),
-      )
-    ).flat();
+      ).then((items) => items.flat()),
+      this.forums.listPostAuthors(
+        readable.map((record) => record.post.authorUserId),
+      ),
+    ]);
+    const authorsById = new Map(authors.map((author) => [author.id, author]));
     const last = page.at(-1);
     return {
       items: readable.map((record) => ({
@@ -659,6 +670,9 @@ export class ForumsService {
         placeSlug: record.placeSlug,
         post: {
           ...this.toPost(record.post),
+          author: this.requirePostAuthor(
+            authorsById.get(record.post.authorUserId),
+          ),
           reactions: reactions
             .filter((item) => item.postId === record.post.id)
             .map(({ count, reacted, reaction }) => ({
@@ -1096,19 +1110,37 @@ export class ForumsService {
       version: number;
     },
   >(placeId: string, post: T, userId: string) {
-    const reactions = await this.forums.listReactionSummaries(
-      placeId,
-      [post.id],
-      userId,
-    );
+    const [reactions, authors] = await Promise.all([
+      this.forums.listReactionSummaries(placeId, [post.id], userId),
+      this.forums.listPostAuthors([post.authorUserId]),
+    ]);
     return {
       ...this.toPost(post),
+      author: this.requirePostAuthor(authors[0]),
       reactions: reactions.map(({ count, reacted, reaction }) => ({
         count,
         reacted,
         reaction,
       })),
     };
+  }
+
+  private async withPostAuthor<T extends Record<string, unknown>>(post: T) {
+    const authorUserId = post.authorUserId;
+    if (typeof authorUserId !== 'string')
+      throw new Error('Post response is missing its author.');
+    const [author] = await this.forums.listPostAuthors([authorUserId]);
+    return { ...post, author: this.requirePostAuthor(author) };
+  }
+
+  private requirePostAuthor(author: {
+    displayName: string;
+    handle: string;
+    id: string;
+    joinedAt: Date;
+  } | undefined) {
+    if (!author) throw new Error('Post author was not found.');
+    return author;
   }
 
   private requestHash(value: unknown): string {

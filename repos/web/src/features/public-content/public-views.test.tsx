@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { placeContractFixture } from "@/features/places/place-fixtures";
 import { postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
@@ -6,8 +6,12 @@ import { RichText } from "./rich-text";
 import { TopicView } from "./public-views";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }) }));
+const sessionState = vi.hoisted(() => ({ authenticated: false }));
+
 vi.mock("@/features/auth/session-provider", () => ({
-  useSession: () => ({ status: "anonymous", user: null }),
+  useSession: () => sessionState.authenticated
+    ? { status: "authenticated", user: { id: "viewer-id" } }
+    : { status: "anonymous", user: null },
 }));
 
 describe("public content rendering", () => {
@@ -58,5 +62,31 @@ describe("public content rendering", () => {
     expect(screen.getByText("This post was removed.")).toBeInTheDocument();
     expect(screen.queryByText("deterministic previews")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sign in to join" })).not.toBeInTheDocument();
+  });
+
+  it("renders a post author's public profile summary", () => {
+    const post = postPageFixture.items[0]!;
+    render(
+      <TopicView
+        place={placeContractFixture}
+        posts={{ items: [post] }}
+        topic={topicPageFixture.items.find((topic) => topic.id === publicIds.weeklyTopic)!}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: post.author.displayName })).toHaveAttribute("href", `/members/${post.author.handle}`);
+    expect(screen.getByText(`@${post.author.handle}`)).toBeInTheDocument();
+    expect(screen.getByText(/Joined/)).toBeInTheDocument();
+  });
+
+  it("keeps authenticated topic controls inside the heading card", () => {
+    sessionState.authenticated = true;
+    const topic = topicPageFixture.items.find((item) => item.id === publicIds.weeklyTopic)!;
+    render(<TopicView place={placeContractFixture} posts={postPageFixture} topic={topic} />);
+
+    const headingCard = screen.getByRole("heading", { name: topic.title }).closest("header");
+    expect(headingCard).not.toBeNull();
+    expect(within(headingCard!).getByRole("region", { name: "Topic actions" })).toBeInTheDocument();
+    sessionState.authenticated = false;
   });
 });

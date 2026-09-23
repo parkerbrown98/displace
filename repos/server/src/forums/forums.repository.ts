@@ -724,6 +724,19 @@ export class ForumsRepository {
       .limit(Math.min(Math.max(limit, 1), 100) + 1);
   }
 
+  async listPostAuthors(userIds: string[]) {
+    if (userIds.length === 0) return [];
+    return this.database
+      .select({
+        displayName: users.displayName,
+        handle: users.handle,
+        id: users.id,
+        joinedAt: users.createdAt,
+      })
+      .from(users)
+      .where(inArray(users.id, [...new Set(userIds)]));
+  }
+
   async reply(
     placeId: string,
     topicId: string,

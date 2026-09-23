@@ -71,6 +71,12 @@ export interface PostContract {
   id: string;
   topicId: string;
   authorUserId: string;
+  author: {
+    displayName: string;
+    handle: string;
+    id: string;
+    joinedAt: string;
+  };
   document: RichTextDocumentContract | null;
   sanitizedHtml: string | null;
   plainText: string | null;

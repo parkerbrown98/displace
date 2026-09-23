@@ -140,17 +140,6 @@ export function TopicView({
         <Link href={routes.place(place.slug)}>Forums</Link>
         {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}
       </nav>
-      <header className="topic-header">
-        <div className="topic-flags">
-          {topic.isPinned ? <span><Pin size={14} aria-hidden="true" /> Pinned</span> : null}
-          {topic.status === "locked" ? <span><Lock size={14} aria-hidden="true" /> Locked</span> : null}
-        </div>
-        <h1>{topic.title}</h1>
-        <div className="topic-summary">
-          <span>{topic.replyCount} replies</span><span>{formatCount(topic.viewCount)} views</span>
-          <time dateTime={topic.createdAt}>{formatPublicDate(topic.createdAt)}</time>
-        </div>
-      </header>
       <TopicDiscussion initialPosts={posts} initialTopic={topic} place={place} />
       <CursorPagination nextCursor={posts.nextCursor} parameters={cursor ? { from: cursor } : undefined} path={routes.topic(place.slug, topic.id)} />
     </main>

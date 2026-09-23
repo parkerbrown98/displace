@@ -286,6 +286,17 @@ export class PostReactionSummaryDto {
   reaction: string;
 }
 
+export class PostAuthorDto {
+  @ApiProperty()
+  id: string;
+  @ApiProperty()
+  displayName: string;
+  @ApiProperty()
+  handle: string;
+  @ApiProperty({ format: 'date-time' })
+  joinedAt: Date;
+}
+
 export class PostDto {
   @ApiProperty()
   id: string;
@@ -293,6 +304,8 @@ export class PostDto {
   topicId: string;
   @ApiProperty()
   authorUserId: string;
+  @ApiProperty({ type: PostAuthorDto })
+  author: PostAuthorDto;
   @ApiProperty({ type: 'object', additionalProperties: true, nullable: true })
   document: RichTextDocument | null;
   @ApiProperty({ nullable: true })
