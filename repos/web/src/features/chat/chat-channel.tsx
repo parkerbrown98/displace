@@ -1,9 +1,8 @@
 "use client";
 
-import { Edit3, Hash, Send, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { AudioLines, Edit3, Hash, MessageCircle, Send, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { StatusPanel } from "@/components/ui/status-panel";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
 import { ReportButton } from "@/features/moderation/report-button";
@@ -16,35 +15,54 @@ import { routes } from "@/lib/routes";
 import { deleteChatMessage, editChatMessage, listChatChannels, listChatMessages, markChatRead, sendChatMessage } from "./chat-client";
 import type { ChatChannelContract, ChatMessageContract, ChatMessagePageContract } from "./chat-contracts";
 
-export function ChatChannel({ channelSlug, placeSlug }: { channelSlug: string; placeSlug: string }) {
-  return <PlaceWorkspaceGate placeId={placeSlug} returnTo={routes.chat(placeSlug, channelSlug)}>{({ context }) => <ChatWorkspace channelSlug={channelSlug} place={context.place} />}</PlaceWorkspaceGate>;
-}
-
 export function LiveExperience({ placeSlug }: { placeSlug: string }) {
   return <PlaceWorkspaceGate placeId={placeSlug} returnTo={routes.live(placeSlug)}>{({ context }) => <LiveWorkspace place={context.place} />}</PlaceWorkspaceGate>;
 }
 
 function LiveWorkspace({ place }: { place: PlaceContract }) {
   const [channels, setChannels] = useState<ChatChannelContract[]>();
+  const [selectedChannelId, setSelectedChannelId] = useState<string>();
+  const [channelError, setChannelError] = useState<string>();
 
   useEffect(() => {
     let active = true;
-    void listChatChannels(place.id).then((items) => { if (active) setChannels(items); }).catch(() => { if (active) setChannels([]); });
+    void listChatChannels(place.id).then((items) => {
+      if (!active) return;
+      setChannels(items);
+      setSelectedChannelId((current) => items.some((channel) => channel.id === current) ? current : items[0]?.id);
+    }).catch((cause) => {
+      if (!active) return;
+      setChannels([]);
+      setChannelError(placeErrorMessage(cause, "Text channels could not be loaded."));
+    });
     return () => { active = false; };
   }, [place.id]);
 
-  if (!channels) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading live spaces" /></main>;
-  if (channels[0]) return <ChatWorkspace channelSlug={channels[0].slug} place={place} />;
+  const selectedChannel = channels?.find((channel) => channel.id === selectedChannelId) ?? channels?.[0];
 
   return <main className="public-main place-workspace-page live-page" id="main-content">
     <PlaceForumHeader active="live" currentSection={{ href: routes.live(place.slug), label: "Live" }} place={place} />
-    <section className="live-voice-only" aria-label="Live workspace"><PlaceVoicePanel place={place} /></section>
+    <section className="live-studio" aria-label="Live workspace">
+      <header className="live-studio-header">
+        <div><span className="live-pulse" aria-hidden="true" /><div><p className="eyebrow">Now together</p><h2>Live</h2></div></div>
+        <div className="live-studio-summary"><span><MessageCircle size={15} />{channels?.length ?? 0} text</span><span><AudioLines size={15} />Audio</span></div>
+      </header>
+      <div className="live-studio-body">
+        <aside className="live-channel-rail" aria-label="Text channels">
+          <div className="live-rail-label"><MessageCircle size={15} /><span>Text channels</span></div>
+          <div className="live-channel-buttons">
+            {!channels ? <span className="live-rail-loading">Loading channels...</span> : channels.map((channel) => <button aria-pressed={channel.id === selectedChannel?.id} className="live-channel-button" key={channel.id} onClick={() => setSelectedChannelId(channel.id)} type="button"><Hash size={15} /><span>{channel.name}</span></button>)}
+          </div>
+        </aside>
+        {selectedChannel ? <ChatConversation channel={selectedChannel} key={selectedChannel.id} place={place} /> : <section className="chat-conversation chat-conversation-empty" aria-label="Text chat"><StatusPanel description={channelError ?? "No text channels are available to your current roles."} title="Text chat unavailable" /></section>}
+        <PlaceVoicePanel place={place} />
+      </div>
+    </section>
   </main>;
 }
 
-function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: PlaceContract }) {
+function ChatConversation({ channel, place }: { channel: ChatChannelContract; place: PlaceContract }) {
   const session = useSession();
-  const [channels, setChannels] = useState<ChatChannelContract[]>([]);
   const [page, setPage] = useState<ChatMessagePageContract>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -57,16 +75,15 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
 
   useEffect(() => {
     let active = true;
-    void Promise.all([listChatChannels(place.id), listChatMessages(place.id, channelSlug)]).then(([nextChannels, nextPage]) => {
+    void listChatMessages(place.id, channel.slug).then((nextPage) => {
       if (!active) return;
-      setChannels(nextChannels);
       setMessages(nextPage.items);
       setPage(nextPage);
     }).catch((cause) => {
       if (active) setError(placeErrorMessage(cause, "The chat history could not be loaded."));
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [channelSlug, place.id]);
+  }, [channel.slug, place.id]);
 
   useEffect(() => {
     if (!page || session.status !== "authenticated") return;
@@ -151,22 +168,15 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
     catch (cause) { toast.error(placeErrorMessage(cause, "The message could not be deleted.")); }
   }
 
-  if (loading) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading chat" /></main>;
-  if (!page) return <main className="public-main standalone-public-state" id="main-content"><StatusPanel tone="error" title="Chat unavailable" description={error ?? "This channel is unavailable."} action={<Link className="secondary-button" href={routes.place(place.slug)}>Return to place</Link>} /></main>;
+  if (loading) return <section className="chat-conversation chat-conversation-empty" aria-label={`${channel.name} chat`}><p className="live-loading-copy">Opening #{channel.name}...</p></section>;
+  if (!page) return <section className="chat-conversation chat-conversation-empty" aria-label={`${channel.name} chat`}><StatusPanel tone="error" title="Chat unavailable" description={error ?? "This channel is unavailable."} /></section>;
 
-  return <main className="public-main place-workspace-page live-page chat-page" id="main-content">
-    <PlaceForumHeader active="live" currentSection={{ href: routes.live(place.slug), label: "Live" }} place={place} />
-    <section className="live-layout" aria-label="Live workspace">
-      <aside className="chat-channel-list"><p className="eyebrow">Channels</p>{channels.map((channel) => <Link className={`chat-channel-link${channel.id === page.channel.id ? " active" : ""}`} href={routes.chat(place.slug, channel.slug)} key={channel.id}><Hash size={15} />{channel.name}</Link>)}</aside>
-      <section className="chat-conversation" aria-label={`${page.channel.name} chat`}>
-        <header className="chat-heading"><div><p className="eyebrow">Live discussion</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status">{realtimeConnected ? "Live" : "Connecting"}</span></header>
+  return <section className="chat-conversation" aria-label={`${page.channel.name} chat`}>
+        <header className="chat-heading"><div><p className="eyebrow">Text room</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status"><span aria-hidden="true" />{realtimeConnected ? "Live" : "Connecting"}</span></header>
         <div className="chat-message-list">{messages.length ? messages.map((message) => <ChatMessage canManage={page.permissions.canManage} currentUserId={session.user?.id} editing={editingId === message.id} key={message.id} message={message} onCancel={() => setEditingId(undefined)} onDelete={() => void remove(message.id)} onEdit={() => setEditingId(message.id)} onSave={saveEdit} placeId={place.id} />) : <p className="chat-empty">No messages yet. Start the conversation.</p>}</div>
         {typingUsers.length ? <p className="chat-typing" role="status">Someone is typing...</p> : null}
         {page.permissions.canSend ? <form className="chat-composer" onSubmit={send}><label className="sr-only" htmlFor="chat-message">Message {page.channel.name}</label><textarea id="chat-message" maxLength={10_000} onChange={(event) => updateDraft(event.target.value)} placeholder={`Message #${page.channel.name}`} value={draft} /><button className="icon-button chat-send" disabled={!draft.trim()} title="Send message" type="submit"><Send size={18} /><span className="sr-only">Send message</span></button></form> : <p className="chat-readonly">You can read this channel, but cannot send messages.</p>}
-      </section>
-      <PlaceVoicePanel place={place} />
-    </section>
-  </main>;
+      </section>;
 }
 
 function ChatMessage({ canManage, currentUserId, editing, message, onCancel, onDelete, onEdit, onSave, placeId }: { canManage: boolean; currentUserId?: string; editing: boolean; message: ChatMessageContract; onCancel: () => void; onDelete: () => void; onEdit: () => void; onSave: (messageId: string, body: string) => Promise<void>; placeId: string }) {

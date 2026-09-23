@@ -62,7 +62,7 @@ test("indexes public content and delivers chat mentions over the live stack", as
   const recipientPage = await recipientContext.newPage();
   try {
     await signIn(recipientPage, recipient);
-    await recipientPage.goto(`/places/${community.placeSlug}/chat/live-room`);
+    await recipientPage.goto(`/places/${community.placeSlug}/live`);
     await expect(recipientPage.locator(".chat-heading h1")).toContainText("Live room");
     await expect(recipientPage.locator(".chat-live-status")).toHaveText("Live");
 

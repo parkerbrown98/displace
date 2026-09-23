@@ -82,7 +82,7 @@ pnpm exec playwright test e2e/places.spec.ts --project=desktop-chromium --worker
 
 ## Live chat and voice
 
-The place Live workspace combines chat channels and API-authorized voice rooms in one full-height view. Channel deep links and the former voice route remain compatible, while `/places/:placeSlug/live` is the primary entry point. Voice connects directly to LiveKit only after the member chooses to join and supports participant summaries, device selection, mute, deafen, audio-playback recovery, reconnect state, and active speaking-permission revocation. Channel and room access remain independently managed from place settings.
+The place Live workspace combines chat channels and API-authorized voice rooms at `/places/:placeSlug/live`. Channel changes happen inside the workspace so an active voice connection remains uninterrupted. Voice connects directly to LiveKit only after the member chooses to join and supports participant summaries, device selection, mute, deafen, audio-playback recovery, reconnect state, and active speaking-permission revocation. Channel and room access remain independently managed from place settings.
 
 Run the controlled real-stack voice journey while API, PostgreSQL, Redis, LiveKit, and coturn are running:
 

@@ -14,7 +14,7 @@ import { getPlaceContext } from "./place-client";
 import type { PlaceContract } from "./place-contract";
 import { PlaceIcon } from "./place-icon";
 
-type PlaceSection = "chat" | "forums" | "live" | "members" | "moderation" | "settings" | "voice";
+type PlaceSection = "forums" | "live" | "members" | "moderation" | "settings";
 
 interface PlaceForumHeaderProps {
   active?: PlaceSection;
@@ -41,7 +41,7 @@ export function PlaceForumHeader({
       </div>
       <nav className="place-toolbar-nav" aria-label={`${place.name} navigation`}>
         <PlaceNavLink active={active === "forums"} href={routes.place(place.slug)}>Forums</PlaceNavLink>
-        <LiveNavLink active={["chat", "live", "voice"].includes(active)} currentSection={currentSection} place={place} />
+        <LiveNavLink active={active === "live"} currentSection={currentSection} place={place} />
         <PlaceNavLink active={active === "members"} href={routes.placeMembers(place.slug)}>Members</PlaceNavLink>
         {moderationVisible ? <PlaceNavLink active={active === "moderation"} href={routes.placeModeration(place.slug)}>Moderation</PlaceNavLink> : null}
         {settingsVisible ? <PlaceNavLink active={active === "settings"} href={routes.placeSettings(place.slug)}>Settings</PlaceNavLink> : null}

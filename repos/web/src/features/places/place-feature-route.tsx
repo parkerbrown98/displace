@@ -25,7 +25,7 @@ export function PlaceFeatureRoute({
       {({ context }) => (
         <main className="public-main place-workspace-page" id="main-content">
           <PlaceForumHeader
-            active="chat"
+            active="live"
             currentSection={{ href: sectionHref, label: sectionLabel }}
             place={context.place}
           />

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createCommunity, createVoiceRoom, joinCommunity, registerVerifiedUser, restrictVoiceSpeaking, type E2eUser } from "./support/api";
+import { createChatChannel, createCommunity, createVoiceRoom, joinCommunity, registerVerifiedUser, restrictVoiceSpeaking, type E2eUser } from "./support/api";
 
 async function signIn(page: Page, user: E2eUser) {
   await page.goto("/sign-in");
@@ -15,10 +15,12 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
   const member = await registerVerifiedUser(request, testInfo, "voice_member");
   const community = await createCommunity(request, owner, testInfo, { withTopic: false });
   await joinCommunity(request, member, community.placeId);
+  await createChatChannel(request, owner, community.placeId, "Lobby", 0);
+  await createChatChannel(request, owner, community.placeId, "Workshop", 1);
   const room = await createVoiceRoom(request, owner, community.placeId);
 
   await signIn(page, member);
-  await page.goto(`/places/${community.placeSlug}/voice`);
+  await page.goto(`/places/${community.placeSlug}/live`);
   await expect(page.getByRole("heading", { name: room.name })).toBeVisible();
   await expect(page.locator(".voice-live-status")).toHaveText("Live", { timeout: 15_000 });
   await page.evaluate(() => {
@@ -39,6 +41,10 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
   await expect(page.getByRole("button", { name: "Mute microphone" })).toBeEnabled();
   await page.getByRole("button", { name: "Mute microphone" }).click();
   await expect(page.getByRole("button", { name: "Unmute microphone" })).toBeVisible();
+  await page.getByRole("button", { name: "Workshop" }).click();
+  await expect(page).toHaveURL(`/places/${community.placeSlug}/live`);
+  await expect(page.getByRole("heading", { name: "Workshop" })).toBeVisible();
+  await expect(page.locator(".voice-connection")).toHaveText("connected");
 
   await restrictVoiceSpeaking(request, owner, community.placeId, room.id);
   await expect(page.getByText(/speaking permission changed/i)).toBeVisible({ timeout: 15_000 });
@@ -48,7 +54,7 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
   const ownerPage = await ownerContext.newPage();
   try {
     await signIn(ownerPage, owner);
-    await ownerPage.goto(`/places/${community.placeSlug}/voice`);
+    await ownerPage.goto(`/places/${community.placeSlug}/live`);
     await ownerPage.getByRole("button", { name: "Join room" }).click();
     await expect(ownerPage.getByText("Voice room is full.")).toBeVisible({ timeout: 15_000 });
   } finally {

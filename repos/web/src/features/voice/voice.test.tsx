@@ -9,7 +9,7 @@ import { placeContextFixture } from "@/features/places/place-fixtures";
 import { mockServer } from "@/test/mocks/server";
 import { ToastProvider } from "@/components/ui/toast";
 import type { VoiceRoomContract } from "./voice-contracts";
-import { VoiceExperience } from "./voice-experience";
+import { PlaceVoicePanel } from "./voice-experience";
 import { VoiceRoomSettings } from "./voice-room-settings";
 
 vi.mock("@/features/places/place-forum-header", () => ({ PlaceForumHeader: () => <div /> }));
@@ -50,7 +50,7 @@ describe("voice experience", () => {
       http.post(`http://localhost:3001/api/v1/places/${placeId}/voice/rooms/${lounge.id}/join-token`, () => HttpResponse.json({ detail: "Voice room is full.", status: 409, title: "Conflict" }, { status: 409 })),
     );
     const user = userEvent.setup();
-    render(<ToastProvider><SessionProvider><VoiceExperience placeSlug="game-makers" /></SessionProvider></ToastProvider>);
+    render(<ToastProvider><SessionProvider><PlaceVoicePanel place={placeContextFixture.place} /></SessionProvider></ToastProvider>);
 
     expect(await screen.findByRole("heading", { name: "Lounge" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Join room" }));

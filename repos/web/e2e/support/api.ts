@@ -30,6 +30,11 @@ export interface E2eVoiceRoom {
   name: string;
 }
 
+export interface E2eChatChannel {
+  id: string;
+  name: string;
+}
+
 export function uniqueValue(prefix: string, testInfo: TestInfo): string {
   const project = testInfo.project.name.startsWith("mobile") ? "m" : "d";
   return `${prefix}_${project}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -127,6 +132,18 @@ export async function createVoiceRoom(request: APIRequestContext, owner: E2eUser
     position: 0,
     slug: "studio-voice",
     speakPermission: "voice.join",
+  });
+  expect(response.status(), await response.text()).toBe(201);
+  return response.json();
+}
+
+export async function createChatChannel(request: APIRequestContext, owner: E2eUser, placeId: string, name: string, position: number): Promise<E2eChatChannel> {
+  const authentication = await login(request, owner);
+  const response = await authorized(request, authentication.accessToken, "POST", `/places/${placeId}/chat/channels`, {
+    name,
+    position,
+    slug: name.toLowerCase().replaceAll(" ", "-"),
+    visibility: "members",
   });
   expect(response.status(), await response.text()).toBe(201);
   return response.json();

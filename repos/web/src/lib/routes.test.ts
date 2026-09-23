@@ -11,8 +11,5 @@ describe("application routes", () => {
       "/places/game-makers/topics/weekly-thread",
     );
     expect(routes.live("game-makers")).toBe("/places/game-makers/live");
-    expect(routes.chat("game-makers", "general")).toBe(
-      "/places/game-makers/chat/general",
-    );
   });
 });
