@@ -110,7 +110,7 @@ export function ShellTopbar() {
   if (isPlaceRoute) return null;
   return (
     <header className="topbar">
-      <form className="search-box" action={routes.search} role="search">
+      <form className="search-box" action={routes.discover} role="search">
         <Search size={18} aria-hidden="true" />
         <label className="sr-only" htmlFor="global-search">Search discussions</label>
         <input id="global-search" name="q" placeholder="Search discussions" type="search" />

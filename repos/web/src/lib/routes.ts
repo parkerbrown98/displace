@@ -15,6 +15,8 @@ export const routes = {
   moderation: "/moderation",
   administration: "/admin",
   createPlace: "/places/new",
+  discoverInPlace: (placeId: string) =>
+    `/discover?placeId=${encodeURIComponent(placeId)}`,
   member: (username: string) => `/members/${username}`,
   place: (placeSlug: string) => `/places/${placeSlug}`,
   placeSettings: (placeSlug: string) => `/places/${placeSlug}/settings`,

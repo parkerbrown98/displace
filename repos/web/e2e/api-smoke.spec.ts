@@ -4,7 +4,7 @@ import { createCommunity, createDeletedReply, registerVerifiedUser } from "./sup
 test("renders and navigates the API-backed community", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/discover$/);
-  await expect(page.getByRole("heading", { name: "Find your next conversation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find communities and conversations" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create account" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();

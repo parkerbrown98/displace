@@ -11,6 +11,18 @@ async function signIn(page: Page, user: E2eUser) {
   await expect(page).toHaveURL(/\/discover$/);
 }
 
+test("opens Discover with the current place selected", async ({ page, request }, testInfo) => {
+  const owner = await registerVerifiedUser(request, testInfo, "search_owner");
+  const community = await createCommunity(request, owner, testInfo);
+
+  await page.goto(`/places/${community.placeSlug}`);
+  await page.getByRole("link", { name: `Search in ${community.placeName}` }).click();
+
+  await expect(page).toHaveURL(`/discover?placeId=${community.placeId}`);
+  await expect(page.getByRole("combobox", { name: "Search scope" })).toHaveValue(community.placeId);
+  await expect(page.locator(".search-filters").getByRole("searchbox", { name: "Search" })).toBeFocused();
+});
+
 test("indexes public content and delivers chat mentions over the live stack", async ({ browser, page, request }, testInfo) => {
   test.setTimeout(90_000);
   const owner = await registerVerifiedUser(request, testInfo, "phase_owner");
@@ -26,6 +38,10 @@ test("indexes public content and delivers chat mentions over the live stack", as
   }, { timeout: 30_000 }).toBe(true);
 
   await page.goto(`/search?q=${encodeURIComponent(community.placeName)}`);
+  await expect.poll(() => {
+    const destination = new URL(page.url());
+    return { pathname: destination.pathname, query: destination.searchParams.get("q") };
+  }).toEqual({ pathname: "/discover", query: community.placeName });
   await expect(page.getByRole("heading", { name: community.placeName })).toBeVisible();
 
   await signIn(page, owner);
@@ -49,10 +65,6 @@ test("indexes public content and delivers chat mentions over the live stack", as
     await expect(recipientPage.locator(".chat-live-status")).toHaveText("Live");
 
     await page.goto(`/places/${community.placeSlug}`);
-    await expect(page.getByPlaceholder("Search discussions")).toHaveCount(0);
-    await page.getByRole("button", { name: "Search discussions" }).click();
-    await expect(page.getByPlaceholder("Search discussions")).toBeVisible();
-    await page.getByTitle("Close search").click();
     await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Chat" }).click();
     await expect(page.locator(".chat-heading h1")).toContainText("Live room");
     await expect(page.locator(".chat-live-status")).toHaveText("Live");

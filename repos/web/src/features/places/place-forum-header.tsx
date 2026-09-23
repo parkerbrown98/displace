@@ -1,8 +1,8 @@
 "use client";
 
-import { Bell, Search, Users, X } from "lucide-react";
+import { Bell, Search, Users } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { listChatChannels } from "@/features/chat/chat-client";
 import type { ChatChannelContract } from "@/features/chat/chat-contracts";
 import { listVoiceRooms } from "@/features/voice/voice-client";
@@ -51,7 +51,7 @@ export function PlaceForumHeader({
       </nav>
       <div className="place-toolbar-actions">
         <span className="place-membership"><Users size={16} aria-hidden="true" /> {place.joinPolicy === "open" ? "Open membership" : "Membership by request"}</span>
-        <PlaceSearch />
+        <PlaceSearch place={place} />
         <ReportButton label={place.name} placeId={place.id} targetId={place.id} targetType="place" />
         {session.status === "authenticated" ? <Link className="icon-button notification-button" href={routes.notifications} title="Notifications">
           <Bell size={19} />
@@ -110,24 +110,8 @@ function useModerationVisibility(placeId: string) {
   return visible;
 }
 
-function PlaceSearch() {
-  const input = useRef<HTMLInputElement>(null);
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    if (expanded) input.current?.focus();
-  }, [expanded]);
-
-  if (!expanded) {
-    return <button aria-expanded="false" className="icon-button place-search-toggle" onClick={() => setExpanded(true)} title="Search discussions" type="button"><Search size={18} /><span className="sr-only">Search discussions</span></button>;
-  }
-
-  return <form action={routes.search} className="place-toolbar-search" role="search">
-    <Search aria-hidden="true" size={17} />
-    <label className="sr-only" htmlFor="place-search">Search discussions</label>
-    <input id="place-search" name="q" placeholder="Search discussions" ref={input} required type="search" />
-    <button aria-label="Close search" className="icon-button" onClick={() => setExpanded(false)} title="Close search" type="button"><X size={16} /></button>
-  </form>;
+function PlaceSearch({ place }: { place: PlaceContract }) {
+  return <Link className="icon-button place-search-toggle" href={routes.discoverInPlace(place.id)} title={`Search in ${place.name}`}><Search size={18} /><span className="sr-only">Search in {place.name}</span></Link>;
 }
 
 function ChatNavLink({

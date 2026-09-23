@@ -19,18 +19,19 @@ import type {
 import { ForumLiveSpaces } from "./forum-live-spaces";
 import { ForumMemberPreview } from "./forum-member-preview";
 
-export function DiscoveryView({ joinPolicy, page, query }: { joinPolicy?: string; page: PlacePageContract; query?: string }) {
+export function PlaceDirectory({ joinPolicy, page }: { joinPolicy?: string; page: PlacePageContract }) {
   return (
-    <main className="public-main" id="main-content">
-      <header className="public-page-heading">
-        <p className="eyebrow">Open communities</p>
-        <h1>Find your next conversation</h1>
-        <p>Browse public places built around durable, searchable discussion.</p>
-      </header>
+    <section className="discovery-directory" aria-labelledby="place-directory-heading">
+      <div className="discovery-directory-heading">
+        <div>
+          <p className="eyebrow">Open communities</p>
+          <h2 id="place-directory-heading">Explore public places</h2>
+        </div>
+        <p>Browse communities built around durable conversation.</p>
+      </div>
       <form className="discovery-filters" method="get">
-        <label className="form-field">Search places<input defaultValue={query} name="q" placeholder="Name or description" type="search" /></label>
         <label className="form-field">Join policy<select defaultValue={joinPolicy ?? ""} name="join"><option value="">Any policy</option><option value="open">Open</option><option value="approval">Approval required</option><option value="invite_only">Invite only</option></select></label>
-        <button className="secondary-button" type="submit">Apply filters</button>
+        <button className="secondary-button" type="submit">Filter places</button>
       </form>
       {page.items.length ? (
         <section className="place-directory" aria-label="Public places">
@@ -51,8 +52,8 @@ export function DiscoveryView({ joinPolicy, page, query }: { joinPolicy?: string
       ) : (
         <StatusPanel title="No more places" description="There are no additional public places to show." />
       )}
-      <CursorPagination nextCursor={page.nextCursor} path={routes.discover} />
-    </main>
+      <CursorPagination nextCursor={page.nextCursor} parameters={{ join: joinPolicy }} path={routes.discover} />
+    </section>
   );
 }
 
