@@ -3,6 +3,7 @@
 import { Archive, Plus, Save } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 import { placeErrorMessage } from "@/features/places/place-access";
 import { placePermissions, type PlaceContextContract, type PlacePermission } from "@/features/places/place-contract";
 import { archiveChatChannel, createChatChannel, listChatChannels, updateChatChannel } from "./chat-client";
@@ -94,11 +95,11 @@ function NewChatChannelForm({ disabled, onCreate }: { disabled: boolean; onCreat
 }
 
 function ChannelFields({ channel }: { channel?: ChatChannelContract }) {
-  return <><FormField defaultValue={channel?.position ?? 0} label="Position" min={0} name="position" type="number" required /><label className="form-field">Visibility<select defaultValue={channel?.visibility ?? "members"} name="visibility"><option value="members">Members only</option><option value="public">Public</option></select></label><PermissionSelect defaultValue={channel?.readPermission} label="Read permission" name="readPermission" /><PermissionSelect defaultValue={channel?.sendPermission} label="Send permission" name="sendPermission" /></>;
+  return <><FormField defaultValue={channel?.position ?? 0} label="Position" min={0} name="position" type="number" required /><label className="form-field">Visibility<Select defaultValue={channel?.visibility ?? "members"} name="visibility" options={[{ label: "Members only", value: "members" }, { label: "Public", value: "public" }]} /></label><PermissionSelect defaultValue={channel?.readPermission} label="Read permission" name="readPermission" /><PermissionSelect defaultValue={channel?.sendPermission} label="Send permission" name="sendPermission" /></>;
 }
 
 function PermissionSelect({ defaultValue, label, name }: { defaultValue?: string | null; label: string; name: string }) {
-  return <label className="form-field">{label}<select defaultValue={defaultValue ?? ""} name={name}><option value="">No additional permission</option>{placePermissions.map((permission) => <option key={permission} value={permission}>{permission.replace(".", " ")}</option>)}</select></label>;
+  return <label className="form-field">{label}<Select defaultValue={defaultValue ?? ""} name={name} options={[{ label: "No additional permission", value: "" }, ...placePermissions.map((permission) => ({ label: permission.replace(".", " "), value: permission }))]} /></label>;
 }
 
 function channelCreateInput(form: FormData): CreateChatChannelInput {

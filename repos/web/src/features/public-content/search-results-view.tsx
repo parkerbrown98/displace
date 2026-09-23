@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, FileText, MapPin, MessageSquareText, Search } from "lucide-react";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
+import { Select } from "@/components/ui/select";
 import { StatusPanel } from "@/components/ui/status-panel";
 import type { PlaceContract, PlacePageContract } from "@/features/places/place-contract";
 import { routes } from "@/lib/routes";
@@ -36,8 +37,8 @@ export function DiscoveryView({ joinPolicy, page, places, placeId, query, select
             <label className="sr-only" htmlFor="discover-query">Search</label>
             <input autoFocus={Boolean(placeId && !query)} defaultValue={query} id="discover-query" minLength={2} name="q" placeholder={selectedPlace ? `Search in ${selectedPlace.name}` : "Search communities or topics"} required type="search" />
           </div>
-          <label className="discovery-select">Result type<select defaultValue={type ?? ""} name="type"><option value="">Everything</option><option value="place">Communities</option><option value="topic">Topics</option><option value="post">Replies</option></select></label>
-          <label className="discovery-select">Search scope<select defaultValue={selectedPlace?.id ?? ""} name="placeId"><option value="">Everywhere</option>{selectedPlace ? <option value={selectedPlace.id}>{selectedPlace.name}</option> : null}</select></label>
+          <label className="discovery-select">Result type<Select defaultValue={type ?? ""} name="type" options={[{ label: "Everything", value: "" }, { label: "Communities", value: "place" }, { label: "Topics", value: "topic" }, { label: "Replies", value: "post" }]} /></label>
+          <label className="discovery-select">Search scope<Select defaultValue={selectedPlace?.id ?? ""} name="placeId" options={[{ label: "Everywhere", value: "" }, ...(selectedPlace ? [{ label: selectedPlace.name, value: selectedPlace.id }] : [])]} /></label>
           <button className="discovery-search-button" type="submit"><Search size={18} aria-hidden="true" />Search</button>
         </form>
         {selectedPlace ? <div className="discovery-scope"><MapPin size={17} aria-hidden="true" /><div><p>Searching within</p><h2>Search in {selectedPlace.name}</h2></div><Link href={routes.discover}>Search everywhere</Link></div> : null}

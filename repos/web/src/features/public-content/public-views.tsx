@@ -2,6 +2,7 @@ import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, Mes
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
+import { Select } from "@/components/ui/select";
 import { StatusPanel } from "@/components/ui/status-panel";
 import { ForumAuthoringActions } from "@/features/forums/create-topic-form";
 import { TopicDiscussion } from "@/features/forums/topic-discussion";
@@ -37,7 +38,7 @@ export function PlaceDirectory({ joinPolicy, page, tag }: { joinPolicy?: string;
       </nav> : null}
       <form action={routes.discover} className="discovery-filters" method="get">
         {tag ? <input name="tag" type="hidden" value={tag} /> : null}
-        <label>Access<select defaultValue={joinPolicy ?? ""} name="join"><option value="">Any access</option><option value="open">Open to join</option><option value="approval">Request to join</option><option value="invite_only">Invite only</option></select></label>
+        <label>Access<Select defaultValue={joinPolicy ?? ""} name="join" options={[{ label: "Any access", value: "" }, { label: "Open to join", value: "open" }, { label: "Request to join", value: "approval" }, { label: "Invite only", value: "invite_only" }]} /></label>
         <button className="secondary-button" type="submit"><SlidersHorizontal size={16} />Apply</button>
         {tag || joinPolicy ? <Link className="discovery-clear-filter" href={routes.discover}>Clear filters</Link> : null}
       </form>

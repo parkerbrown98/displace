@@ -4,6 +4,7 @@ import { Archive, Plus, Save, Shield, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 import { StatusPanel } from "@/components/ui/status-panel";
 import { setPlaceImage } from "@/features/assets/asset-client";
 import type { AssetContract } from "@/features/assets/asset-contract";
@@ -133,7 +134,7 @@ function IdentityForm({ context, onForbidden, onSaved }: { context: PlaceContext
 }
 
 function PlacePolicyFields({ place }: { place?: PlaceContextContract["place"] }) {
-  return <div className="policy-grid"><label className="form-field">Visibility<select defaultValue={place?.visibility ?? "public"} name="visibility"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select><small>Private places are hidden from non-members.</small></label><label className="form-field">Join policy<select defaultValue={place?.joinPolicy ?? "open"} name="joinPolicy"><option value="open">Open</option><option value="approval">Approval required</option><option value="invite_only">Invite only</option></select><small>Approval requests appear in the member directory.</small></label></div>;
+  return <div className="policy-grid"><label className="form-field">Visibility<Select defaultValue={place?.visibility ?? "public"} name="visibility" options={[{ label: "Public", value: "public" }, { label: "Unlisted", value: "unlisted" }, { label: "Private", value: "private" }]} /><small>Private places are hidden from non-members.</small></label><label className="form-field">Join policy<Select defaultValue={place?.joinPolicy ?? "open"} name="joinPolicy" options={[{ label: "Open", value: "open" }, { label: "Approval required", value: "approval" }, { label: "Invite only", value: "invite_only" }]} /><small>Approval requests appear in the member directory.</small></label></div>;
 }
 
 function PreferenceForm({ context, onForbidden, onSaved }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void>; onSaved: () => Promise<void> }) {
@@ -145,7 +146,7 @@ function PreferenceForm({ context, onForbidden, onSaved }: { context: PlaceConte
     catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "Preferences could not be saved.") }); }
   }
   const tags = Array.isArray(context.place.settings.tags) ? context.place.settings.tags.filter((tag): tag is string => typeof tag === "string") : [];
-  return <section className="settings-section" id="preferences"><p className="eyebrow">Defaults and discovery</p><h2>Community preferences</h2><form className="settings-form compact-form" onSubmit={submit}><label className="form-field">Discovery tags<input defaultValue={tags.join(", ")} maxLength={200} name="tags" placeholder="game-design, accessibility, indie" /><small>Up to 8 comma-separated tags. Spaces become hyphens.</small></label><label className="form-field">Locale<select defaultValue={String(context.place.settings.locale ?? "en-US")} name="locale"><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option></select></label><label className="form-field">Default topic order<select defaultValue={String(context.place.settings.topicSort ?? "activity")} name="topicSort"><option value="activity">Recent activity</option><option value="created">Newest topics</option></select></label><NoticeMessage notice={notice} /><button className="secondary-button" type="submit">Save preferences</button></form></section>;
+  return <section className="settings-section" id="preferences"><p className="eyebrow">Defaults and discovery</p><h2>Community preferences</h2><form className="settings-form compact-form" onSubmit={submit}><label className="form-field">Discovery tags<input defaultValue={tags.join(", ")} maxLength={200} name="tags" placeholder="game-design, accessibility, indie" /><small>Up to 8 comma-separated tags. Spaces become hyphens.</small></label><label className="form-field">Locale<Select defaultValue={String(context.place.settings.locale ?? "en-US")} name="locale" options={[{ label: "English (United States)", value: "en-US" }, { label: "English (United Kingdom)", value: "en-GB" }]} /></label><label className="form-field">Default topic order<Select defaultValue={String(context.place.settings.topicSort ?? "activity")} name="topicSort" options={[{ label: "Recent activity", value: "activity" }, { label: "Newest topics", value: "created" }]} /></label><NoticeMessage notice={notice} /><button className="secondary-button" type="submit">Save preferences</button></form></section>;
 }
 
 function RoleEditor({ onChanged, onForbidden, placeId, role }: { onChanged: () => Promise<void>; onForbidden: (error: unknown) => Promise<void>; placeId: string; role: PlaceRoleContract }) {

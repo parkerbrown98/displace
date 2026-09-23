@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,7 +75,8 @@ describe("voice experience", () => {
     await user.type(screen.getByLabelText("Name"), "Town Hall");
     await user.clear(screen.getByLabelText("Room slug"));
     await user.type(screen.getByLabelText("Room slug"), "town-hall");
-    await user.selectOptions(screen.getByLabelText("Speak permission"), "voice.manage");
+    fireEvent.click(screen.getByRole("combobox", { name: /Speak permission/ }));
+    fireEvent.click(screen.getByRole("option", { name: "voice manage" }));
     await user.click(screen.getByRole("button", { name: "Create room" }));
 
     await waitFor(() => expect(created).toEqual({

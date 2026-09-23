@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSession } from "@/features/auth/session-provider";
@@ -35,7 +35,8 @@ describe("ReportButton", () => {
     render(<ReportButton label="post 2" placeId="place-id" targetId="post-id" targetType="post" />);
 
     await user.click(screen.getByRole("button", { name: "Report post 2" }));
-    await user.selectOptions(screen.getByLabelText("Reason"), "harassment");
+    fireEvent.click(screen.getByRole("combobox", { name: /Reason/ }));
+    fireEvent.click(screen.getByRole("option", { name: "harassment" }));
     await user.type(screen.getByLabelText("Details"), "Repeated unwanted replies.");
     await user.click(screen.getByRole("button", { name: "Submit report" }));
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
 import { getProfileImage, setProfileImage } from "@/features/assets/asset-client";
 import { ImageUploader } from "@/features/assets/image-uploader";
@@ -109,9 +110,7 @@ function ProfileImageSettings() {
           {places.length > 1 ? (
             <label className="form-field">
               Upload storage
-              <select onChange={(event) => setPlaceId(event.target.value)} value={placeId}>
-                {places.map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}
-              </select>
+              <Select onValueChange={setPlaceId} options={places.map((place) => ({ label: place.name, value: place.id }))} value={placeId} />
               <small>The image remains private in this place&apos;s storage.</small>
             </label>
           ) : null}

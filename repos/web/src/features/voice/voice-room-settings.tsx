@@ -3,6 +3,7 @@
 import { Archive, Plus, Save } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 import { placeErrorMessage } from "@/features/places/place-access";
 import { placePermissions, type PlaceContextContract, type PlacePermission } from "@/features/places/place-contract";
 import { archiveVoiceRoom, createVoiceRoom, listVoiceRooms, updateVoiceRoom } from "./voice-client";
@@ -58,7 +59,7 @@ function VoiceFields({ room }: { room?: VoiceRoomContract }) {
 }
 
 function PermissionSelect({ defaultValue, label, name }: { defaultValue: PlacePermission; label: string; name: string }) {
-  return <label className="form-field">{label}<select defaultValue={defaultValue} name={name}>{placePermissions.map((permission) => <option key={permission} value={permission}>{permission.replace(".", " ")}</option>)}</select></label>;
+  return <label className="form-field">{label}<Select defaultValue={defaultValue} name={name} options={placePermissions.map((permission) => ({ label: permission.replace(".", " "), value: permission }))} /></label>;
 }
 
 function roomInput(form: FormData): VoiceRoomInput {

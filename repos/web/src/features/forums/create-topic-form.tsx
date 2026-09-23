@@ -4,6 +4,7 @@ import { Plus, Send, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
 import { PlaceWorkspaceGate, placeErrorMessage, usePlaceWorkspace } from "@/features/places/place-access";
 import type { PlaceContextContract, PlaceContract, PlacePermission } from "@/features/places/place-contract";
@@ -99,7 +100,7 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
       </header>
       <form className="topic-compose-form" onSubmit={submit}>
         <div className="topic-compose-fields">
-          <label className="form-field">Forum<select name="forumId" required>{forums.map((forum) => <option key={forum.id} value={forum.id}>{forum.name}</option>)}</select></label>
+          <label className="form-field">Forum<Select name="forumId" options={forums.map((forum) => ({ label: forum.name, value: forum.id }))} required /></label>
           <label className="form-field">Title<input maxLength={300} minLength={1} name="title" required /></label>
         </div>
         {navigation.tags.length ? <fieldset className="topic-tag-picker"><legend>Tags</legend>{navigation.tags.map((tag) => <label key={tag.id}><input name="tagIds" type="checkbox" value={tag.id} /><span>{tag.name}</span></label>)}</fieldset> : null}

@@ -8,7 +8,9 @@ describe("DiscoveryView", () => {
     render(<DiscoveryView placeId={placeContractFixture.id} selectedPlace={placeContractFixture} />);
 
     expect(screen.getByRole("searchbox", { name: "Search" })).toHaveAttribute("placeholder", `Search in ${placeContractFixture.name}`);
-    expect(screen.getByRole("combobox", { name: "Search scope" })).toHaveValue(placeContractFixture.id);
+    const scope = screen.getByRole("combobox", { name: "Search scope" });
+    expect(scope).toHaveTextContent(placeContractFixture.name);
+    expect(new FormData(scope.closest("form")!).get("placeId")).toBe(placeContractFixture.id);
     expect(screen.getByRole("heading", { name: `Search in ${placeContractFixture.name}` })).toBeInTheDocument();
   });
 

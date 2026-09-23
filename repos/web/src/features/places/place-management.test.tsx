@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -81,7 +81,8 @@ describe("place management", () => {
     await user.type(screen.getByLabelText("Name"), "Tabletop Studio");
     await user.type(screen.getByLabelText("Slug"), "tabletop-studio");
     await user.type(screen.getByLabelText("Description"), "A community for tabletop makers.");
-    await user.selectOptions(screen.getByRole("combobox", { name: /Join policy/ }), "approval");
+    fireEvent.click(screen.getByRole("combobox", { name: /Join policy/ }));
+    fireEvent.click(screen.getByRole("option", { name: "Approval required" }));
     await user.click(screen.getByRole("button", { name: "Create place" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/places/tabletop-studio/settings"));
   });

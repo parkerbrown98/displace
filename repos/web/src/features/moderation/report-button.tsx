@@ -2,6 +2,7 @@
 
 import { Flag, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { Select } from "@/components/ui/select";
 import { useSession } from "@/features/auth/session-provider";
 import { placeErrorMessage } from "@/features/places/place-access";
 import { createReport } from "./moderation-client";
@@ -42,7 +43,7 @@ export function ReportButton({ label, placeId, targetId, targetType }: { label: 
     {open ? <span aria-labelledby={`report-title-${targetId}`} aria-modal="true" className="report-dialog" role="dialog">
       <span className="report-dialog-heading"><strong id={`report-title-${targetId}`}>Report {label}</strong><button className="icon-button" onClick={() => setOpen(false)} title="Close report" type="button"><X size={15} /><span className="sr-only">Close</span></button></span>
       <form onSubmit={submit}>
-        <label className="form-field">Reason<select defaultValue="" name="reasonCode" required><option disabled value="">Select reason</option>{reportReasonCodes.map((reason) => <option key={reason} value={reason}>{reason.replaceAll("_", " ")}</option>)}</select></label>
+        <label className="form-field">Reason<Select defaultValue="" name="reasonCode" options={[{ disabled: true, label: "Select reason", value: "" }, ...reportReasonCodes.map((reason) => ({ label: reason.replaceAll("_", " "), value: reason }))]} required /></label>
         <label className="form-field">Details<textarea maxLength={4000} name="details" rows={4} /></label>
         {notice ? <span className={`form-message${notice.error ? " form-message-error" : " form-message-success"}`} role={notice.error ? "alert" : "status"}>{notice.text}</span> : null}
         <button className="primary-button" disabled={pending} type="submit"><Flag size={15} />{pending ? "Submitting..." : "Submit report"}</button>

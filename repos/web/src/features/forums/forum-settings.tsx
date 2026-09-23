@@ -3,6 +3,7 @@
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 import type { PlaceContextContract } from "@/features/places/place-contract";
 import { placePermissions } from "@/features/places/place-contract";
 import { placeErrorMessage } from "@/features/places/place-access";
@@ -167,18 +168,18 @@ function NewForumForm({ disabled, groups, onCreate }: { disabled: boolean; group
 
 function ForumFields({ forum, groups }: { forum?: ForumContract; groups: ForumGroupContract[] }) {
   return <>
-    <label className="form-field">Group<select defaultValue={forum?.groupId} name="groupId" required>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
+    <label className="form-field">Group<Select defaultValue={forum?.groupId} name="groupId" options={groups.map((group) => ({ label: group.name, value: group.id }))} required /></label>
     <FormField defaultValue={forum?.name} label="Forum name" maxLength={120} name="name" required />
     <label className="form-field">Description<textarea defaultValue={forum?.description} maxLength={2000} name="description" rows={3} /></label>
     <FormField defaultValue={forum?.position ?? 0} label="Position" min={0} name="position" type="number" required />
-    <label className="form-field">Visibility<select defaultValue={forum?.visibility ?? "public"} name="visibility"><option value="public">Public</option><option value="members">Members only</option></select></label>
+    <label className="form-field">Visibility<Select defaultValue={forum?.visibility ?? "public"} name="visibility" options={[{ label: "Public", value: "public" }, { label: "Members only", value: "members" }]} /></label>
     <PermissionSelect defaultValue={forum?.readPermission} label="Read permission" name="readPermission" />
     <PermissionSelect defaultValue={forum?.writePermission} label="Write permission" name="writePermission" />
   </>;
 }
 
 function PermissionSelect({ defaultValue, label, name }: { defaultValue?: string | null; label: string; name: string }) {
-  return <label className="form-field">{label}<select defaultValue={defaultValue ?? ""} name={name}><option value="">No additional permission</option>{placePermissions.map((permission) => <option key={permission} value={permission}>{permission.replace(".", " ")}</option>)}</select></label>;
+  return <label className="form-field">{label}<Select defaultValue={defaultValue ?? ""} name={name} options={[{ label: "No additional permission", value: "" }, ...placePermissions.map((permission) => ({ label: permission.replace(".", " "), value: permission }))]} /></label>;
 }
 
 function NewForumTagForm({ disabled, onCreate }: { disabled: boolean; onCreate: (input: { slug: string; name: string; color: string }) => Promise<boolean> }) {
