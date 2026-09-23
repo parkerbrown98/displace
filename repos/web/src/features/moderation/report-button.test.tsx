@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSession } from "@/features/auth/session-provider";
+import { ToastProvider } from "@/components/ui/toast";
 import { createReport } from "./moderation-client";
 import { ReportButton } from "./report-button";
 
@@ -32,7 +33,7 @@ describe("ReportButton", () => {
   it("submits the selected reason and reporter details", async () => {
     const user = userEvent.setup();
     vi.mocked(createReport).mockResolvedValue({ id: "report-id" } as never);
-    render(<ReportButton label="post 2" placeId="place-id" targetId="post-id" targetType="post" />);
+    render(<ToastProvider><ReportButton label="post 2" placeId="place-id" targetId="post-id" targetType="post" /></ToastProvider>);
 
     await user.click(screen.getByRole("button", { name: "Report post 2" }));
     fireEvent.click(screen.getByRole("combobox", { name: /Reason/ }));
@@ -46,7 +47,7 @@ describe("ReportButton", () => {
       targetId: "post-id",
       targetType: "post",
     });
-    expect(await screen.findByRole("status")).toHaveTextContent("Report submitted.");
+    expect(await screen.findByText("Report submitted.")).toBeInTheDocument();
   });
 
   it("does not render for anonymous visitors", () => {

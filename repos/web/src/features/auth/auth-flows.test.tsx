@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockServer } from "@/test/mocks/server";
+import { ToastProvider } from "@/components/ui/toast";
 import { accountSessionsFixture, createAuthenticationFixture, userProfileFixture } from "./auth-fixtures";
 import { AccountSettings } from "./account-settings";
 import { resetAuthenticationForTests, signIn } from "./auth-client";
@@ -77,13 +78,13 @@ describe("authentication journeys", () => {
       )),
     );
     const user = userEvent.setup();
-    render(<SessionProvider><SignInPanel /></SessionProvider>);
+    render(<ToastProvider><SessionProvider><SignInPanel /></SessionProvider></ToastProvider>);
 
     await user.type(screen.getByLabelText("Email or handle"), "parker");
     await user.type(screen.getByLabelText("Password"), "incorrect-password");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Too many attempts");
+    expect(await screen.findByText(/Too many attempts/)).toBeInTheDocument();
   });
 
   it("revokes a device session and signs out all sessions", async () => {

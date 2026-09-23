@@ -4,16 +4,15 @@ import { Archive, Plus, Save } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
+import { toast } from "@/components/ui/toast";
 import { placeErrorMessage } from "@/features/places/place-access";
 import { placePermissions, type PlaceContextContract, type PlacePermission } from "@/features/places/place-contract";
 import { archiveVoiceRoom, createVoiceRoom, listVoiceRooms, updateVoiceRoom } from "./voice-client";
 import type { CreateVoiceRoomInput, VoiceRoomContract, VoiceRoomInput } from "./voice-contracts";
 
-type Notice = { kind: "error" | "success"; text: string } | null;
-
 export function VoiceRoomSettings({ context, onForbidden }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void> }) {
   const [rooms, setRooms] = useState<VoiceRoomContract[]>();
-  const [notice, setNotice] = useState<Notice>(null);
+  const [loadError, setLoadError] = useState<string>();
   const [pending, setPending] = useState<string>();
 
   async function refresh() { setRooms(await listVoiceRooms(context.place.id)); }
@@ -22,23 +21,21 @@ export function VoiceRoomSettings({ context, onForbidden }: { context: PlaceCont
     let active = true;
     void listVoiceRooms(context.place.id)
       .then((value) => { if (active) setRooms(value); })
-      .catch((error) => { if (active) setNotice({ kind: "error", text: placeErrorMessage(error, "Voice rooms could not be loaded.") }); });
+      .catch((error) => { if (active) setLoadError(placeErrorMessage(error, "Voice rooms could not be loaded.")); });
     return () => { active = false; };
   }, [context.place.id]);
 
   async function run(key: string, action: () => Promise<unknown>, success: string) {
-    setPending(key); setNotice(null);
-    try { await action(); await refresh(); setNotice({ kind: "success", text: success }); return true; }
-    catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "Voice rooms could not be changed.") }); return false; }
+    setPending(key);
+    try { await action(); await refresh(); toast.success(success); return true; }
+    catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "Voice rooms could not be changed.")); return false; }
     finally { setPending(undefined); }
   }
 
   return <section className="settings-section" id="voice">
     <p className="eyebrow">Live audio</p><h2>Voice rooms</h2>
     <p className="settings-muted">Order audio rooms, set capacity, and choose separate permissions for listening and speaking.</p>
-    {notice ? <p className={`form-message form-message-${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.text}</p> : null}
-    {rooms?.length ? <div className="role-list">{rooms.map((room) => <VoiceRoomEditor disabled={Boolean(pending)} key={room.id} room={room} onArchive={() => run(`archive-${room.id}`, () => archiveVoiceRoom(context.place.id, room.id), "Voice room archived.")} onSave={(input) => run(`save-${room.id}`, () => updateVoiceRoom(context.place.id, room.id, input), "Voice room saved.")} />)}</div> : <p className="settings-muted">No voice rooms yet.</p>}
-    <NewVoiceRoom disabled={Boolean(pending)} onCreate={(input) => run("create", () => createVoiceRoom(context.place.id, input), "Voice room created.")} />
+    {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : <>{rooms?.length ? <div className="role-list">{rooms.map((room) => <VoiceRoomEditor disabled={Boolean(pending)} key={room.id} room={room} onArchive={() => run(`archive-${room.id}`, () => archiveVoiceRoom(context.place.id, room.id), "Voice room archived.")} onSave={(input) => run(`save-${room.id}`, () => updateVoiceRoom(context.place.id, room.id, input), "Voice room saved.")} />)}</div> : <p className="settings-muted">No voice rooms yet.</p>}<NewVoiceRoom disabled={Boolean(pending)} onCreate={(input) => run("create", () => createVoiceRoom(context.place.id, input), "Voice room created.")} /></>}
   </section>;
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/features/auth/session-provider";
 import "./globals.css";
 
@@ -21,11 +22,12 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <a className="skip-link" href="#main-content">Skip to content</a>
-        <SessionProvider>
-          {children}
-          {modal}
-        </SessionProvider>
-        <div className="toast-region" id="toast-region" aria-live="polite" aria-atomic="true" />
+        <ToastProvider>
+          <SessionProvider>
+            {children}
+            {modal}
+          </SessionProvider>
+        </ToastProvider>
       </body>
     </html>
   );

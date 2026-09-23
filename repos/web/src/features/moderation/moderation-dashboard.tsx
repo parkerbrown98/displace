@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
 import { getPlaceContext, listMyPlaces } from "@/features/places/place-client";
 import type { PlaceContextContract } from "@/features/places/place-contract";
@@ -43,7 +44,7 @@ export function ModerationDashboard({ initialPlaceSlug }: { initialPlaceSlug?: s
   const [status, setStatus] = useState<ReportStatus>("open");
   const [nextCursor, setNextCursor] = useState<string>();
   const [loading, setLoading] = useState(true);
-  const [notice, setNotice] = useState<{ error?: boolean; text: string }>();
+  const [loadError, setLoadError] = useState<string>();
 
   useEffect(() => {
     if (session.status !== "authenticated") return;
@@ -58,7 +59,7 @@ export function ModerationDashboard({ initialPlaceSlug }: { initialPlaceSlug?: s
         setPlaces(manageable);
         setPlaceId(manageable.find(({ context }) => context.place.slug === initialPlaceSlug)?.context.place.id ?? manageable[0]?.context.place.id);
       })
-      .catch((error) => setNotice({ error: true, text: placeErrorMessage(error, "Moderated places could not be loaded.") }))
+      .catch((error) => setLoadError(placeErrorMessage(error, "Moderated places could not be loaded.")))
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [initialPlaceSlug, session.status]);
@@ -68,16 +69,15 @@ export function ModerationDashboard({ initialPlaceSlug }: { initialPlaceSlug?: s
     let active = true;
     void listModerationReports(placeId, { status })
       .then((page) => { if (active) { setReports(page.items); setNextCursor(page.nextCursor); } })
-      .catch((error) => { if (active) setNotice({ error: true, text: placeErrorMessage(error, "Reports could not be loaded.") }); })
+      .catch((error) => { if (active) setLoadError(placeErrorMessage(error, "Reports could not be loaded.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [placeId, status]);
 
   async function openReport(reportId: string) {
     if (!placeId) return;
-    setNotice(undefined);
     try { setSelected(await getModerationReport(placeId, reportId)); }
-    catch (error) { setNotice({ error: true, text: placeErrorMessage(error, "The report could not be loaded.") }); }
+    catch (error) { toast.error(placeErrorMessage(error, "The report could not be loaded.")); }
   }
 
   async function refreshReport(reportId: string) {
@@ -107,13 +107,13 @@ export function ModerationDashboard({ initialPlaceSlug }: { initialPlaceSlug?: s
   return <AppShell activePlaceSlug={activePlace?.slug}>
     <main className="main-content moderation-page" id="main-content">
       <header className="operations-heading moderation-heading"><div><p className="eyebrow">Trust and safety</p><h1>Review reports</h1><p>Triage incoming reports, review the available evidence, and record a clear outcome.</p></div><div className="moderation-overview" aria-label="Queue summary"><span><strong>{reports.length}</strong><small>{statusLabel(status)} loaded</small></span><span><strong>{assignedCount}</strong><small>Assigned to you</small></span><span><strong>{unassignedCount}</strong><small>Unassigned</small></span></div></header>
-      {notice ? <p className={`form-message${notice.error ? " form-message-error" : " form-message-success"}`} role={notice.error ? "alert" : "status"}>{notice.text}</p> : null}
+      {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : null}
       {session.status === "loading" || loading && !placeId ? <LoadingPanel label="Loading moderation queue" /> : session.status !== "authenticated" ? <StatusPanel title="Sign in required" description="Sign in to review moderation cases." /> : places.length === 0 ? <StatusPanel title="No moderation access" description="None of your current place roles grant moderation management." /> : <>
         <section className="moderation-toolbar" aria-label="Queue filters">
           <label className="form-field">Community<Select onValueChange={(value) => { setLoading(true); setSelected(undefined); setChecked([]); setPlaceId(value); }} options={places.map(({ context }) => ({ label: context.place.name, value: context.place.id }))} value={placeId} /></label>
           <div className="moderation-status-filter"><span>Queue</span><div className="moderation-status-segments" aria-label="Report status" role="group">{reportStatuses.map((reportStatus) => <button aria-pressed={status === reportStatus} key={reportStatus} onClick={() => changeStatus(reportStatus)} type="button">{statusLabel(reportStatus)}</button>)}</div></div>
         </section>
-        <BulkActionBar checked={checked} placeId={placeId!} reports={reports} onClear={() => setChecked([])} onComplete={async () => { setNotice({ text: "Bulk actions recorded." }); setChecked([]); if (selected) await refreshReport(selected.id); }} />
+        <BulkActionBar checked={checked} placeId={placeId!} reports={reports} onClear={() => setChecked([])} onComplete={async () => { toast.success("Bulk actions recorded."); setChecked([]); if (selected) await refreshReport(selected.id); }} />
         <div className={`moderation-layout${selected ? " has-selection" : ""}`}>
           <section className="moderation-queue" aria-label="Report queue">
             <header className="moderation-queue-heading"><div><p className="eyebrow">Inbox</p><h2>{statusLabel(status)} reports</h2></div><span>{reports.length}</span></header>
@@ -154,13 +154,12 @@ function BulkActionBar({ checked, onClear, onComplete, placeId, reports }: { che
 
 function CaseDetail({ onBack, onChanged, placeId, report, userId }: { onBack: () => void; onChanged: () => Promise<void>; placeId: string; report: ModerationReportContract; userId: string }) {
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
   const actions = actionsFor(report);
   const [selectedAction, setSelectedAction] = useState<ModerationActionName | undefined>(actions[0]);
   async function run(operation: () => Promise<unknown>) {
-    setPending(true); setError(undefined);
+    setPending(true);
     try { await operation(); await onChanged(); }
-    catch (cause) { setError(placeErrorMessage(cause, "The moderation case could not be updated.")); }
+    catch (cause) { toast.error(placeErrorMessage(cause, "The moderation case could not be updated.")); }
     finally { setPending(false); }
   }
   async function action(event: FormEvent<HTMLFormElement>) {
@@ -177,7 +176,6 @@ function CaseDetail({ onBack, onChanged, placeId, report, userId }: { onBack: ()
   return <div className="case-detail">
     <button className="case-back-button" onClick={onBack} type="button"><ArrowLeft size={16} />Back to queue</button>
     <header className="case-header"><div className="case-header-meta"><span className="case-target-type">{targetTypeLabel(report.targetType)}</span><span className={`case-status case-status-${report.status}`}>{statusLabel(report.status)}</span></div><h2>{targetLabel(report)}</h2><p>{report.details || "The reporter did not provide additional details."}</p><dl className="case-meta"><div><dt>Reported</dt><dd><Clock3 aria-hidden="true" size={14} />{formatDate(report.createdAt)}</dd></div><div><dt>Reporter</dt><dd>{shortId(report.reporterUserId)}</dd></div><div><dt>Assignment</dt><dd>{report.assignedToUserId ? report.assignedToUserId === userId ? "You" : shortId(report.assignedToUserId) : "Unassigned"}</dd></div><div><dt>Case</dt><dd>{shortId(report.id)}</dd></div></dl></header>
-    {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
     <section className="case-section"><div className="case-section-heading"><span><FileSearch aria-hidden="true" size={18} /></span><div><h3>Evidence snapshot</h3><p>Information captured when the report was submitted.</p></div></div><dl className="evidence-list">{Object.entries(report.evidence).map(([key, value]) => <div key={key}><dt>{humanize(key)}</dt><dd>{formatEvidence(value)}</dd></div>)}</dl></section>
     {report.status === "open" || report.status === "in_review" ? <>
       <div className="case-assignment"><span><UserCheck aria-hidden="true" size={18} /><span><strong>{report.assignedToUserId === userId ? "This case is assigned to you" : report.assignedToUserId ? "This case is assigned" : "This case is unassigned"}</strong><small>Claim a case before coordinating moderation work.</small></span></span><button className="secondary-button" disabled={pending || report.assignedToUserId === userId} onClick={() => void run(() => assignModerationReport(placeId, report.id, userId))} type="button">{report.assignedToUserId === userId ? "Assigned to you" : "Assign to me"}</button></div>

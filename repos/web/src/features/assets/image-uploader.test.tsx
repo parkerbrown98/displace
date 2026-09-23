@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/problem-details";
 import { getAssetDownload, getPlaceImage } from "./asset-client";
 import { ImageUploader } from "./image-uploader";
@@ -31,7 +32,7 @@ describe("ImageUploader", () => {
       target: { files: [new File(["bad"], "payload.exe", { type: "application/octet-stream" })] },
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Choose a JPEG, PNG, or WebP image.");
+    expect(screen.getByText("Choose a JPEG, PNG, or WebP image.")).toBeInTheDocument();
     expect(uploadAsset).not.toHaveBeenCalled();
   });
 
@@ -63,7 +64,7 @@ describe("ImageUploader", () => {
     await user.click(screen.getByRole("button", { name: "Upload image" }));
 
     await waitFor(() => expect(onUploaded).toHaveBeenCalledWith(expect.objectContaining({ id: "asset-id" })));
-    expect(screen.getByRole("status")).toHaveTextContent("Image ready");
+    expect(screen.getByText("Image ready")).toBeInTheDocument();
   });
 
   it("restores a persisted image when the uploader remounts", async () => {
@@ -103,7 +104,7 @@ describe("ImageUploader", () => {
 
     await user.click(screen.getByRole("button", { name: "Upload image" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(detail);
+    expect(await screen.findByText(detail)).toBeInTheDocument();
   });
 
   it("allows retry after an object-store failure", async () => {
@@ -116,18 +117,20 @@ describe("ImageUploader", () => {
 
     await user.click(screen.getByRole("button", { name: "Upload image" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("could not reach object storage");
+    expect(await screen.findByText("The upload could not reach object storage.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload image" })).toBeEnabled();
   });
 });
 
 function renderUploader(onUploaded = vi.fn()) {
   return render(
-    <ImageUploader
-      description="Shown on your posts."
-      label="Profile photo"
-      onUploaded={onUploaded}
-      placeId="place-id"
-    />,
+    <ToastProvider>
+      <ImageUploader
+        description="Shown on your posts."
+        label="Profile photo"
+        onUploaded={onUploaded}
+        placeId="place-id"
+      />
+    </ToastProvider>,
   );
 }

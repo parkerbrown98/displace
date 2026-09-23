@@ -7,6 +7,7 @@ import { resetAuthenticationForTests, signIn } from "@/features/auth/auth-client
 import { SessionProvider } from "@/features/auth/session-provider";
 import { placeContextFixture } from "@/features/places/place-fixtures";
 import { mockServer } from "@/test/mocks/server";
+import { ToastProvider } from "@/components/ui/toast";
 import type { VoiceRoomContract } from "./voice-contracts";
 import { VoiceExperience } from "./voice-experience";
 import { VoiceRoomSettings } from "./voice-room-settings";
@@ -49,11 +50,11 @@ describe("voice experience", () => {
       http.post(`http://localhost:3001/api/v1/places/${placeId}/voice/rooms/${lounge.id}/join-token`, () => HttpResponse.json({ detail: "Voice room is full.", status: 409, title: "Conflict" }, { status: 409 })),
     );
     const user = userEvent.setup();
-    render(<SessionProvider><VoiceExperience placeSlug="game-makers" /></SessionProvider>);
+    render(<ToastProvider><SessionProvider><VoiceExperience placeSlug="game-makers" /></SessionProvider></ToastProvider>);
 
     expect(await screen.findByRole("heading", { name: "Lounge" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Join room" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Voice room is full.");
+    expect(await screen.findByText("Voice room is full.")).toBeInTheDocument();
   });
 
   it("creates a room with separate listen and speak permissions", async () => {
@@ -68,7 +69,7 @@ describe("voice experience", () => {
       }),
     );
     const user = userEvent.setup();
-    render(<VoiceRoomSettings context={placeContextFixture} onForbidden={vi.fn()} />);
+    render(<ToastProvider><VoiceRoomSettings context={placeContextFixture} onForbidden={vi.fn()} /></ToastProvider>);
 
     await screen.findByText("No voice rooms yet.");
     await user.clear(screen.getByLabelText("Name"));
@@ -87,6 +88,6 @@ describe("voice experience", () => {
       slug: "town-hall",
       speakPermission: "voice.manage",
     }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Voice room created.");
+    expect(await screen.findByText("Voice room created.")).toBeInTheDocument();
   });
 });

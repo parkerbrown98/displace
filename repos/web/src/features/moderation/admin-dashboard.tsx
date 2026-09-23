@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AppShell, ShellTopbar } from "@/components/app-shell/app-shell";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
 import { placeErrorMessage } from "@/features/places/place-access";
 import {
@@ -18,13 +19,11 @@ import {
   type InstanceSettingsContract,
 } from "./moderation-contracts";
 
-type Notice = { error?: boolean; text: string } | undefined;
-
 export function AdminDashboard() {
   const session = useSession();
   const [settings, setSettings] = useState<InstanceSettingsContract>();
   const [loading, setLoading] = useState(true);
-  const [notice, setNotice] = useState<Notice>();
+  const [loadError, setLoadError] = useState<string>();
 
   useEffect(() => {
     if (session.status !== "authenticated" || !session.user?.isInstanceAdmin) {
@@ -33,7 +32,7 @@ export function AdminDashboard() {
     let active = true;
     void getInstanceSettings()
       .then((value) => { if (active) setSettings(value); })
-      .catch((error) => { if (active) setNotice({ error: true, text: placeErrorMessage(error, "Instance settings could not be loaded.") }); })
+      .catch((error) => { if (active) setLoadError(placeErrorMessage(error, "Instance settings could not be loaded.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [session.status, session.user?.isInstanceAdmin]);
@@ -42,19 +41,19 @@ export function AdminDashboard() {
     <main className="main-content admin-page" id="main-content">
       <ShellTopbar />
       <header className="operations-heading"><p className="eyebrow">Instance</p><h1>Administration</h1><p>Public policy, feature availability, and account safety.</p></header>
-      {notice ? <p className={`form-message${notice.error ? " form-message-error" : " form-message-success"}`} role={notice.error ? "alert" : "status"}>{notice.text}</p> : null}
+      {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : null}
       {session.status === "loading" ? <LoadingPanel label="Loading account" /> : session.status !== "authenticated" ? <StatusPanel title="Sign in required" description="Sign in with an instance administrator account." /> : !session.user?.isInstanceAdmin ? <StatusPanel tone="error" title="Administration unavailable" description="Your account is not an instance administrator." /> : loading ? <LoadingPanel label="Loading instance settings" /> : settings ? <div className="admin-layout">
         <nav aria-label="Administration sections"><a href="#policy">Policy</a><a href="#features">Features</a><a href="#accounts">Accounts</a></nav>
         <div className="admin-sections">
-          <SettingsForm onNotice={setNotice} onSaved={setSettings} settings={settings} />
-          <AccountSafetyForm onNotice={setNotice} />
+          <SettingsForm onSaved={setSettings} settings={settings} />
+          <AccountSafetyForm />
         </div>
       </div> : <StatusPanel tone="error" title="Settings unavailable" description="Instance settings could not be loaded." />}
     </main>
   </AppShell>;
 }
 
-function SettingsForm({ onNotice, onSaved, settings }: { onNotice: (notice: Notice) => void; onSaved: (settings: InstanceSettingsContract) => void; settings: InstanceSettingsContract }) {
+function SettingsForm({ onSaved, settings }: { onSaved: (settings: InstanceSettingsContract) => void; settings: InstanceSettingsContract }) {
   const [pending, setPending] = useState(false);
   const publicPolicyUrls = objectValue(settings.settings.publicPolicyUrls);
   const uploads = objectValue(settings.settings.uploads);
@@ -62,7 +61,7 @@ function SettingsForm({ onNotice, onSaved, settings }: { onNotice: (notice: Noti
   const features = objectValue(settings.settings.features);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const formElement = event.currentTarget; setPending(true); onNotice(undefined);
+    event.preventDefault(); const formElement = event.currentTarget; setPending(true);
     const form = new FormData(formElement);
     try {
       const updated = await updateInstanceSettings({
@@ -84,8 +83,8 @@ function SettingsForm({ onNotice, onSaved, settings }: { onNotice: (notice: Noti
         singlePlaceMode: form.get("singlePlaceMode") === "on",
       });
       onSaved(updated);
-      onNotice({ text: "Instance settings saved." });
-    } catch (error) { onNotice({ error: true, text: placeErrorMessage(error, "Instance settings could not be saved.") }); }
+      toast.success("Instance settings saved.");
+    } catch (error) { toast.error(placeErrorMessage(error, "Instance settings could not be saved.")); }
     finally { setPending(false); }
   }
 
@@ -95,17 +94,17 @@ function SettingsForm({ onNotice, onSaved, settings }: { onNotice: (notice: Noti
   </form>;
 }
 
-function AccountSafetyForm({ onNotice }: { onNotice: (notice: Notice) => void }) {
+function AccountSafetyForm() {
   const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const formElement = event.currentTarget; setPending(true); onNotice(undefined);
+    event.preventDefault(); const formElement = event.currentTarget; setPending(true);
     const form = new FormData(formElement);
     const action = String(form.get("action")) as "restore" | "suspend";
     try {
       const result = await updateAccountStatus(String(form.get("userId")), action, { reason: String(form.get("reason")), reasonCode: String(form.get("reasonCode")) as ActionReasonCode });
-      onNotice({ text: `Account is now ${result.status}.` });
+      toast.success(`Account is now ${result.status}.`);
       formElement.reset();
-    } catch (error) { onNotice({ error: true, text: placeErrorMessage(error, "Account status could not be changed.") }); }
+    } catch (error) { toast.error(placeErrorMessage(error, "Account status could not be changed.")); }
     finally { setPending(false); }
   }
   return <section className="settings-section" id="accounts"><p className="eyebrow">Safety</p><h2>Account status</h2><form className="account-safety-form" onSubmit={submit}><label className="form-field">User ID<input name="userId" pattern="[0-9a-fA-F-]{36}" required /></label><label className="form-field">Action<Select name="action" options={[{ label: "Suspend", value: "suspend" }, { label: "Restore", value: "restore" }]} /></label><label className="form-field">Reason code<Select name="reasonCode" options={actionReasonCodes.map((reason) => ({ label: reason.replaceAll("_", " "), value: reason }))} /></label><label className="form-field wide">Reason<textarea maxLength={4000} name="reason" required rows={3} /></label><button className="danger-button" disabled={pending} type="submit"><ShieldX size={16} />{pending ? "Applying..." : "Apply status"}</button><span className="account-restore-icon" aria-hidden="true"><RotateCcw size={16} /></span></form></section>;

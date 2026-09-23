@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useState, type FormEvent } from "react";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
 import { ApiError } from "@/lib/api/problem-details";
 import { routes } from "@/lib/routes";
@@ -72,16 +73,16 @@ export function PlaceMembershipButton({ place }: { place: PlaceContract }) {
     setPending(true);
     try {
       const result = await joinPlace(place.id);
-      if (result.status === "pending") setRequestSent(true);
-      else setContext(await getPlaceContext(place.id));
-    } catch { return; }
+      if (result.status === "pending") { setRequestSent(true); toast.success("Membership request sent."); }
+      else { setContext(await getPlaceContext(place.id)); toast.success("Joined place."); }
+    } catch (error) { toast.error(placeErrorMessage(error, "This place could not be joined.")); }
     finally { setPending(false); }
   }
 
   async function leave() {
     setPending(true);
-    try { await leavePlace(place.id); setContext(null); router.refresh(); }
-    catch { return; }
+    try { await leavePlace(place.id); setContext(null); toast.success("You left this place."); router.refresh(); }
+    catch (error) { toast.error(placeErrorMessage(error, "This place could not be left.")); }
     finally { setPending(false); }
   }
 
@@ -109,17 +110,16 @@ export function PlaceSwitcher({ activeSlug }: { activeSlug?: string }) {
 export function InviteAcceptance({ placeSlug, token }: { placeSlug: string; token?: string }) {
   const session = useSession();
   const router = useRouter();
-  const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setPending(true); setMessage(null);
+    event.preventDefault(); setPending(true);
     const value = String(new FormData(event.currentTarget).get("token") ?? "");
-    try { await acceptPlaceInvite(placeSlug, value); setMessage("Invitation accepted. Opening the place..."); router.replace(routes.place(placeSlug)); router.refresh(); }
-    catch (error) { setMessage(placeErrorMessage(error, "The invitation could not be accepted.")); }
+    try { await acceptPlaceInvite(placeSlug, value); toast.success("Invitation accepted."); router.replace(routes.place(placeSlug)); router.refresh(); }
+    catch (error) { toast.error(placeErrorMessage(error, "The invitation could not be accepted.")); }
     finally { setPending(false); }
   }
   if (session.status === "anonymous") return <StatusPanel title="Sign in to accept" description="This invitation must be connected to a verified account." action={<Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(`${routes.acceptPlaceInvite(placeSlug)}?token=${token ?? ""}`)}`}>Sign in</Link>} />;
-  return <section className="settings-section invite-acceptance"><p className="eyebrow">Invitation</p><h1>Join this place</h1><p>Accept the invitation to activate your membership and assigned role.</p><form className="settings-form" method="post" onSubmit={submit}><label className="form-field">Invite token<input defaultValue={token} minLength={32} name="token" required /></label>{message ? <p className="form-message" role="status">{message}</p> : null}<button className="primary-button" disabled={pending} type="submit"><Check size={16} /> {pending ? "Accepting..." : "Accept invitation"}</button></form></section>;
+  return <section className="settings-section invite-acceptance"><p className="eyebrow">Invitation</p><h1>Join this place</h1><p>Accept the invitation to activate your membership and assigned role.</p><form className="settings-form" method="post" onSubmit={submit}><label className="form-field">Invite token<input defaultValue={token} minLength={32} name="token" required /></label><button className="primary-button" disabled={pending} type="submit"><Check size={16} /> {pending ? "Accepting..." : "Accept invitation"}</button></form></section>;
 }
 
 export function placeErrorMessage(error: unknown, fallback: string): string {

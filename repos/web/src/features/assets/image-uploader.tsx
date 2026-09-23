@@ -2,6 +2,7 @@
 
 import { ImagePlus, RefreshCw, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/problem-details";
 import { getAssetDownload, getPlaceImage, getProfileImage } from "./asset-client";
 import type { AssetContract, UploadProgress } from "./asset-contract";
@@ -35,7 +36,6 @@ export function ImageUploader({
   const [file, setFile] = useState<File>();
   const [previewUrl, setPreviewUrl] = useState<string>();
   const [progress, setProgress] = useState<UploadProgress>();
-  const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function ImageUploader({
       })
       .catch((cause: unknown) => {
         if (previewRequest.current !== request) return;
-        setError(cause instanceof ApiError
+        toast.error(cause instanceof ApiError
           ? cause.problem.detail ?? cause.problem.title
           : "The saved image could not be loaded.");
       });
@@ -65,7 +65,6 @@ export function ImageUploader({
 
   function select(nextFile?: File) {
     previewRequest.current += 1;
-    setError(undefined);
     setProgress(undefined);
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     if (!nextFile) {
@@ -74,11 +73,11 @@ export function ImageUploader({
       return;
     }
     if (!IMAGE_TYPES.includes(nextFile.type)) {
-      setError("Choose a JPEG, PNG, or WebP image.");
+      toast.error("Choose a JPEG, PNG, or WebP image.");
       return;
     }
     if (nextFile.size > MAX_IMAGE_BYTES) {
-      setError("Choose an image smaller than 25 MB.");
+      toast.error("Choose an image smaller than 25 MB.");
       return;
     }
     setFile(nextFile);
@@ -88,7 +87,6 @@ export function ImageUploader({
   async function upload() {
     if (!file) return;
     setPending(true);
-    setError(undefined);
     abortController.current = new AbortController();
     try {
       const asset = await uploadAsset(placeId, file, {
@@ -101,13 +99,14 @@ export function ImageUploader({
       setPreviewUrl(download.url);
       setFile(undefined);
       if (input.current) input.current.value = "";
+      toast.success("Image uploaded.");
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") {
-        setError("Upload cancelled.");
+        toast.error("Upload cancelled.");
       } else if (cause instanceof ApiError) {
-        setError(cause.problem.detail ?? cause.problem.title);
+        toast.error(cause.problem.detail ?? cause.problem.title);
       } else {
-        setError(cause instanceof Error ? cause.message : "The image could not be uploaded.");
+        toast.error(cause instanceof Error ? cause.message : "The image could not be uploaded.");
       }
     } finally {
       abortController.current = null;
@@ -186,7 +185,6 @@ export function ImageUploader({
             <span>{status}</span>
           </div>
         ) : null}
-        {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
       </div>
     </div>
   );

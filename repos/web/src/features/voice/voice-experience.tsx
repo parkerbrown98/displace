@@ -5,6 +5,7 @@ import { Room, RoomEvent, Track, type Participant, type RemoteTrack } from "live
 import { useEffect, useRef, useState } from "react";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { PlaceWorkspaceGate, placeErrorMessage } from "@/features/places/place-access";
 import { PlaceForumHeader } from "@/features/places/place-forum-header";
 import type { PlaceContract } from "@/features/places/place-contract";
@@ -68,7 +69,6 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [error, setError] = useState<string>();
 
   useEffect(() => {
     const socket = realtimeSocket();
@@ -93,11 +93,11 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
   useEffect(() => {
     if (room.canSpeak || !liveRoom.current || !microphoneEnabled) return;
     void liveRoom.current.localParticipant.setMicrophoneEnabled(false).finally(() => setMicrophoneEnabled(false));
-    setError("Your speaking permission changed. You can continue listening.");
+    toast.error("Your speaking permission changed. You can continue listening.");
   }, [microphoneEnabled, room.canSpeak]);
 
   async function join() {
-    setConnection("connecting"); setError(undefined);
+    setConnection("connecting");
     try {
       const ticket = await createVoiceJoinToken(placeId, room.id);
       const next = new Room({ adaptiveStream: true, dynacast: true });
@@ -111,7 +111,7 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
       next.on(RoomEvent.Reconnecting, () => setConnection("reconnecting"));
       next.on(RoomEvent.Reconnected, () => setConnection("connected"));
       next.on(RoomEvent.Disconnected, () => { setConnection("disconnected"); setMicrophoneEnabled(false); });
-      next.on(RoomEvent.MediaDevicesError, () => setError("A selected audio device is unavailable. Choose another device and try again."));
+      next.on(RoomEvent.MediaDevicesError, () => toast.error("A selected audio device is unavailable. Choose another device and try again."));
       next.on(RoomEvent.AudioPlaybackStatusChanged, (playing) => setPlaybackBlocked(!playing));
       next.on(RoomEvent.ParticipantPermissionsChanged, (_previous, participant) => {
         if (participant === next.localParticipant) {
@@ -119,7 +119,7 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
           setPublishAllowed(canPublish);
           if (!canPublish) {
             setMicrophoneEnabled(false);
-            setError("Your speaking permission changed. You can continue listening.");
+            toast.error("Your speaking permission changed. You can continue listening.");
           }
         }
         sync();
@@ -137,17 +137,17 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
           await next.localParticipant.setMicrophoneEnabled(true);
           setMicrophoneEnabled(true);
         } catch {
-          setError("Connected without a microphone. Allow microphone access or choose another input device.");
+          toast.error("Connected without a microphone. Allow microphone access or choose another input device.");
         }
       }
       try {
         setDevices(await navigator.mediaDevices?.enumerateDevices() ?? []);
       } catch {
-        setError("Audio device selection is unavailable, but the room remains connected.");
+        toast.error("Audio device selection is unavailable, but the room remains connected.");
       }
     } catch (cause) {
       await liveRoom.current?.disconnect(); liveRoom.current = null; setConnection("disconnected");
-      setError(placeErrorMessage(cause, "The voice room could not connect. Check your network and try again."));
+      toast.error(placeErrorMessage(cause, "The voice room could not connect. Check your network and try again."));
     }
   }
 
@@ -155,24 +155,23 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
   async function toggleMicrophone() {
     if (!liveRoom.current || !publishAllowed) return;
     const enabled = !microphoneEnabled;
-    try { await liveRoom.current.localParticipant.setMicrophoneEnabled(enabled); setMicrophoneEnabled(enabled); setError(undefined); }
-    catch { setError("The microphone could not be changed. Check browser and device permissions."); }
+    try { await liveRoom.current.localParticipant.setMicrophoneEnabled(enabled); setMicrophoneEnabled(enabled); }
+    catch { toast.error("The microphone could not be changed. Check browser and device permissions."); }
   }
   function toggleDeafen() { const next = !deafened; media.current?.querySelectorAll("audio").forEach((audio) => { audio.muted = next; }); setDeafened(next); }
   async function switchDevice(kind: "audioinput" | "audiooutput", deviceId: string) {
-    try { await liveRoom.current?.switchActiveDevice(kind, deviceId, true); setError(undefined); }
-    catch { setError("The selected audio device could not be activated."); }
+    try { await liveRoom.current?.switchActiveDevice(kind, deviceId, true); }
+    catch { toast.error("The selected audio device could not be activated."); }
   }
   async function resumeAudio() {
-    try { await liveRoom.current?.startAudio(); setPlaybackBlocked(false); setError(undefined); }
-    catch { setError("Browser audio playback is blocked. Allow audio for this site and try again."); }
+    try { await liveRoom.current?.startAudio(); setPlaybackBlocked(false); }
+    catch { toast.error("Browser audio playback is blocked. Allow audio for this site and try again."); }
   }
 
   const joined = connection === "connected" || connection === "reconnecting";
   const speakingAllowed = room.canSpeak && publishAllowed;
   return <section className="voice-room" aria-label={room.name}>
     <header className="voice-heading"><div><p className="eyebrow">Live audio</p><h1>{room.name}</h1><p>{participants.length} of {room.capacity} connected · <span className="voice-live-status">{realtimeConnected ? "Live" : "Connecting"}</span></p></div><span className={`voice-connection voice-connection-${connection}`}>{connection}</span></header>
-    {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
     <div className="voice-participants">{participants.length ? participants.map((participant) => <ParticipantTile key={participant.identity} participant={participant} />) : <div className="voice-empty"><Headphones size={28} /><strong>The room is quiet</strong><span>Join when you are ready to talk or listen.</span></div>}</div>
     {joined ? <div className="voice-device-panel"><Settings2 size={16} /><label>Microphone<Select aria-label="Microphone" onValueChange={(value) => void switchDevice("audioinput", value)} options={devices.filter((device) => device.kind === "audioinput").map((device) => ({ label: device.label || "Microphone", value: device.deviceId }))} /></label><label>Output<Select aria-label="Output" onValueChange={(value) => void switchDevice("audiooutput", value)} options={devices.filter((device) => device.kind === "audiooutput").map((device) => ({ label: device.label || "Speaker", value: device.deviceId }))} /></label></div> : null}
     <footer className="voice-controls">{joined ? <>{playbackBlocked ? <button className="secondary-button" onClick={() => void resumeAudio()} type="button"><Volume2 size={17} /> Enable audio</button> : null}<button aria-pressed={!microphoneEnabled} className="icon-button" disabled={!speakingAllowed} onClick={() => void toggleMicrophone()} title={speakingAllowed ? microphoneEnabled ? "Mute microphone" : "Unmute microphone" : "Speaking is not permitted"} type="button">{microphoneEnabled ? <Mic size={19} /> : <MicOff size={19} />}<span className="sr-only">{microphoneEnabled ? "Mute microphone" : "Unmute microphone"}</span></button><button aria-pressed={deafened} className="icon-button" onClick={toggleDeafen} title={deafened ? "Restore audio" : "Deafen"} type="button">{deafened ? <HeadphoneOff size={19} /> : <Headphones size={19} />}<span className="sr-only">{deafened ? "Restore audio" : "Deafen"}</span></button><button className="danger-button" onClick={() => void leave()} type="button"><PhoneOff size={17} /> Leave</button></> : <button className="primary-button" disabled={connection === "connecting" || !room.canJoin} onClick={() => void join()} type="button"><Headphones size={17} /> {connection === "connecting" ? "Joining..." : "Join room"}</button>}</footer>

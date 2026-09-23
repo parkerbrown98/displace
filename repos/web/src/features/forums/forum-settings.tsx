@@ -4,6 +4,7 @@ import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
+import { toast } from "@/components/ui/toast";
 import type { PlaceContextContract } from "@/features/places/place-contract";
 import { placePermissions } from "@/features/places/place-contract";
 import { placeErrorMessage } from "@/features/places/place-access";
@@ -21,8 +22,6 @@ import {
   type ForumInput,
 } from "./forum-client";
 
-type Notice = { kind: "error" | "success"; text: string } | null;
-
 export function ForumSettings({
   context,
   onForbidden,
@@ -31,7 +30,7 @@ export function ForumSettings({
   onForbidden: (error: unknown) => Promise<void>;
 }) {
   const [navigation, setNavigation] = useState<ForumNavigationContract>();
-  const [notice, setNotice] = useState<Notice>(null);
+  const [loadError, setLoadError] = useState<string>();
   const [pendingAction, setPendingAction] = useState<string>();
 
   async function refresh() {
@@ -42,35 +41,34 @@ export function ForumSettings({
     let active = true;
     void getForumNavigation(context.place.id)
       .then((value) => { if (active) setNavigation(value); })
-      .catch((error) => { if (active) setNotice({ kind: "error", text: placeErrorMessage(error, "Forum settings could not be loaded.") }); });
+      .catch((error) => { if (active) setLoadError(placeErrorMessage(error, "Forum settings could not be loaded.")); });
     return () => { active = false; };
   }, [context.place.id]);
 
   async function run(actionKey: string, action: () => Promise<unknown>, success: string): Promise<boolean> {
     setPendingAction(actionKey);
-    setNotice(null);
     try {
       await action();
       await refresh();
-      setNotice({ kind: "success", text: success });
+      toast.success(success);
       return true;
     } catch (error) {
       await onForbidden(error);
-      setNotice({ kind: "error", text: placeErrorMessage(error, "Forum settings could not be changed.") });
+      toast.error(placeErrorMessage(error, "Forum settings could not be changed."));
       return false;
     } finally {
       setPendingAction(undefined);
     }
   }
 
-  if (!navigation && !notice) return <section className="settings-section" id="forums"><p className="settings-muted">Loading forums...</p></section>;
+  if (!navigation && !loadError) return <section className="settings-section" id="forums"><p className="settings-muted">Loading forums...</p></section>;
 
   return (
     <section className="settings-section" id="forums">
       <p className="eyebrow">Discussion structure</p>
       <h2>Forums and tags</h2>
       <p className="settings-muted">Organize forums into ordered groups and define the tags members can apply to topics.</p>
-      <NoticeMessage notice={notice} />
+      {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : null}
 
       {navigation ? <>
         <div className="forum-admin-list">
@@ -208,8 +206,4 @@ function forumInput(form: FormData): ForumInput {
     visibility: String(form.get("visibility") ?? "public") as ForumInput["visibility"],
     writePermission: writePermission || null,
   };
-}
-
-function NoticeMessage({ notice }: { notice: Notice }) {
-  return notice ? <p className={`form-message form-message-${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.text}</p> : null;
 }

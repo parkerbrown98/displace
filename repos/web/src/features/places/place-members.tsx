@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { ReportButton } from "@/features/moderation/report-button";
 import { routes } from "@/lib/routes";
 import { PlaceWorkspaceGate, placeErrorMessage } from "./place-access";
@@ -25,8 +26,6 @@ import {
   transferPlaceOwnership,
 } from "./place-client";
 import type { PlaceContextContract, PlaceInviteContract, PlaceMemberContract, PlaceRoleContract } from "./place-contract";
-
-type Notice = { kind: "error" | "success"; text: string } | null;
 
 export function PlaceMembers({ placeId }: { placeId: string }) {
   return <PlaceWorkspaceGate placeId={placeId} returnTo={routes.placeMembers(placeId)}>{({ context, reload }) => <MemberDirectory context={context} reloadContext={reload} />}</PlaceWorkspaceGate>;
@@ -76,12 +75,10 @@ function MemberDirectory({ context, reloadContext }: { context: PlaceContextCont
 
 function MemberRow({ canManageMembers, canManageRoles, context, member, onApproved, onContextChanged, onForbidden, onRemoved, roles }: { canManageMembers: boolean; canManageRoles: boolean; context: PlaceContextContract; member: PlaceMemberContract; onApproved?: () => Promise<void>; onContextChanged: () => Promise<void>; onForbidden: (error: unknown) => Promise<void>; onRemoved: () => void; roles: PlaceRoleContract[] }) {
   const [current, setCurrent] = useState(member);
-  const [notice, setNotice] = useState<Notice>(null);
   const isOwner = current.userId === context.place.ownerUserId;
   async function action(operation: () => Promise<void>, success: string) {
-    setNotice(null);
-    try { await operation(); setNotice({ kind: "success", text: success }); }
-    catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "The member could not be updated.") }); }
+    try { await operation(); toast.success(success); }
+    catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "The member could not be updated.")); }
   }
   async function assign(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const roleId = String(new FormData(event.currentTarget).get("roleId") ?? "");
@@ -95,19 +92,17 @@ function MemberRow({ canManageMembers, canManageRoles, context, member, onApprov
     {context.viewer.isOwner && !isOwner && current.status === "active" ? <button className="secondary-button" onClick={() => void action(async () => { await transferPlaceOwnership(context.place.id, current.userId); await onContextChanged(); }, "Ownership transferred.")} type="button"><Crown size={16} /> Transfer ownership</button> : null}
     {canManageMembers && !isOwner ? <button className="danger-button" onClick={() => void action(async () => { await removePlaceMember(context.place.id, current.id); onRemoved(); }, "Member removed.")} type="button"><UserMinus size={16} /> Remove</button> : null}
     {isOwner && canManageMembers ? <small className="owner-safety">The owner cannot be removed. Transfer ownership first.</small> : null}
-    {notice ? <p className={`form-message form-message-${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.text}</p> : null}
   </article>;
 }
 
 function InvitePanel({ invites, onChanged, onForbidden, placeId, roles }: { invites: PlaceInviteContract[]; onChanged: (items: PlaceInviteContract[]) => void; onForbidden: (error: unknown) => Promise<void>; placeId: string; roles: PlaceRoleContract[] }) {
-  const [notice, setNotice] = useState<Notice>(null);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = new FormData(event.currentTarget); setNotice(null);
-    try { const invite = await createPlaceInvite(placeId, { email: String(form.get("email") || "") || undefined, roleId: String(form.get("roleId") || "") || undefined }); onChanged([invite, ...invites]); setNotice({ kind: "success", text: invite.token ? `Invitation created. Token: ${invite.token}` : "Invitation created." }); event.currentTarget.reset(); }
-    catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "Invitation could not be created.") }); }
+    event.preventDefault(); const form = new FormData(event.currentTarget);
+    try { const invite = await createPlaceInvite(placeId, { email: String(form.get("email") || "") || undefined, roleId: String(form.get("roleId") || "") || undefined }); onChanged([invite, ...invites]); toast.success("Invitation created.", invite.token ? `Token: ${invite.token}` : undefined); event.currentTarget.reset(); }
+    catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "Invitation could not be created.")); }
   }
-  async function revoke(inviteId: string) { try { await revokePlaceInvite(placeId, inviteId); onChanged(invites.filter((invite) => invite.id !== inviteId)); } catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "Invitation could not be revoked.") }); } }
-  return <section className="member-section invite-panel"><div className="section-heading"><p className="eyebrow">Access</p><h2>Invitations</h2></div><form className="invite-form" onSubmit={submit}><FormField label="Email (optional)" name="email" type="email" /><label className="form-field">Initial role<Select name="roleId" options={[{ label: "Member default", value: "" }, ...roles.filter((role) => role.name !== "Owner").map((role) => ({ label: role.name, value: role.id }))]} /></label><button className="primary-button" type="submit"><MailPlus size={16} /> Create invite</button></form>{notice ? <p className={`form-message form-message-${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.text}</p> : null}<div className="invite-list">{invites.map((invite) => <div key={invite.id}><span>{invite.email ?? "Shareable invitation"}<small>{invite.useCount}/{invite.maxUses} uses · expires {formatDate(invite.expiresAt)}</small></span><button className="icon-button" onClick={() => void revoke(invite.id)} title="Revoke invitation" type="button"><Trash2 size={16} /><span className="sr-only">Revoke invitation</span></button></div>)}</div></section>;
+  async function revoke(inviteId: string) { try { await revokePlaceInvite(placeId, inviteId); onChanged(invites.filter((invite) => invite.id !== inviteId)); toast.success("Invitation revoked."); } catch (error) { await onForbidden(error); toast.error(placeErrorMessage(error, "Invitation could not be revoked.")); } }
+  return <section className="member-section invite-panel"><div className="section-heading"><p className="eyebrow">Access</p><h2>Invitations</h2></div><form className="invite-form" onSubmit={submit}><FormField label="Email (optional)" name="email" type="email" /><label className="form-field">Initial role<Select name="roleId" options={[{ label: "Member default", value: "" }, ...roles.filter((role) => role.name !== "Owner").map((role) => ({ label: role.name, value: role.id }))]} /></label><button className="primary-button" type="submit"><MailPlus size={16} /> Create invite</button></form><div className="invite-list">{invites.map((invite) => <div key={invite.id}><span>{invite.email ?? "Shareable invitation"}<small>{invite.useCount}/{invite.maxUses} uses · expires {formatDate(invite.expiresAt)}</small></span><button className="icon-button" onClick={() => void revoke(invite.id)} title="Revoke invitation" type="button"><Trash2 size={16} /><span className="sr-only">Revoke invitation</span></button></div>)}</div></section>;
 }
 
 export function PlaceMemberProfile({ memberId, placeId }: { memberId: string; placeId: string }) {

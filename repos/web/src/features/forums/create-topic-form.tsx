@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { PlaceWorkspaceGate, placeErrorMessage, usePlaceWorkspace } from "@/features/places/place-access";
 import type { PlaceContextContract, PlaceContract, PlacePermission } from "@/features/places/place-contract";
 import { PlaceForumHeader } from "@/features/places/place-forum-header";
@@ -62,14 +63,12 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
   const forums = navigation.groups.flatMap((group) => group.forums).filter((forum) => !forum.writePermission || permissions.includes(forum.writePermission as PlacePermission));
   const [document, setDocument] = useState<RichTextDocumentContract>();
   const [editorEmpty, setEditorEmpty] = useState(true);
-  const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!document || editorEmpty) return;
     setPending(true);
-    setError(undefined);
     const data = new FormData(event.currentTarget);
     try {
       const topic = await createTopic(place.id, String(data.get("forumId")), {
@@ -80,7 +79,7 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
       router.push(routes.topic(place.slug, topic.id));
       router.refresh();
     } catch (cause) {
-      setError(placeErrorMessage(cause, "The topic could not be created."));
+      toast.error(placeErrorMessage(cause, "The topic could not be created."));
       setPending(false);
     }
   }
@@ -105,7 +104,6 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
         </div>
         {navigation.tags.length ? <fieldset className="topic-tag-picker"><legend>Tags</legend>{navigation.tags.map((tag) => <label key={tag.id}><input name="tagIds" type="checkbox" value={tag.id} /><span>{tag.name}</span></label>)}</fieldset> : null}
         <ForumEditor canUpload={permissions.includes("upload.create")} label="Opening post" onChange={(nextDocument, isEmpty) => { setDocument(nextDocument); setEditorEmpty(isEmpty); }} placeId={place.id} />
-        {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
         <div className="topic-compose-actions"><button className="primary-button" disabled={pending || editorEmpty} type="submit"><Send size={16} />{pending ? "Publishing..." : "Publish topic"}</button></div>
       </form>
     </main>

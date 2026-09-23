@@ -4,6 +4,7 @@ import { Edit3, Hash, Send, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
 import { ReportButton } from "@/features/moderation/report-button";
 import { PlaceForumHeader } from "@/features/places/place-forum-header";
@@ -106,12 +107,11 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!page || !draft.trim()) return;
-    setError(undefined);
     try {
       const message = await sendChatMessage(place.id, page.channel.id, draft.trim());
       setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
       setDraft("");
-    } catch (cause) { setError(placeErrorMessage(cause, "The message could not be sent.")); }
+    } catch (cause) { toast.error(placeErrorMessage(cause, "The message could not be sent.")); }
   }
 
   async function saveEdit(messageId: string, body: string) {
@@ -119,13 +119,13 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
       const message = await editChatMessage(place.id, messageId, body);
       setMessages((current) => current.map((item) => item.id === message.id ? message : item));
       setEditingId(undefined);
-    } catch (cause) { setError(placeErrorMessage(cause, "The message could not be updated.")); }
+    } catch (cause) { toast.error(placeErrorMessage(cause, "The message could not be updated.")); }
   }
 
   async function remove(messageId: string) {
     if (!window.confirm("Delete this message?")) return;
     try { await deleteChatMessage(place.id, messageId); }
-    catch (cause) { setError(placeErrorMessage(cause, "The message could not be deleted.")); }
+    catch (cause) { toast.error(placeErrorMessage(cause, "The message could not be deleted.")); }
   }
 
   if (loading) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading chat" /></main>;
@@ -137,7 +137,6 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
       <aside className="chat-channel-list"><p className="eyebrow">Channels</p>{channels.map((channel) => <Link className={`chat-channel-link${channel.id === page.channel.id ? " active" : ""}`} href={routes.chat(place.slug, channel.slug)} key={channel.id}><Hash size={15} />{channel.name}</Link>)}</aside>
       <section className="chat-conversation" aria-label={`${page.channel.name} chat`}>
         <header className="chat-heading"><div><p className="eyebrow">Live discussion</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status">{realtimeConnected ? "Live" : "Connecting"}</span></header>
-        {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
         <div className="chat-message-list">{messages.length ? messages.map((message) => <ChatMessage canManage={page.permissions.canManage} currentUserId={session.user?.id} editing={editingId === message.id} key={message.id} message={message} onCancel={() => setEditingId(undefined)} onDelete={() => void remove(message.id)} onEdit={() => setEditingId(message.id)} onSave={saveEdit} placeId={place.id} />) : <p className="chat-empty">No messages yet. Start the conversation.</p>}</div>
         {typingUsers.length ? <p className="chat-typing" role="status">Someone is typing...</p> : null}
         {page.permissions.canSend ? <form className="chat-composer" onSubmit={send}><label className="sr-only" htmlFor="chat-message">Message {page.channel.name}</label><textarea id="chat-message" maxLength={10_000} onChange={(event) => updateDraft(event.target.value)} placeholder={`Message #${page.channel.name}`} value={draft} /><button className="icon-button chat-send" disabled={!draft.trim()} title="Send message" type="submit"><Send size={18} /><span className="sr-only">Send message</span></button></form> : <p className="chat-readonly">You can read this channel, but cannot send messages.</p>}

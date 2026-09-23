@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useState, type FormEvent, type Re
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
+import { toast } from "@/components/ui/toast";
 import { getProfileImage, setProfileImage } from "@/features/assets/asset-client";
 import { ImageUploader } from "@/features/assets/image-uploader";
 import { getPlaceContext, listMyPlaces } from "@/features/places/place-client";
@@ -15,8 +16,6 @@ import type { AccountSession, UserProfile } from "./auth-contracts";
 import { changeEmail, changePassword, listSessions, revokeSession, updateProfile } from "./auth-client";
 import { authErrorMessage } from "./auth-error-message";
 import { useSession } from "./session-provider";
-
-type Notice = { kind: "error" | "success"; text: string } | null;
 
 interface AccountSettingsWorkspace {
   refreshProfile: () => Promise<void>;
@@ -174,53 +173,50 @@ function ProfileImageSettings() {
 }
 
 function ProfileSettings({ user, onSaved }: { user: { displayName: string; handle: string }; onSaved: () => Promise<void> }) {
-  const [notice, setNotice] = useState<Notice>(null);
   const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setPending(true); setNotice(null);
+    event.preventDefault(); setPending(true);
     const form = new FormData(event.currentTarget);
     try {
       await updateProfile({ displayName: String(form.get("displayName") ?? ""), handle: String(form.get("handle") ?? "") });
-      await onSaved(); setNotice({ kind: "success", text: "Profile saved." });
-    } catch (cause) { setNotice({ kind: "error", text: authErrorMessage(cause, "Profile could not be saved.") }); }
+      await onSaved(); toast.success("Profile saved.");
+    } catch (cause) { toast.error(authErrorMessage(cause, "Profile could not be saved.")); }
     finally { setPending(false); }
   }
   return <section className="settings-section" id="profile"><p className="eyebrow">Public identity</p><h2>Profile</h2><form className="settings-form" method="post" onSubmit={submit}>
     <FormField defaultValue={user.displayName} label="Display name" maxLength={100} name="displayName" required />
     <FormField defaultValue={user.handle} hint="3-32 lowercase letters, numbers, or underscores." label="Handle" maxLength={32} minLength={3} name="handle" pattern="[a-z0-9_]{3,32}" required />
-    <NoticeMessage notice={notice} /><button className="primary-button" disabled={pending} type="submit">{pending ? "Saving..." : "Save profile"}</button>
+    <button className="primary-button" disabled={pending} type="submit">{pending ? "Saving..." : "Save profile"}</button>
   </form></section>;
 }
 
 function EmailSettings({ email, verified }: { email: string; verified: boolean }) {
-  const [notice, setNotice] = useState<Notice>(null);
   const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setPending(true); setNotice(null);
-    try { await changeEmail(String(new FormData(event.currentTarget).get("email") ?? "")); setNotice({ kind: "success", text: "A verification message has been queued." }); }
-    catch (cause) { setNotice({ kind: "error", text: authErrorMessage(cause, "Email could not be changed.") }); }
+    event.preventDefault(); setPending(true);
+    try { await changeEmail(String(new FormData(event.currentTarget).get("email") ?? "")); toast.success("Verification email sent.", "Check your inbox to confirm the new address."); }
+    catch (cause) { toast.error(authErrorMessage(cause, "Email could not be changed.")); }
     finally { setPending(false); }
   }
   return <section className="settings-section" id="email"><div className="settings-section-heading"><div><p className="eyebrow">Contact</p><h2>Email</h2></div><span className={`verification-state ${verified ? "verified" : ""}`}>{verified ? "Verified" : "Verification pending"}</span></div><form className="settings-form" method="post" onSubmit={submit}>
     <FormField autoComplete="email" defaultValue={email} label="Email address" name="email" type="email" required />
-    <NoticeMessage notice={notice} /><button className="primary-button" disabled={pending} type="submit">{pending ? "Sending..." : "Change email"}</button>
+    <button className="primary-button" disabled={pending} type="submit">{pending ? "Sending..." : "Change email"}</button>
   </form></section>;
 }
 
 function PasswordSettings() {
-  const [notice, setNotice] = useState<Notice>(null);
   const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setPending(true); setNotice(null);
+    event.preventDefault(); setPending(true);
     const form = new FormData(event.currentTarget);
-    try { await changePassword(String(form.get("currentPassword") ?? ""), String(form.get("newPassword") ?? "")); event.currentTarget.reset(); setNotice({ kind: "success", text: "Password changed." }); }
-    catch (cause) { setNotice({ kind: "error", text: authErrorMessage(cause, "Password could not be changed. Check your current password.") }); }
+    try { await changePassword(String(form.get("currentPassword") ?? ""), String(form.get("newPassword") ?? "")); event.currentTarget.reset(); toast.success("Password changed."); }
+    catch (cause) { toast.error(authErrorMessage(cause, "Password could not be changed. Check your current password.")); }
     finally { setPending(false); }
   }
   return <section className="settings-section" id="password"><p className="eyebrow">Credentials</p><h2>Password</h2><form className="settings-form" method="post" onSubmit={submit}>
     <FormField autoComplete="current-password" label="Current password" name="currentPassword" type="password" required />
     <FormField autoComplete="new-password" hint="Use at least 12 characters." label="New password" minLength={12} maxLength={256} name="newPassword" type="password" required />
-    <NoticeMessage notice={notice} /><button className="primary-button" disabled={pending} type="submit">{pending ? "Updating..." : "Change password"}</button>
+    <button className="primary-button" disabled={pending} type="submit">{pending ? "Updating..." : "Change password"}</button>
   </form></section>;
 }
 
@@ -231,10 +227,6 @@ function SessionList({ sessions, onRevoke }: { sessions: AccountSession[]; onRev
     <div><strong>{session.userAgent ?? "Unknown device"}{session.current ? " (current)" : ""}</strong><span>Last active {formatSessionDate(session.lastSeenAt)}{session.ipAddress ? ` · ${session.ipAddress}` : ""}</span></div>
     {!session.current ? <button className="icon-button" onClick={() => void onRevoke(session.id)} title="Revoke session" type="button"><Trash2 size={17} /><span className="sr-only">Revoke {session.userAgent ?? "session"}</span></button> : null}
   </article>)}</div>;
-}
-
-function NoticeMessage({ notice }: { notice: Notice }) {
-  return notice ? <p className={`form-message form-message-${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.text}</p> : null;
 }
 
 function formatSessionDate(value: string): string {

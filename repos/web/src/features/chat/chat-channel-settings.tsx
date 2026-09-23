@@ -4,12 +4,11 @@ import { Archive, Plus, Save } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
+import { toast } from "@/components/ui/toast";
 import { placeErrorMessage } from "@/features/places/place-access";
 import { placePermissions, type PlaceContextContract, type PlacePermission } from "@/features/places/place-contract";
 import { archiveChatChannel, createChatChannel, listChatChannels, updateChatChannel } from "./chat-client";
 import type { ChatChannelContract, CreateChatChannelInput, UpdateChatChannelInput } from "./chat-contracts";
-
-type Notice = { kind: "error" | "success"; text: string } | null;
 
 export function ChatChannelSettings({
   context,
@@ -19,7 +18,7 @@ export function ChatChannelSettings({
   onForbidden: (error: unknown) => Promise<void>;
 }) {
   const [channels, setChannels] = useState<ChatChannelContract[]>();
-  const [notice, setNotice] = useState<Notice>(null);
+  const [loadError, setLoadError] = useState<string>();
   const [pendingAction, setPendingAction] = useState<string>();
 
   async function refresh() {
@@ -30,37 +29,34 @@ export function ChatChannelSettings({
     let active = true;
     void listChatChannels(context.place.id)
       .then((value) => { if (active) setChannels(value); })
-      .catch((error) => { if (active) setNotice({ kind: "error", text: placeErrorMessage(error, "Chat channels could not be loaded.") }); });
+      .catch((error) => { if (active) setLoadError(placeErrorMessage(error, "Chat channels could not be loaded.")); });
     return () => { active = false; };
   }, [context.place.id]);
 
   async function run(actionKey: string, action: () => Promise<unknown>, success: string): Promise<boolean> {
     setPendingAction(actionKey);
-    setNotice(null);
     try {
       await action();
       await refresh();
-      setNotice({ kind: "success", text: success });
+      toast.success(success);
       return true;
     } catch (error) {
       await onForbidden(error);
-      setNotice({ kind: "error", text: placeErrorMessage(error, "Chat channels could not be changed.") });
+      toast.error(placeErrorMessage(error, "Chat channels could not be changed."));
       return false;
     } finally {
       setPendingAction(undefined);
     }
   }
 
-  if (!channels && !notice) return <section className="settings-section" id="chat"><p className="settings-muted">Loading chat channels...</p></section>;
+  if (!channels && !loadError) return <section className="settings-section" id="chat"><p className="settings-muted">Loading chat channels...</p></section>;
 
   return (
     <section className="settings-section" id="chat">
       <p className="eyebrow">Live conversation</p>
       <h2>Chat channels</h2>
       <p className="settings-muted">Create the spaces members use for real-time conversation and control who can read or post in each one.</p>
-      <NoticeMessage notice={notice} />
-      {channels?.length ? <div className="role-list">{channels.map((channel) => <ChatChannelEditor channel={channel} disabled={Boolean(pendingAction)} key={channel.id} onArchive={() => run(`archive-${channel.id}`, () => archiveChatChannel(context.place.id, channel.id), "Channel archived.")} onSave={(input) => run(`channel-${channel.id}`, () => updateChatChannel(context.place.id, channel.id, input), "Channel saved.")} />)}</div> : <p className="settings-muted">No chat channels yet. Create a General channel to make Chat available to members.</p>}
-      <NewChatChannelForm disabled={Boolean(pendingAction)} onCreate={(input) => run("new-channel", () => createChatChannel(context.place.id, input), "Channel created.")} />
+      {loadError ? <p className="form-message form-message-error" role="alert">{loadError}</p> : <>{channels?.length ? <div className="role-list">{channels.map((channel) => <ChatChannelEditor channel={channel} disabled={Boolean(pendingAction)} key={channel.id} onArchive={() => run(`archive-${channel.id}`, () => archiveChatChannel(context.place.id, channel.id), "Channel archived.")} onSave={(input) => run(`channel-${channel.id}`, () => updateChatChannel(context.place.id, channel.id, input), "Channel saved.")} />)}</div> : <p className="settings-muted">No chat channels yet. Create a General channel to make Chat available to members.</p>}<NewChatChannelForm disabled={Boolean(pendingAction)} onCreate={(input) => run("new-channel", () => createChatChannel(context.place.id, input), "Channel created.")} /></>}
     </section>
   );
 }
@@ -127,8 +123,4 @@ function channelUpdateInput(form: FormData): UpdateChatChannelInput {
 function permissionFrom(form: FormData, field: string): PlacePermission | null {
   const value = String(form.get(field) ?? "");
   return placePermissions.includes(value as PlacePermission) ? value as PlacePermission : null;
-}
-
-function NoticeMessage({ notice }: { notice: Notice }) {
-  return notice ? <p className={`form-message form-message-${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>{notice.text}</p> : null;
 }
