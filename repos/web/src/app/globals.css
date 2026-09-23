@@ -3772,7 +3772,11 @@ textarea:focus-visible {
 	font-style: italic;
 }
 
-.topic-compose-page,
+.topic-compose-page {
+	max-width: none;
+	padding-bottom: 70px;
+}
+
 .saved-page {
 	max-width: 920px;
 	padding-bottom: 70px;
