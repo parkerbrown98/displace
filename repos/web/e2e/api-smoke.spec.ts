@@ -4,10 +4,16 @@ import { createCommunity, createDeletedReply, registerVerifiedUser } from "./sup
 test("renders and navigates the API-backed community", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/discover$/);
-  await expect(page.getByRole("heading", { name: "Find communities and conversations" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Find your people/ })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create account" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+
+  const search = page.locator(".discovery-command");
+  await search.getByRole("searchbox", { name: "Search" }).fill("unlikely-public-search-term");
+  await search.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("heading", { name: "No matches found" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Search is unavailable" })).toHaveCount(0);
 });
 
 test("public discovery, forum, topic, and profile are crawlable", async ({ page, request }, testInfo) => {

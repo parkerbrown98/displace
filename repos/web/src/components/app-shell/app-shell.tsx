@@ -107,7 +107,7 @@ export function ShellTopbar() {
   const pathname = usePathname();
   const session = useSession();
   const isPlaceRoute = pathname.startsWith("/places/");
-  if (isPlaceRoute) return null;
+  if (isPlaceRoute || pathname === routes.discover) return null;
   return (
     <header className="topbar">
       <form className="search-box" action={routes.discover} role="search">

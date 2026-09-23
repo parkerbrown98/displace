@@ -72,15 +72,20 @@ export class PlacesService {
 
   async discover(query: PlaceDiscoveryQueryDto) {
     const cursor = query.cursor ? this.decodeCursor(query.cursor) : undefined;
-    const records = await this.places.listPublic({
-      cursor,
-      joinPolicy: query.joinPolicy,
-      limit: query.limit,
-      query: query.q?.trim() || undefined,
-      singlePlaceSlug: this.config.get('SINGLE_PLACE_MODE', { infer: true })
-        ? this.config.get('SINGLE_PLACE_SLUG', { infer: true })
-        : undefined,
-    });
+    const singlePlaceSlug = this.config.get('SINGLE_PLACE_MODE', { infer: true })
+      ? this.config.get('SINGLE_PLACE_SLUG', { infer: true })
+      : undefined;
+    const [records, tags] = await Promise.all([
+      this.places.listPublic({
+        cursor,
+        joinPolicy: query.joinPolicy,
+        limit: query.limit,
+        query: query.q?.trim() || undefined,
+        singlePlaceSlug,
+        tag: query.tag,
+      }),
+      this.places.listPublicTagFacets(singlePlaceSlug),
+    ]);
     const hasMore = records.length > query.limit;
     const items = records.slice(0, query.limit);
     const last = items.at(-1);
@@ -93,6 +98,7 @@ export class PlacesService {
               id: last.id,
             })
           : undefined,
+          tags,
     };
   }
 
@@ -160,7 +166,30 @@ export class PlacesService {
     settings: Record<string, unknown>,
   ) {
     await this.requireVerified(userId);
-    return this.places.updateSettings(placeId, settings, userId, this.clock.now());
+    return this.places.updateSettings(
+      placeId,
+      this.normalizeSettings(settings),
+      userId,
+      this.clock.now(),
+    );
+  }
+
+  private normalizeSettings(settings: Record<string, unknown>) {
+    if (settings.tags === undefined) return settings;
+    if (!Array.isArray(settings.tags) || settings.tags.length > 8) {
+      throw new BadRequestException('Discovery tags must contain at most 8 items.');
+    }
+    const tags = [...new Set(settings.tags.map((value) => {
+      if (typeof value !== 'string') {
+        throw new BadRequestException('Discovery tags must be strings.');
+      }
+      const tag = value.trim().toLowerCase().replace(/\s+/g, '-');
+      if (tag.length < 2 || tag.length > 24 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tag)) {
+        throw new BadRequestException('Discovery tags must use 2-24 letters, numbers, or hyphens.');
+      }
+      return tag;
+    }))];
+    return { ...settings, tags };
   }
 
   async archive(placeId: string, userId: string): Promise<void> {

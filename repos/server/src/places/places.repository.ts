@@ -4,12 +4,14 @@ import {
   desc,
   eq,
   gt,
+  getTableColumns,
   ilike,
   inArray,
   isNull,
   lt,
   max,
   or,
+  sql,
 } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { Database } from '../database/database.types.js';
@@ -19,6 +21,7 @@ import {
   memberRoles,
   outboxEvents,
   placeMembers,
+  placeProfileAssets,
   places,
   rolePermissions,
   roles,
@@ -166,6 +169,7 @@ export class PlacesRepository {
     limit: number;
     query?: string;
     singlePlaceSlug?: string;
+    tag?: string;
   }) {
     const cursor = options.cursor
       ? or(
@@ -177,8 +181,18 @@ export class PlacesRepository {
         )
       : undefined;
     return this.database
-      .select()
+      .select({
+        ...getTableColumns(places),
+        hasBanner: sql<boolean>`${placeProfileAssets.assetId} is not null`,
+      })
       .from(places)
+      .leftJoin(
+        placeProfileAssets,
+        and(
+          eq(placeProfileAssets.placeId, places.id),
+          eq(placeProfileAssets.kind, 'banner'),
+        ),
+      )
       .where(
         and(
           eq(places.visibility, 'public'),
@@ -192,6 +206,9 @@ export class PlacesRepository {
                 ilike(places.description, `%${options.query}%`),
               )
             : undefined,
+          options.tag
+            ? sql`${places.settings}->'tags' @> ${JSON.stringify([options.tag])}::jsonb`
+            : undefined,
           options.singlePlaceSlug
             ? eq(places.slug, options.singlePlaceSlug)
             : undefined,
@@ -200,6 +217,23 @@ export class PlacesRepository {
       )
       .orderBy(desc(places.createdAt), desc(places.id))
       .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
+  }
+
+  async listPublicTagFacets(singlePlaceSlug?: string) {
+    const tag = sql<string>`jsonb_array_elements_text(coalesce(${places.settings}->'tags', '[]'::jsonb))`;
+    return this.database
+      .select({ count: sql<number>`count(*)::int`, name: tag })
+      .from(places)
+      .where(
+        and(
+          eq(places.visibility, 'public'),
+          isNull(places.archivedAt),
+          singlePlaceSlug ? eq(places.slug, singlePlaceSlug) : undefined,
+        ),
+      )
+      .groupBy(tag)
+      .orderBy(desc(sql`count(*)`), tag)
+      .limit(24);
   }
 
   async listForUser(

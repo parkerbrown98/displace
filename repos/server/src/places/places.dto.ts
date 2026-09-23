@@ -59,6 +59,13 @@ export class PlaceDiscoveryQueryDto extends CursorQueryDto {
   @IsEnum(PlaceJoinPolicyDto)
   @IsOptional()
   joinPolicy?: PlaceJoinPolicyDto;
+
+  @ApiPropertyOptional({ maxLength: 24, minLength: 2, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' })
+  @IsString()
+  @Length(2, 24)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @IsOptional()
+  tag?: string;
 }
 
 export class CreatePlaceDto {
@@ -138,6 +145,8 @@ export class PlaceDto {
   joinPolicy: PlaceJoinPolicyDto;
   @ApiProperty({ type: 'object', additionalProperties: true })
   settings: Record<string, unknown>;
+  @ApiPropertyOptional()
+  hasBanner?: boolean;
   @ApiPropertyOptional({ format: 'date-time' })
   archivedAt: Date | null;
   @ApiProperty({ format: 'date-time' })
@@ -151,6 +160,15 @@ export class PlacePageDto {
   items: PlaceDto[];
   @ApiPropertyOptional()
   nextCursor?: string;
+  @ApiPropertyOptional({ isArray: true, type: () => PlaceTagFacetDto })
+  tags?: PlaceTagFacetDto[];
+}
+
+export class PlaceTagFacetDto {
+  @ApiProperty()
+  name: string;
+  @ApiProperty()
+  count: number;
 }
 
 export class PlaceViewerDto {

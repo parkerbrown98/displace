@@ -17,7 +17,8 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
   const joinPolicy = queryValue(parameters.join);
   const query = queryValue(parameters.q)?.trim();
   const type = searchType(queryValue(parameters.type));
-  const placeId = queryValue(parameters.placeId);
+  const placeId = queryValue(parameters.placeId) || undefined;
+  const tag = discoveryTag(queryValue(parameters.tag));
   const hasQuery = Boolean(query && query.length >= 2);
   const selectedPlacePromise = placeId ? loadSelectedPlace(placeId) : Promise.resolve(undefined);
 
@@ -31,16 +32,20 @@ export default async function DiscoverPage({ searchParams }: PageProps<"/discove
 
   const [selectedPlace, places] = await Promise.all([
     selectedPlacePromise,
-    loadDiscovery({ cursor: queryValue(parameters.cursor), joinPolicy }),
+    loadDiscovery({ cursor: queryValue(parameters.cursor), joinPolicy, tag }),
   ]);
-  return <PublicShell><DiscoveryView joinPolicy={joinPolicy} placeId={placeId} places={places} query={query} selectedPlace={selectedPlace} type={type} /></PublicShell>;
+  return <PublicShell><DiscoveryView joinPolicy={joinPolicy} placeId={placeId} places={places} query={query} selectedPlace={selectedPlace} tag={tag} type={type} /></PublicShell>;
 }
 
 function searchType(value?: string): "place" | "post" | "topic" | undefined {
   return value === "place" || value === "post" || value === "topic" ? value : undefined;
 }
 
-async function loadDiscovery(parameters: { cursor?: string; joinPolicy?: string }) {
+function discoveryTag(value?: string): string | undefined {
+  return value && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) ? value : undefined;
+}
+
+async function loadDiscovery(parameters: { cursor?: string; joinPolicy?: string; tag?: string }) {
   try {
     return await listPublicPlaces(parameters);
   } catch (error) {

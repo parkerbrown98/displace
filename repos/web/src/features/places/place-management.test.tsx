@@ -19,10 +19,12 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 describe("place management", () => {
   let createdForumGroup: unknown;
   let createdForum: unknown;
+  let updatedSettings: unknown;
 
   beforeEach(async () => {
     createdForumGroup = undefined;
     createdForum = undefined;
+    updatedSettings = undefined;
     mockServer.use(
       http.post("http://localhost:3001/api/v1/auth/login", () => HttpResponse.json(createAuthenticationFixture())),
       http.post("http://localhost:3001/api/v1/auth/refresh", () => HttpResponse.json(createAuthenticationFixture())),
@@ -49,6 +51,10 @@ describe("place management", () => {
         ...await request.json() as object,
         id: "created-place",
       })),
+      http.patch("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/settings", async ({ request }) => {
+        updatedSettings = await request.json();
+        return HttpResponse.json(placeContractFixture);
+      }),
       http.post("http://localhost:3001/api/v1/places/game-makers/invites/accept", () => HttpResponse.json({ memberId: memberFixture.id, status: "active" })),
     );
     await signIn({ identifier: "parker", password: "correct horse battery staple" });
@@ -78,6 +84,17 @@ describe("place management", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /Join policy/ }), "approval");
     await user.click(screen.getByRole("button", { name: "Create place" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/places/tabletop-studio/settings"));
+  });
+
+  it("configures tags used for public discovery", async () => {
+    const user = userEvent.setup();
+    render(<SessionProvider><PlaceSettings placeId={placeContractFixture.slug} /></SessionProvider>);
+    await user.type(await screen.findByLabelText(/Discovery tags/), "Game Design, Accessibility");
+    await user.click(screen.getByRole("button", { name: "Save preferences" }));
+
+    await waitFor(() => expect(updatedSettings).toMatchObject({
+      settings: { locale: "en-US", tags: ["Game Design", "Accessibility"], topicSort: "activity" },
+    }));
   });
 
   it("shows role capabilities and protects the owner in member management", async () => {

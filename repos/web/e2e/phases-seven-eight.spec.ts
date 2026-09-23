@@ -20,7 +20,7 @@ test("opens Discover with the current place selected", async ({ page, request },
 
   await expect(page).toHaveURL(`/discover?placeId=${community.placeId}`);
   await expect(page.getByRole("combobox", { name: "Search scope" })).toHaveValue(community.placeId);
-  await expect(page.locator(".search-filters").getByRole("searchbox", { name: "Search" })).toBeFocused();
+  await expect(page.locator(".discovery-command").getByRole("searchbox", { name: "Search" })).toBeFocused();
 });
 
 test("indexes public content and delivers chat mentions over the live stack", async ({ browser, page, request }, testInfo) => {

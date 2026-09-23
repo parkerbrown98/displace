@@ -7,6 +7,7 @@ export interface PlaceContract {
   visibility: "private" | "public" | "unlisted";
   joinPolicy: "approval" | "invite_only" | "open";
   settings: Record<string, unknown>;
+  hasBanner?: boolean;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -15,6 +16,18 @@ export interface PlaceContract {
 export interface PlacePageContract {
   items: PlaceContract[];
   nextCursor?: string;
+  tags?: PlaceTagFacetContract[];
+}
+
+export interface PlaceTagFacetContract {
+  count: number;
+  name: string;
+}
+
+export function placeDiscoveryTags(place: PlaceContract): string[] {
+  return Array.isArray(place.settings.tags)
+    ? place.settings.tags.filter((tag): tag is string => typeof tag === "string")
+    : [];
 }
 
 export const placePermissions = [

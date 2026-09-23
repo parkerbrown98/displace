@@ -2,13 +2,18 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  HttpStatus,
+  NotFoundException,
   Param,
   ParseEnumPipe,
   ParseUUIDPipe,
   Post,
   Put,
+  Redirect,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -16,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/authentication.guard.js';
+import type { AppEnvironment } from '../config/environment.js';
 import type {
   AuthenticatedUser,
   AuthorizedPlace,
@@ -25,6 +31,7 @@ import { CurrentPlace } from '../platform/authorization/current-place.decorator.
 import { CurrentUser } from '../platform/authorization/current-user.decorator.js';
 import { RequirePermissions } from '../platform/authorization/require-permissions.decorator.js';
 import { PlaceContextGuard } from '../places/place-context.guard.js';
+import { PlacesRepository } from '../places/places.repository.js';
 import {
   AssetDownloadDto,
   AssetDto,
@@ -44,6 +51,42 @@ enum UserImageKind {
 enum PlaceImageKind {
   Banner = 'banner',
   Icon = 'icon',
+}
+
+@ApiTags('Public assets')
+@Controller({ path: 'public/places/:placeId/images', version: '1' })
+export class PublicPlaceImagesController {
+  constructor(
+    private readonly assets: AssetsService,
+    private readonly places: PlacesRepository,
+    private readonly config: ConfigService<AppEnvironment, true>,
+  ) {}
+
+  @Get('banner')
+  @Header('Cross-Origin-Resource-Policy', 'cross-origin')
+  @Redirect(undefined, HttpStatus.TEMPORARY_REDIRECT)
+  async getBanner(@Param('placeId', UUID_V7_PIPE) placeId: string) {
+    const place = await this.places.findByIdentifier(placeId);
+    const configuredSlug = this.config.get('SINGLE_PLACE_SLUG', { infer: true });
+    if (
+      !place ||
+      place.archivedAt ||
+      place.visibility !== 'public' ||
+      (this.config.get('SINGLE_PLACE_MODE', { infer: true }) &&
+        place.slug !== configuredSlug)
+    ) {
+      throw new NotFoundException('Place banner was not found.');
+    }
+    const reference = await this.assets.getPlaceImage(place.id, 'banner');
+    if (!reference.assetId) {
+      throw new NotFoundException('Place banner was not found.');
+    }
+    const download = await this.assets.createDownloadUrl(
+      place.id,
+      reference.assetId,
+    );
+    return { statusCode: HttpStatus.TEMPORARY_REDIRECT, url: download.url };
+  }
 }
 
 @ApiTags('Assets')

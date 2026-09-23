@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { PlacesModule } from '../places/places.module.js';
-import { AssetsController } from './assets.controller.js';
+import { AssetsController, PublicPlaceImagesController } from './assets.controller.js';
 import {
   ASSETS_REPOSITORY,
   MEDIA_QUEUE,
@@ -14,7 +14,7 @@ import { ObjectStorageService } from './object-storage.service.js';
 
 @Module({
   imports: [AuthModule, PlacesModule],
-  controllers: [AssetsController],
+  controllers: [AssetsController, PublicPlaceImagesController],
   providers: [
     AssetsRepository,
     AssetsService,

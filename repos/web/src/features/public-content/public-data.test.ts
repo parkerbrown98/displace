@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getPublicProfile, listPublicTopics, PublicResourceError, searchPublicContent } from "./public-data";
+import { getPublicProfile, listPublicPlaces, listPublicTopics, PublicResourceError, searchPublicContent } from "./public-data";
 
 describe("public content data", () => {
   afterEach(() => {
@@ -29,6 +29,22 @@ describe("public content data", () => {
         credentials: "omit",
         next: { revalidate: 60, tags: ["place:game-makers:topics"] },
       }),
+    );
+  });
+
+  it("forwards discovery tags to public places", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [], tags: [] }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await listPublicPlaces({ joinPolicy: "open", tag: "game-design" });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/v1/places?joinPolicy=open&tag=game-design",
+      expect.objectContaining({ next: { revalidate: 60, tags: ["places"] } }),
     );
   });
 

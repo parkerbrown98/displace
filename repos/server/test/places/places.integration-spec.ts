@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { AssetsRepository } from '../../src/assets/assets.repository.js';
 import { AccessTokenService } from '../../src/auth/access-token.service.js';
 import {
   sessions,
@@ -56,6 +57,22 @@ describe('places lifecycle', () => {
     expect(created.statusCode).toBe(201);
     const openPlace = created.json<{ id: string; slug: string }>();
 
+    const assets = new AssetsRepository(context.database);
+    const now = new Date();
+    const reservation = await assets.reserveIntent({
+      expectedMimeType: 'image/png',
+      expectedSizeBytes: 1_024,
+      expiresAt: new Date(now.getTime() + 15 * 60 * 1_000),
+      objectKey: `uploads/${openPlace.id}/banner`,
+      originalFileName: 'banner.png',
+      placeId: openPlace.id,
+      userId: owner.id,
+    }, { placeBytes: 10_000, userBytes: 10_000 }, now);
+    if (!reservation.intent) throw new Error('Expected a banner upload intent.');
+    const banner = await assets.completeIntent(reservation.intent.id, openPlace.id, now);
+    await assets.markReady(banner.id, 'image/png', 'skipped', {}, []);
+    await assets.setPlaceImage(openPlace.id, 'banner', banner.id, now);
+
     const anonymousRead = await app.inject({
       method: 'GET',
       url: `/api/v1/places/${openPlace.slug}`,
@@ -69,8 +86,16 @@ describe('places lifecycle', () => {
     });
     expect(filteredDiscovery.statusCode).toBe(200);
     expect(filteredDiscovery.json<{ items: Array<{ id: string }> }>().items).toEqual([
-      expect.objectContaining({ id: openPlace.id }),
+      expect.objectContaining({ hasBanner: true, id: openPlace.id }),
     ]);
+
+    const publicBanner = await app.inject({
+      method: 'GET',
+      url: `/api/v1/public/places/${openPlace.id}/images/banner`,
+    });
+    expect(publicBanner.statusCode).toBe(307);
+    expect(publicBanner.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(publicBanner.headers.location).toContain('banner');
 
     const anonymousContext = await app.inject({
       method: 'GET',
@@ -200,13 +225,29 @@ describe('places lifecycle', () => {
     const settings = await app.inject({
       headers: bearer(owner),
       method: 'PATCH',
-      payload: { settings: { locale: 'en-US', topicSort: 'activity' } },
+      payload: { settings: { locale: 'en-US', tags: ['Game Design', 'game-design', 'Accessibility'], topicSort: 'activity' } },
       url: `/api/v1/places/${openPlace.id}/settings`,
     });
     expect(settings.statusCode).toBe(200);
     expect(settings.json()).toMatchObject({
-      settings: { locale: 'en-US', topicSort: 'activity' },
+      settings: { locale: 'en-US', tags: ['game-design', 'accessibility'], topicSort: 'activity' },
     });
+    const tagDiscovery = await app.inject({
+      method: 'GET',
+      url: '/api/v1/places?tag=game-design',
+    });
+    expect(tagDiscovery.statusCode).toBe(200);
+    const tagPage = tagDiscovery.json<{
+      items: Array<{ id: string }>;
+      tags: Array<{ count: number; name: string }>;
+    }>();
+    expect(tagPage.items).toEqual([
+      expect.objectContaining({ id: openPlace.id }),
+    ]);
+    expect(tagPage.tags).toEqual(expect.arrayContaining([
+      { count: 1, name: 'accessibility' },
+      { count: 1, name: 'game-design' },
+    ]));
 
     const approval = await createPlace(owner, {
       joinPolicy: 'approval',

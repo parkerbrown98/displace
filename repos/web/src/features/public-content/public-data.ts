@@ -34,10 +34,11 @@ const publicReadOptions = {
   next: { revalidate: PUBLIC_REVALIDATE_SECONDS },
 };
 
-export async function listPublicPlaces(parameters: { cursor?: string; joinPolicy?: string; query?: string } = {}): Promise<PlacePageContract> {
+export async function listPublicPlaces(parameters: { cursor?: string; joinPolicy?: string; query?: string; tag?: string } = {}): Promise<PlacePageContract> {
   return readPublic<PlacePageContract>(withCursor("/places", parameters.cursor, {
     joinPolicy: parameters.joinPolicy,
     q: parameters.query,
+    tag: parameters.tag,
   }), ["places"]);
 }
 
@@ -91,7 +92,7 @@ export async function searchPublicContent(parameters: {
 }): Promise<SearchPageContract> {
   try {
     return await publicServerRead<SearchPageContract>(withCursor("/search", parameters.cursor, {
-      placeId: parameters.placeId,
+      placeId: parameters.placeId || undefined,
       q: parameters.query,
       type: parameters.type,
     }), { cache: "no-store" });

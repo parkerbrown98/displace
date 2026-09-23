@@ -103,7 +103,7 @@ function PlaceSettingsContent({ context, reload }: { context: PlaceContextContra
       <nav aria-label="Place settings sections">{canManagePlace ? <><a href="#identity">Identity</a><a href="#preferences">Preferences</a></> : null}{canManageForums ? <a href="#forums">Forums</a> : null}{canManageChat ? <a href="#chat">Chat</a> : null}{canManageVoice ? <a href="#voice">Voice</a> : null}{canManageRoles ? <a href="#roles">Roles</a> : null}{canManagePlace ? <a href="#archive">Archive</a> : null}</nav>
       <div className="settings-sections">
         {canManagePlace ? <IdentityForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} /> : null}
-        {canManagePlace ? <PreferenceForm context={context} onForbidden={refreshAfterForbidden} /> : null}
+        {canManagePlace ? <PreferenceForm context={context} onForbidden={refreshAfterForbidden} onSaved={reload} /> : null}
         {canManageForums ? <ForumSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
         {canManageChat ? <ChatChannelSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
         {canManageVoice ? <VoiceRoomSettings context={context} onForbidden={refreshAfterForbidden} /> : null}
@@ -136,14 +136,16 @@ function PlacePolicyFields({ place }: { place?: PlaceContextContract["place"] })
   return <div className="policy-grid"><label className="form-field">Visibility<select defaultValue={place?.visibility ?? "public"} name="visibility"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select><small>Private places are hidden from non-members.</small></label><label className="form-field">Join policy<select defaultValue={place?.joinPolicy ?? "open"} name="joinPolicy"><option value="open">Open</option><option value="approval">Approval required</option><option value="invite_only">Invite only</option></select><small>Approval requests appear in the member directory.</small></label></div>;
 }
 
-function PreferenceForm({ context, onForbidden }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void> }) {
+function PreferenceForm({ context, onForbidden, onSaved }: { context: PlaceContextContract; onForbidden: (error: unknown) => Promise<void>; onSaved: () => Promise<void> }) {
   const [notice, setNotice] = useState<Notice>(null);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = new FormData(event.currentTarget); setNotice(null);
-    try { await updatePlaceSettings(context.place.id, { locale: String(form.get("locale") ?? "en-US"), topicSort: String(form.get("topicSort") ?? "activity") }); setNotice({ kind: "success", text: "Place preferences saved." }); }
+    const tags = String(form.get("tags") ?? "").split(",").map((tag) => tag.trim()).filter(Boolean);
+    try { await updatePlaceSettings(context.place.id, { ...context.place.settings, locale: String(form.get("locale") ?? "en-US"), tags, topicSort: String(form.get("topicSort") ?? "activity") }); await onSaved(); setNotice({ kind: "success", text: "Place preferences saved." }); }
     catch (error) { await onForbidden(error); setNotice({ kind: "error", text: placeErrorMessage(error, "Preferences could not be saved.") }); }
   }
-  return <section className="settings-section" id="preferences"><p className="eyebrow">Defaults</p><h2>Community preferences</h2><form className="settings-form compact-form" onSubmit={submit}><label className="form-field">Locale<select defaultValue={String(context.place.settings.locale ?? "en-US")} name="locale"><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option></select></label><label className="form-field">Default topic order<select defaultValue={String(context.place.settings.topicSort ?? "activity")} name="topicSort"><option value="activity">Recent activity</option><option value="created">Newest topics</option></select></label><NoticeMessage notice={notice} /><button className="secondary-button" type="submit">Save preferences</button></form></section>;
+  const tags = Array.isArray(context.place.settings.tags) ? context.place.settings.tags.filter((tag): tag is string => typeof tag === "string") : [];
+  return <section className="settings-section" id="preferences"><p className="eyebrow">Defaults and discovery</p><h2>Community preferences</h2><form className="settings-form compact-form" onSubmit={submit}><label className="form-field">Discovery tags<input defaultValue={tags.join(", ")} maxLength={200} name="tags" placeholder="game-design, accessibility, indie" /><small>Up to 8 comma-separated tags. Spaces become hyphens.</small></label><label className="form-field">Locale<select defaultValue={String(context.place.settings.locale ?? "en-US")} name="locale"><option value="en-US">English (United States)</option><option value="en-GB">English (United Kingdom)</option></select></label><label className="form-field">Default topic order<select defaultValue={String(context.place.settings.topicSort ?? "activity")} name="topicSort"><option value="activity">Recent activity</option><option value="created">Newest topics</option></select></label><NoticeMessage notice={notice} /><button className="secondary-button" type="submit">Save preferences</button></form></section>;
 }
 
 function RoleEditor({ onChanged, onForbidden, placeId, role }: { onChanged: () => Promise<void>; onForbidden: (error: unknown) => Promise<void>; placeId: string; role: PlaceRoleContract }) {

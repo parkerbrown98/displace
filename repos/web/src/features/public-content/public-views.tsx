@@ -1,12 +1,13 @@
-import { Clock3, LayoutList, Lock, MessageSquareText, Pin } from "lucide-react";
+import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { StatusPanel } from "@/components/ui/status-panel";
 import { ForumAuthoringActions } from "@/features/forums/create-topic-form";
 import { TopicDiscussion } from "@/features/forums/topic-discussion";
-import type { PlaceContract, PlacePageContract } from "@/features/places/place-contract";
+import { placeDiscoveryTags, type PlaceContract, type PlacePageContract } from "@/features/places/place-contract";
 import { PlaceForumHeader } from "@/features/places/place-forum-header";
+import { resolveApiUrl } from "@/lib/api/request";
 import { routes } from "@/lib/routes";
 import type {
   ForumContract,
@@ -19,42 +20,74 @@ import type {
 import { ForumLiveSpaces } from "./forum-live-spaces";
 import { ForumMemberPreview } from "./forum-member-preview";
 
-export function PlaceDirectory({ joinPolicy, page }: { joinPolicy?: string; page: PlacePageContract }) {
+export function PlaceDirectory({ joinPolicy, page, tag }: { joinPolicy?: string; page: PlacePageContract; tag?: string }) {
+  const facets = page.tags ?? [];
   return (
     <section className="discovery-directory" aria-labelledby="place-directory-heading">
       <div className="discovery-directory-heading">
         <div>
-          <p className="eyebrow">Open communities</p>
-          <h2 id="place-directory-heading">Explore public places</h2>
+          <p className="eyebrow">Community atlas</p>
+          <h2 id="place-directory-heading">{tag ? `Communities tagged #${tag}` : "Explore what people are building"}</h2>
         </div>
-        <p>Browse communities built around durable conversation.</p>
+        <p>{page.items.length} {page.items.length === 1 ? "community" : "communities"} in view. Pick an interest or browse the whole field.</p>
       </div>
-      <form className="discovery-filters" method="get">
-        <label className="form-field">Join policy<select defaultValue={joinPolicy ?? ""} name="join"><option value="">Any policy</option><option value="open">Open</option><option value="approval">Approval required</option><option value="invite_only">Invite only</option></select></label>
-        <button className="secondary-button" type="submit">Filter places</button>
+      {facets.length ? <nav className="discovery-tags" aria-label="Browse by interest">
+        <Link aria-current={!tag ? "page" : undefined} className={!tag ? "active" : undefined} href={discoveryHref({ joinPolicy })}><Compass size={15} />All</Link>
+        {facets.map((facet) => <Link aria-current={tag === facet.name ? "page" : undefined} aria-label={`${humanizeTag(facet.name)}, ${facet.count} ${facet.count === 1 ? "community" : "communities"}`} className={tag === facet.name ? "active" : undefined} href={discoveryHref({ joinPolicy, tag: facet.name })} key={facet.name}><Hash size={14} />{humanizeTag(facet.name)}<span>{facet.count}</span></Link>)}
+      </nav> : null}
+      <form action={routes.discover} className="discovery-filters" method="get">
+        {tag ? <input name="tag" type="hidden" value={tag} /> : null}
+        <label>Access<select defaultValue={joinPolicy ?? ""} name="join"><option value="">Any access</option><option value="open">Open to join</option><option value="approval">Request to join</option><option value="invite_only">Invite only</option></select></label>
+        <button className="secondary-button" type="submit"><SlidersHorizontal size={16} />Apply</button>
+        {tag || joinPolicy ? <Link className="discovery-clear-filter" href={routes.discover}>Clear filters</Link> : null}
       </form>
       {page.items.length ? (
-        <section className="place-directory" aria-label="Public places">
+        <div className="place-directory" aria-label="Public places">
           {page.items.map((place, index) => (
             <article className="place-directory-item" key={place.id}>
-              <span className={`directory-mark directory-mark-${index % 3}`} aria-hidden="true">
-                {initials(place.name)}
-              </span>
-              <div>
-                <p className="eyebrow">{place.visibility} place</p>
-                <h2><Link href={routes.place(place.slug)}>{place.name}</Link></h2>
-                <p>{place.description}</p>
+              <div className={`place-card-visual place-card-visual-${index % 4}${place.hasBanner ? " has-banner" : ""}`}>
+                {place.hasBanner ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img alt={`${place.name} banner`} loading="lazy" src={publicPlaceBannerUrl(place.id)} />
+                ) : <><span>{String(index + 1).padStart(2, "0")}</span><strong>{initials(place.name)}</strong><i /></>}
               </div>
-              <Link className="text-link" href={routes.place(place.slug)}>View place</Link>
+              <div className="place-card-body">
+                <p className="eyebrow">Community</p>
+                <h3><Link href={routes.place(place.slug)}>{place.name}</Link></h3>
+                <p className="place-card-description">{place.description || "A public place for focused conversation."}</p>
+                {placeDiscoveryTags(place).length ? <div className="place-card-tags">{placeDiscoveryTags(place).map((placeTag) => <Link href={discoveryHref({ tag: placeTag })} key={placeTag}>#{placeTag}</Link>)}</div> : null}
+                <div className="place-card-footer"><span>{place.joinPolicy === "open" ? <UsersRound size={15} /> : <LockKeyhole size={15} />}{joinPolicyLabel(place.joinPolicy)}</span><Link aria-label={`Open ${place.name}`} href={routes.place(place.slug)}><ArrowUpRight size={18} /></Link></div>
+              </div>
             </article>
           ))}
-        </section>
+        </div>
       ) : (
-        <StatusPanel title="No more places" description="There are no additional public places to show." />
+        <StatusPanel title="No communities found" description="Try another interest or remove the access filter." />
       )}
-      <CursorPagination nextCursor={page.nextCursor} parameters={{ join: joinPolicy }} path={routes.discover} />
+      <CursorPagination nextCursor={page.nextCursor} parameters={{ join: joinPolicy, tag }} path={routes.discover} />
     </section>
   );
+}
+
+function discoveryHref({ joinPolicy, tag }: { joinPolicy?: string; tag?: string }) {
+  const parameters = new URLSearchParams();
+  if (joinPolicy) parameters.set("join", joinPolicy);
+  if (tag) parameters.set("tag", tag);
+  return `${routes.discover}${parameters.size ? `?${parameters}` : ""}`;
+}
+
+function humanizeTag(tag: string) {
+  return tag.replaceAll("-", " ");
+}
+
+function joinPolicyLabel(policy: PlaceContract["joinPolicy"]) {
+  if (policy === "open") return "Open to join";
+  if (policy === "approval") return "Request to join";
+  return "Invite only";
+}
+
+function publicPlaceBannerUrl(placeId: string) {
+  return resolveApiUrl("browser", `/public/places/${encodeURIComponent(placeId)}/images/banner`);
 }
 
 interface PlaceViewProps {
