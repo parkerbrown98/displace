@@ -1724,7 +1724,7 @@ textarea:focus-visible {
 
 .forum-tag-form {
 	display: grid;
-	grid-template-columns: 1fr 1fr 72px auto;
+	grid-template-columns: 1fr 1fr minmax(150px, 0.7fr) auto;
 	align-items: end;
 	gap: 12px;
 	max-width: none;
