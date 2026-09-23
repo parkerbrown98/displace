@@ -270,7 +270,10 @@ function ForumNavigation({ navigation, placeSlug, topics }: { navigation: ForumN
             })}
           </div>
         </section>
-      )) : <StatusPanel title="No public forums" description="This place has not published any forums yet." />}
+      )) : <div className="forum-directory-empty" role="status">
+        <span className="forum-directory-empty-icon" aria-hidden="true"><MessageSquareText size={20} /></span>
+        <div><h3>No public forums</h3><p>This place has not published any forums yet.</p></div>
+      </div>}
     </section>
   );
 }

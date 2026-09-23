@@ -3200,6 +3200,37 @@ textarea:focus-visible {
 	text-align: center;
 }
 
+.forum-directory-empty {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-height: 112px;
+	padding: 24px 18px;
+}
+
+.forum-directory-empty-icon {
+	display: grid;
+	flex: 0 0 auto;
+	width: 42px;
+	height: 42px;
+	color: var(--teal);
+	background: var(--teal-soft);
+	border-radius: 5px;
+	place-items: center;
+}
+
+.forum-directory-empty h3 {
+	margin: 0 0 5px;
+	font-size: 15px;
+}
+
+.forum-directory-empty p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
 .section-heading {
 	margin-bottom: 18px;
 }
