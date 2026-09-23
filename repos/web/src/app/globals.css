@@ -518,7 +518,8 @@ textarea:focus-visible {
 
 .chat-message header {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
+	flex-wrap: wrap;
 	gap: 8px;
 	min-width: 0;
 }
@@ -539,15 +540,16 @@ textarea:focus-visible {
 	margin-left: auto;
 }
 
-.chat-message-actions {
+.chat-message-controls {
 	display: flex;
-	gap: 1px;
+	align-items: center;
+	gap: 3px;
 	margin-left: 6px;
 }
 
-.chat-message-actions .icon-button {
-	width: 27px;
-	height: 27px;
+.chat-message-controls .icon-button {
+	width: 30px;
+	height: 30px;
 }
 
 .chat-message p {
