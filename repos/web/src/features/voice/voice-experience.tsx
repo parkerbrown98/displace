@@ -1,8 +1,8 @@
 "use client";
 
-import { AudioLines, Headphones, HeadphoneOff, Mic, MicOff, PhoneOff, Radio, Settings2, Volume2 } from "lucide-react";
+import { Headphones, HeadphoneOff, Mic, MicOff, PhoneOff, Settings2, Volume2 } from "lucide-react";
 import { Room, RoomEvent, Track, type Participant, type RemoteTrack } from "livekit-client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
 import { toast } from "@/components/ui/toast";
@@ -14,40 +14,42 @@ import type { VoiceParticipantContract, VoiceRoomContract } from "./voice-contra
 
 type ConnectionState = "connected" | "connecting" | "disconnected" | "reconnecting";
 
-export function PlaceVoicePanel({ place }: { place: PlaceContract }) {
+export function PlaceVoicePanel({ onRoomsChanged, place, selectedRoomId }: { onRoomsChanged?: (rooms: VoiceRoomContract[]) => void; place: PlaceContract; selectedRoomId?: string }) {
   const [rooms, setRooms] = useState<VoiceRoomContract[]>();
   const [selectedId, setSelectedId] = useState<string>();
   const [error, setError] = useState<string>();
+  const updateRooms = useCallback((items: VoiceRoomContract[]) => {
+    setRooms(items);
+    onRoomsChanged?.(items);
+  }, [onRoomsChanged]);
 
   useEffect(() => {
     let active = true;
-    void listVoiceRooms(place.id).then((items) => { if (!active) return; setRooms(items); setSelectedId((current) => current ?? items.at(0)?.id); }).catch((cause) => { if (active) setError(placeErrorMessage(cause, "Voice rooms could not be loaded.")); });
+    void listVoiceRooms(place.id).then((items) => { if (!active) return; updateRooms(items); setSelectedId((current) => current ?? items.at(0)?.id); }).catch((cause) => { if (active) setError(placeErrorMessage(cause, "Voice rooms could not be loaded.")); });
     return () => { active = false; };
-  }, [place.id]);
+  }, [place.id, updateRooms]);
 
   useEffect(() => {
     const socket = realtimeSocket(); if (!socket) return;
     const join = () => socket.emit("place.join", { placeId: place.id });
     const refresh = () => {
       void listVoiceRooms(place.id).then((items) => {
-        setRooms(items);
+        updateRooms(items);
         setSelectedId((current) => items.some((room) => room.id === current) ? current : items.at(0)?.id);
       }).catch(() => undefined);
     };
     const updated = (event: { placeId: string }) => { if (event.placeId === place.id) refresh(); };
     socket.on("connect", join); socket.on("voice.room.updated", updated); if (socket.connected) join();
     return () => { socket.off("connect", join); socket.off("voice.room.updated", updated); };
-  }, [place.id]);
+  }, [place.id, updateRooms]);
 
   if (!rooms && !error) return <div className="live-voice-state"><LoadingPanel label="Loading voice rooms" /></div>;
   if (!rooms?.length) return <div className="live-voice-state"><StatusPanel description={error ?? "No voice rooms are available to your current roles."} title="Voice unavailable" /></div>;
-  const selected = rooms.find((room) => room.id === selectedId) ?? rooms[0]!;
+  const selected = rooms.find((room) => room.id === (selectedRoomId ?? selectedId)) ?? rooms[0]!;
 
-  return <aside className="live-audio-panel" aria-label="Audio rooms">
-      <header className="live-audio-panel-heading"><span><AudioLines size={17} /></span><div><p className="eyebrow">Audio rooms</p><strong>On air</strong></div></header>
-      <div className="voice-room-list">{rooms.map((room) => <button aria-pressed={room.id === selected.id} className="voice-room-button" key={room.id} onClick={() => setSelectedId(room.id)} type="button"><Radio size={14} /><span><strong>{room.name}</strong><small>{room.participants.length}/{room.capacity}</small></span></button>)}</div>
-      <VoiceSession key={selected.id} onRoomsChanged={setRooms} placeId={place.id} room={selected} />
-    </aside>;
+  return <section className="live-voice-stage" aria-label="Voice channel">
+      <VoiceSession key={selected.id} onRoomsChanged={updateRooms} placeId={place.id} room={selected} />
+    </section>;
 }
 
 function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (rooms: VoiceRoomContract[]) => void; placeId: string; room: VoiceRoomContract }) {

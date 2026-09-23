@@ -1,6 +1,6 @@
 "use client";
 
-import { AudioLines, Edit3, Hash, MessageCircle, Send, Trash2 } from "lucide-react";
+import { Edit3, Hash, MessageCircle, Mic, MicOff, Send, Trash2, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { StatusPanel } from "@/components/ui/status-panel";
 import { toast } from "@/components/ui/toast";
@@ -11,6 +11,7 @@ import { PlaceWorkspaceGate, placeErrorMessage } from "@/features/places/place-a
 import type { PlaceContract } from "@/features/places/place-contract";
 import { realtimeSocket } from "@/features/realtime/realtime-client";
 import { PlaceVoicePanel } from "@/features/voice/voice-experience";
+import type { VoiceRoomContract } from "@/features/voice/voice-contracts";
 import { routes } from "@/lib/routes";
 import { deleteChatMessage, editChatMessage, listChatChannels, listChatMessages, markChatRead, sendChatMessage } from "./chat-client";
 import type { ChatChannelContract, ChatMessageContract, ChatMessagePageContract } from "./chat-contracts";
@@ -22,6 +23,9 @@ export function LiveExperience({ placeSlug }: { placeSlug: string }) {
 function LiveWorkspace({ place }: { place: PlaceContract }) {
   const [channels, setChannels] = useState<ChatChannelContract[]>();
   const [selectedChannelId, setSelectedChannelId] = useState<string>();
+  const [voiceRooms, setVoiceRooms] = useState<VoiceRoomContract[]>();
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>();
+  const [activeView, setActiveView] = useState<"text" | "voice">("text");
   const [channelError, setChannelError] = useState<string>();
 
   useEffect(() => {
@@ -39,23 +43,34 @@ function LiveWorkspace({ place }: { place: PlaceContract }) {
   }, [place.id]);
 
   const selectedChannel = channels?.find((channel) => channel.id === selectedChannelId) ?? channels?.[0];
+  const selectedVoice = voiceRooms?.find((room) => room.id === selectedVoiceId) ?? voiceRooms?.[0];
+  const currentView = activeView === "text" && channels?.length === 0 && voiceRooms?.length ? "voice" : activeView;
 
   return <main className="public-main place-workspace-page live-page" id="main-content">
     <PlaceForumHeader active="live" currentSection={{ href: routes.live(place.slug), label: "Live" }} place={place} />
     <section className="live-studio" aria-label="Live workspace">
-      <header className="live-studio-header">
-        <div><span className="live-pulse" aria-hidden="true" /><div><p className="eyebrow">Now together</p><h2>Live</h2></div></div>
-        <div className="live-studio-summary"><span><MessageCircle size={15} />{channels?.length ?? 0} text</span><span><AudioLines size={15} />Audio</span></div>
-      </header>
       <div className="live-studio-body">
-        <aside className="live-channel-rail" aria-label="Text channels">
-          <div className="live-rail-label"><MessageCircle size={15} /><span>Text channels</span></div>
-          <div className="live-channel-buttons">
-            {!channels ? <span className="live-rail-loading">Loading channels...</span> : channels.map((channel) => <button aria-pressed={channel.id === selectedChannel?.id} className="live-channel-button" key={channel.id} onClick={() => setSelectedChannelId(channel.id)} type="button"><Hash size={15} /><span>{channel.name}</span></button>)}
-          </div>
+        <aside className="live-channel-rail" aria-label="Channels">
+          <section className="live-rail-section" aria-labelledby="text-channels-heading">
+            <h2 className="live-rail-label" id="text-channels-heading"><MessageCircle size={14} />Text Channels</h2>
+            <div className="live-channel-buttons">
+              {!channels ? <span className="live-rail-loading">Loading channels...</span> : channels.map((channel) => <button aria-pressed={currentView === "text" && channel.id === selectedChannel?.id} className="live-channel-button" key={channel.id} onClick={() => { setSelectedChannelId(channel.id); setActiveView("text"); }} type="button"><Hash size={15} /><span>{channel.name}</span></button>)}
+            </div>
+          </section>
+          <section className="live-rail-section live-voice-channels" aria-labelledby="voice-channels-heading">
+            <h2 className="live-rail-label" id="voice-channels-heading"><Volume2 size={14} />Voice Channels</h2>
+            <div className="live-channel-buttons">
+              {!voiceRooms ? <span className="live-rail-loading">Loading voice...</span> : voiceRooms.map((room) => <div className="live-voice-channel" key={room.id}>
+                <button aria-pressed={currentView === "voice" && room.id === selectedVoice?.id} className="live-channel-button" onClick={() => { setSelectedVoiceId(room.id); setActiveView("voice"); }} type="button"><Volume2 size={15} /><span>{room.name}</span><small>{room.participants.length}</small></button>
+                {room.participants.length ? <div className="live-channel-presence" aria-label={`${room.name} participants`}>{room.participants.map((participant) => <div className="live-presence-member" key={participant.identity}><span className="live-presence-avatar" aria-hidden="true">{participant.displayName.slice(0, 2).toUpperCase()}</span><span>{participant.displayName}</span>{participant.microphoneMuted || !participant.canPublish ? <MicOff aria-label="Muted" size={12} /> : <Mic aria-label="Microphone on" size={12} />}</div>)}</div> : null}
+              </div>)}
+            </div>
+          </section>
         </aside>
-        {selectedChannel ? <ChatConversation channel={selectedChannel} key={selectedChannel.id} place={place} /> : <section className="chat-conversation chat-conversation-empty" aria-label="Text chat"><StatusPanel description={channelError ?? "No text channels are available to your current roles."} title="Text chat unavailable" /></section>}
-        <PlaceVoicePanel place={place} />
+        <div className="live-stage-stack">
+          <div className="live-stage" hidden={currentView !== "text"}>{selectedChannel ? <ChatConversation channel={selectedChannel} key={selectedChannel.id} place={place} /> : <section className="chat-conversation chat-conversation-empty" aria-label="Text chat"><StatusPanel description={channelError ?? "No text channels are available to your current roles."} title="Text chat unavailable" /></section>}</div>
+          <div className="live-stage" hidden={currentView !== "voice"}><PlaceVoicePanel onRoomsChanged={setVoiceRooms} place={place} selectedRoomId={selectedVoice?.id} /></div>
+        </div>
       </div>
     </section>
   </main>;
