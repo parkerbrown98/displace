@@ -166,18 +166,24 @@ function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, pos
 
   return (
     <article className={`post${post.isDeleted ? " post-deleted" : ""}`}>
-      <header><Avatar initials={post.isDeleted ? "-" : "CM"} size="small" /><div><strong>{post.isDeleted ? "Deleted member" : "Community member"}</strong><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time></div><a href={`#post-${post.id}`} id={`post-${post.id}`} aria-label={`Post ${number}`}>#{number}</a></header>
-      {post.isDeleted || !post.document ? <p className="tombstone">This post was removed.</p> : editing ? <div className="post-editor"><ForumEditor canUpload={canUpload} initialDocument={post.document as RichTextDocumentContract} label="Edit post" onChange={(next, isEmpty) => { setDocument(next); setEditorEmpty(isEmpty); }} placeId={placeId} /><div><button className="primary-button" disabled={editorEmpty} onClick={() => void saveEdit()} type="button">Save edit</button><button className="secondary-button" onClick={() => setEditing(false)} type="button">Cancel</button></div></div> : <RichText document={post.document} placeId={placeId} />}
-      {!post.isDeleted && session.status === "authenticated" ? <footer className="post-actions">
-        {["like", "helpful", "insightful"].map((reaction) => { const summary = post.reactions.find((item) => item.reaction === reaction); return <button aria-pressed={summary?.reacted ?? false} key={reaction} onClick={() => void react(reaction, !(summary?.reacted ?? false))} type="button">{reaction}{summary?.count ? ` ${summary.count}` : ""}</button>; })}
-        <button aria-pressed={saved} onClick={() => void setPostSave(placeId, post.id, !saved).then(() => setSaved(!saved)).catch((cause) => setError(placeErrorMessage(cause, "Save status could not be changed.")))} type="button"><Bookmark size={14} />{saved ? "Saved" : "Save"}</button>
-        <ReportButton label={`post ${number}`} placeId={placeId} targetId={post.id} targetType="post" />
-        {canEdit ? <button onClick={() => setEditing(true)} type="button"><Edit3 size={14} />Edit</button> : null}
-        {canEdit ? <button onClick={() => void remove()} type="button"><Trash2 size={14} />Delete</button> : null}
-        {canModerate ? <button onClick={() => void listPostRevisions(placeId, post.id).then(setRevisions).catch((cause) => setError(placeErrorMessage(cause, "Revisions could not be loaded.")))} type="button"><History size={14} />History</button> : null}
-      </footer> : null}
-      {revisions ? <div className="post-revisions"><strong>Revision history</strong>{revisions.length ? <ol>{revisions.map((revision) => <li key={revision.id}>Version {revision.version} · {new Date(revision.createdAt).toLocaleString()}</li>)}</ol> : <p>No earlier revisions.</p>}</div> : null}
-      {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
+      <aside className="post-profile">
+        <Avatar initials={post.isDeleted ? "-" : "CM"} size="small" />
+        <strong>{post.isDeleted ? "Deleted member" : "Community member"}</strong>
+      </aside>
+      <div className="post-content">
+        <header className="post-content-header"><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time><a href={`#post-${post.id}`} id={`post-${post.id}`} aria-label={`Post ${number}`}>#{number}</a></header>
+        <div className="post-body">{post.isDeleted || !post.document ? <p className="tombstone">This post was removed.</p> : editing ? <div className="post-editor"><ForumEditor canUpload={canUpload} initialDocument={post.document as RichTextDocumentContract} label="Edit post" onChange={(next, isEmpty) => { setDocument(next); setEditorEmpty(isEmpty); }} placeId={placeId} /><div><button className="primary-button" disabled={editorEmpty} onClick={() => void saveEdit()} type="button">Save edit</button><button className="secondary-button" onClick={() => setEditing(false)} type="button">Cancel</button></div></div> : <RichText document={post.document} placeId={placeId} />}</div>
+        {!post.isDeleted && session.status === "authenticated" ? <footer className="post-actions">
+          {["like", "helpful", "insightful"].map((reaction) => { const summary = post.reactions.find((item) => item.reaction === reaction); return <button aria-pressed={summary?.reacted ?? false} key={reaction} onClick={() => void react(reaction, !(summary?.reacted ?? false))} type="button">{reaction}{summary?.count ? ` ${summary.count}` : ""}</button>; })}
+          <button aria-pressed={saved} onClick={() => void setPostSave(placeId, post.id, !saved).then(() => setSaved(!saved)).catch((cause) => setError(placeErrorMessage(cause, "Save status could not be changed.")))} type="button"><Bookmark size={14} />{saved ? "Saved" : "Save"}</button>
+          <ReportButton label={`post ${number}`} placeId={placeId} targetId={post.id} targetType="post" />
+          {canEdit ? <button onClick={() => setEditing(true)} type="button"><Edit3 size={14} />Edit</button> : null}
+          {canEdit ? <button onClick={() => void remove()} type="button"><Trash2 size={14} />Delete</button> : null}
+          {canModerate ? <button onClick={() => void listPostRevisions(placeId, post.id).then(setRevisions).catch((cause) => setError(placeErrorMessage(cause, "Revisions could not be loaded.")))} type="button"><History size={14} />History</button> : null}
+        </footer> : null}
+        {revisions ? <div className="post-revisions"><strong>Revision history</strong>{revisions.length ? <ol>{revisions.map((revision) => <li key={revision.id}>Version {revision.version} · {new Date(revision.createdAt).toLocaleString()}</li>)}</ol> : <p>No earlier revisions.</p>}</div> : null}
+        {error ? <p className="form-message form-message-error" role="alert">{error}</p> : null}
+      </div>
     </article>
   );
 }
