@@ -1,6 +1,41 @@
 name: displace-dev
 
 services:
+  web:
+    build:
+      context: ./repos/web
+      dockerfile: Dockerfile.dev
+    command:
+      ["sh", "-c", "CI=true pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"]
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+      API_INTERNAL_URL: http://api:3000/api/v1
+      NEXT_PUBLIC_SINGLE_PLACE_SLUG: ${SINGLE_PLACE_SLUG:-}
+      WATCHPACK_POLLING: ${WATCHPACK_POLLING:-true}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./repos/web:/workspace
+      - web_node_modules:/workspace/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+    init: true
+
   api:
     build:
       context: ./repos/server
@@ -251,6 +286,7 @@ services:
       - "49160-49200:49160-49200/udp"
 
 volumes:
+  web_node_modules:
   api_node_modules:
   worker_node_modules:
   migration_node_modules:

@@ -166,3 +166,30 @@ docker compose -f compose.dev.yaml down
 ```
 
 Add `--volumes` to the `down` command when you intentionally want to reset all local service data.
+
+## Docker Production
+
+The production image is a multi-stage, non-root build shared by the API, worker, and compiled database migration commands. From the repository root, create the deployment environment and replace every placeholder:
+
+```bash
+cp .env.production.example .env.production
+```
+
+Terminate TLS for the web app, API, MinIO, and LiveKit signaling endpoints with a reverse proxy or load balancer. The default bind addresses expose their HTTP ports only on host loopback; LiveKit media ports remain public. Configure DNS and certificates for the four public URLs, then start the stack:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml up --build -d
+```
+
+The one-shot `database-migrate` service bootstraps the least-privilege runtime database role and applies migrations before the API and worker start. Production seeding is intentionally excluded. Check startup and readiness with:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml ps
+curl --fail https://api.example.com/api/v1/health/ready
+```
+
+Back up the PostgreSQL, MinIO, and Meilisearch volumes before upgrades. To stop the deployment while retaining data, run:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml down
+```

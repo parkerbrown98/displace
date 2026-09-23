@@ -1,0 +1,356 @@
+name: displace
+
+x-server: &server
+  image: ${DISPLACE_API_IMAGE:-displace-api:local}
+  build:
+    context: ./repos/server
+    dockerfile: Dockerfile
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=256m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+x-server-environment: &server-environment
+  NODE_ENV: production
+  HOST: 0.0.0.0
+  PORT: 3000
+  PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL to the HTTPS API URL}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  BODY_LIMIT_BYTES: ${BODY_LIMIT_BYTES:-1048576}
+  UPLOAD_LIMIT_BYTES: ${UPLOAD_LIMIT_BYTES:-26214400}
+  UPLOAD_USER_QUOTA_BYTES: ${UPLOAD_USER_QUOTA_BYTES:-1073741824}
+  UPLOAD_PLACE_QUOTA_BYTES: ${UPLOAD_PLACE_QUOTA_BYTES:-21474836480}
+  UPLOAD_ALLOWED_MIME_TYPES: ${UPLOAD_ALLOWED_MIME_TYPES:-image/jpeg,image/png,image/webp,application/pdf,text/plain}
+  UPLOAD_URL_TTL_SECONDS: ${UPLOAD_URL_TTL_SECONDS:-900}
+  ASSET_DOWNLOAD_URL_TTL_SECONDS: ${ASSET_DOWNLOAD_URL_TTL_SECONDS:-300}
+  IMAGE_MAX_PIXELS: ${IMAGE_MAX_PIXELS:-40000000}
+  CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to one or more HTTPS origins}
+  TRUST_PROXY: ${TRUST_PROXY:?Set TRUST_PROXY to the reverse proxy IP or CIDR}
+  DATABASE_URL: postgresql://${POSTGRES_RUNTIME_USER:?Set POSTGRES_RUNTIME_USER}:${POSTGRES_RUNTIME_PASSWORD:?Set POSTGRES_RUNTIME_PASSWORD}@postgres:5432/${POSTGRES_DB:-displace}
+  DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+  DATABASE_CONNECTION_TIMEOUT_MS: ${DATABASE_CONNECTION_TIMEOUT_MS:-2000}
+  DATABASE_IDLE_TIMEOUT_MS: ${DATABASE_IDLE_TIMEOUT_MS:-10000}
+  DATABASE_STATEMENT_TIMEOUT_MS: ${DATABASE_STATEMENT_TIMEOUT_MS:-5000}
+  REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD}@redis:6379
+  S3_ENDPOINT: http://minio:9000
+  S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?Set S3_PUBLIC_ENDPOINT to the HTTPS object-storage URL}
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+  S3_BUCKET: ${MINIO_BUCKET:-displace}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+  MALWARE_SCANNER_URL: ${MALWARE_SCANNER_URL:-}
+  MALWARE_SCANNER_REQUIRED: ${MALWARE_SCANNER_REQUIRED:-false}
+  MEILISEARCH_HOST: http://meilisearch:7700
+  MEILISEARCH_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:?Set MEILISEARCH_MASTER_KEY}
+  LIVEKIT_URL: http://livekit:7880
+  LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:?Set LIVEKIT_PUBLIC_URL to the WSS signaling URL}
+  LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY}
+  LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET}
+  ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?Set ACCESS_TOKEN_SECRET}
+  REFRESH_TOKEN_PEPPER: ${REFRESH_TOKEN_PEPPER:?Set REFRESH_TOKEN_PEPPER}
+  COOKIE_SECRET: ${COOKIE_SECRET:?Set COOKIE_SECRET}
+  CURSOR_SECRET: ${CURSOR_SECRET:?Set CURSOR_SECRET}
+  SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
+  OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+  OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+  OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+  OIDC_REDIRECT_URL: ${OIDC_REDIRECT_URL:-}
+  SINGLE_PLACE_MODE: ${SINGLE_PLACE_MODE:-false}
+  SINGLE_PLACE_SLUG: ${SINGLE_PLACE_SLUG:-}
+
+services:
+  web:
+    image: ${DISPLACE_WEB_IMAGE:-displace-web:local}
+    build:
+      context: ./repos/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL to the public versioned API URL}
+        NEXT_PUBLIC_SINGLE_PLACE_SLUG: ${SINGLE_PLACE_SLUG:-}
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+      - /app/.next/cache:size=256m,uid=1000,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL to the public versioned API URL}
+      API_INTERNAL_URL: http://api:3000/api/v1
+      NEXT_PUBLIC_SINGLE_PLACE_SLUG: ${SINGLE_PLACE_SLUG:-}
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+    mem_limit: ${WEB_MEMORY_LIMIT:-1g}
+    cpus: ${WEB_CPU_LIMIT:-1.0}
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - edge
+      - backend
+
+  api:
+    <<: *server
+    environment: *server-environment
+    ports:
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-3001}:3000"
+    depends_on:
+      database-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      meilisearch:
+        condition: service_started
+      livekit:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/v1/health/live').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+    mem_limit: ${API_MEMORY_LIMIT:-1g}
+    cpus: ${API_CPU_LIMIT:-1.0}
+    networks:
+      - edge
+      - backend
+
+  worker:
+    <<: *server
+    command: ["node", "dist/worker.js"]
+    environment: *server-environment
+    depends_on:
+      database-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      meilisearch:
+        condition: service_started
+      livekit:
+        condition: service_started
+    stop_grace_period: 60s
+    mem_limit: ${WORKER_MEMORY_LIMIT:-2g}
+    cpus: ${WORKER_CPU_LIMIT:-2.0}
+    networks:
+      - edge
+      - backend
+
+  database-migrate:
+    <<: *server
+    command:
+      [
+        "sh",
+        "-c",
+        "node dist/database/cli/bootstrap.js && node dist/database/cli/migrate.js",
+      ]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_RUNTIME_USER:?Set POSTGRES_RUNTIME_USER}:${POSTGRES_RUNTIME_PASSWORD:?Set POSTGRES_RUNTIME_PASSWORD}@postgres:5432/${POSTGRES_DB:-displace}
+      DATABASE_MIGRATION_URL: postgresql://${POSTGRES_USER:?Set POSTGRES_USER}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-displace}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    mem_limit: 512m
+    cpus: 0.5
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-displace}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    stop_grace_period: 60s
+    shm_size: 256mb
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-2g}
+    cpus: ${POSTGRES_CPU_LIMIT:-2.0}
+    networks:
+      - backend
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    command:
+      [
+        "sh",
+        "-c",
+        "exec redis-server --appendonly yes --save 60 1 --requirepass \"$$REDIS_PASSWORD\"",
+      ]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep PONG",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: ${REDIS_MEMORY_LIMIT:-1g}
+    cpus: ${REDIS_CPU_LIMIT:-1.0}
+    networks:
+      - backend
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${CORS_ORIGINS:?Set CORS_ORIGINS}
+    ports:
+      - "${S3_BIND_ADDRESS:-127.0.0.1}:${MINIO_API_PORT:-9000}:9000"
+      - "${S3_BIND_ADDRESS:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    stop_grace_period: 30s
+    mem_limit: ${MINIO_MEMORY_LIMIT:-1g}
+    cpus: ${MINIO_CPU_LIMIT:-1.0}
+    networks:
+      - edge
+      - backend
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-displace}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - >-
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
+        do sleep 1; done;
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+    restart: "no"
+    networks:
+      - backend
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:?Set MEILISEARCH_MASTER_KEY}
+    volumes:
+      - meilisearch_data:/meili_data
+    mem_limit: ${MEILISEARCH_MEMORY_LIMIT:-2g}
+    cpus: ${MEILISEARCH_CPU_LIMIT:-2.0}
+    networks:
+      - backend
+
+  livekit:
+    image: livekit/livekit-server:v1.9
+    restart: unless-stopped
+    environment:
+      LIVEKIT_CONFIG: |-
+        port: 7880
+        bind_addresses:
+          - "0.0.0.0"
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+          use_external_ip: true
+        redis:
+          address: redis:6379
+          password: "${REDIS_PASSWORD:?Set REDIS_PASSWORD}"
+        keys:
+          "${LIVEKIT_API_KEY:?Set LIVEKIT_API_KEY}": "${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET}"
+        logging:
+          level: info
+    ports:
+      - "${LIVEKIT_BIND_ADDRESS:-127.0.0.1}:${LIVEKIT_HTTP_PORT:-7880}:7880"
+      - "${LIVEKIT_TCP_PORT:-7881}:7881/tcp"
+      - "50000-50100:50000-50100/udp"
+    depends_on:
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+    mem_limit: ${LIVEKIT_MEMORY_LIMIT:-2g}
+    cpus: ${LIVEKIT_CPU_LIMIT:-2.0}
+    networks:
+      - edge
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  meilisearch_data:
+
+networks:
+  edge:
+  backend:
+    internal: true

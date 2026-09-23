@@ -41,5 +41,5 @@ buried within non-indexed "servers" requiring an account to even discover.
 
 ### Deployment
 
-- **Docker Compose:** [`compose.dev.yaml`](compose.dev.yaml) runs the API, background worker, Mailpit, LiveKit, coturn, PostgreSQL, Redis, MinIO, and Meilisearch for local development. Production will use a separate Compose definition with production images, secrets, networking, and resource policies.
+- **Docker Compose:** [`compose.dev.yaml`](compose.dev.yaml) runs the local web app and development stack. [`compose.prod.yaml`](compose.prod.yaml) provides production web, API, background worker, migrations, PostgreSQL, Redis, MinIO, Meilisearch, and LiveKit services with externally supplied secrets and local reverse-proxy bindings.
 - **Containers:** Each service is independently deployable; production installations can move to Kubernetes only when their scale warrants it.

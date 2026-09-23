@@ -100,3 +100,15 @@ pnpm start
 ```
 
 The default API URL expects the development server on port 3001 and the web app on port 3000.
+
+The repository Compose files also run the web app. Development uses bind-mounted source with hot reload:
+
+```bash
+docker compose -f compose.dev.yaml up --build
+```
+
+Production builds the standalone Next.js image and routes server-component API requests over the internal Docker network. Set `NEXT_PUBLIC_API_URL` to the browser-visible versioned API URL in `.env.production`, then start the stack from the repository root:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml up --build -d
+```

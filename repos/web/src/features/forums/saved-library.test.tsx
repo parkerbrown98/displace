@@ -73,8 +73,8 @@ describe("SavedLibrary", () => {
 
     expect(await screen.findByRole("heading", { name: "Designing a better inventory" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Keep the first session narrow/ })).toBeInTheDocument();
-    const headings = screen.getAllByRole("heading").map((heading) => heading.textContent);
-    expect(headings.indexOf(post.post.plainText)).toBeLessThan(headings.indexOf(topic.topic.title));
+    const headings = screen.getAllByRole("heading").map((heading) => heading.textContent ?? "");
+    expect(headings.indexOf(post.post.plainText ?? "")).toBeLessThan(headings.indexOf(topic.topic.title));
 
     await user.click(screen.getByRole("button", { name: /^Topics\d/ }));
     expect(screen.getByRole("heading", { name: "Designing a better inventory" })).toBeInTheDocument();
