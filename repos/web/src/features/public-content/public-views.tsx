@@ -258,15 +258,15 @@ function TopicDirectory({
   return (
     <section className="public-topics" aria-labelledby="public-topics-heading">
       <div className="public-topic-toolbar">
-        <h2 id="public-topics-heading">Discussions</h2>
-        <div className="public-topic-toolbar-actions">
-          <nav aria-label="Topic filters">
-            {(["latest", "popular", "following"] as const).map((value) => (
-              <Link className={feed === value ? "active" : ""} href={`${path}?feed=${value}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`} key={value}>{capitalize(value)}</Link>
-            ))}
-          </nav>
+        <div className="public-topic-toolbar-heading">
+          <h2 id="public-topics-heading">Discussions</h2>
           <ForumAuthoringActions placeId={placeId} placeSlug={placeSlug} />
         </div>
+        <nav aria-label="Topic filters">
+          {(["latest", "popular", "following"] as const).map((value) => (
+            <Link className={feed === value ? "active" : ""} href={`${path}?feed=${value}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`} key={value}>{capitalize(value)}</Link>
+          ))}
+        </nav>
       </div>
       {topics.length ? topics.map((topic) => (
         <article className="public-topic-row" key={topic.id}>
