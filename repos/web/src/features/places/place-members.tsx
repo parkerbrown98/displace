@@ -63,7 +63,7 @@ function MemberDirectory({ context, reloadContext }: { context: PlaceContextCont
 
   const showSettings = canManageMembers || canManageRoles || context.viewer.permissions.includes("place.manage") || context.viewer.permissions.includes("forum.manage");
   return <main className="public-main place-workspace-page" id="main-content">
-    <PlaceForumHeader active="members" place={context.place} showMembershipActions={false} showSettings={showSettings} />
+    <PlaceForumHeader active="members" place={context.place} showSettings={showSettings} />
     <header className="place-page-heading"><p className="eyebrow">Directory</p><h2>Members</h2><p>People, invitations, access roles, and ownership.</p></header>
     <div className="member-toolbar"><span>{activeMembers.length} active</span>{canManageMembers ? <span>{pendingMembers.length} awaiting approval</span> : null}<Link className="secondary-button" href={routes.place(context.place.slug)}>Back to place</Link></div>
     {failed ? <StatusPanel tone="error" title="Directory unavailable" description="Member information could not be loaded." /> : <>
@@ -118,7 +118,7 @@ function MemberProfileContent({ context, memberId }: { context: PlaceContextCont
   const [member, setMember] = useState<PlaceMemberContract | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => { let active = true; void getPlaceMember(context.place.id, memberId).then((value) => { if (active) setMember(value); }).catch(() => { if (active) setFailed(true); }); return () => { active = false; }; }, [context.place.id, memberId]);
-  const frame = (content: React.ReactNode) => <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="members" place={context.place} showMembershipActions={false} /><nav className="breadcrumbs place-page-breadcrumbs" aria-label="Breadcrumb"><Link href={routes.place(context.place.slug)}>Forums</Link><span>/</span><Link href={routes.placeMembers(context.place.slug)}>Members</Link></nav>{content}</main>;
+  const frame = (content: React.ReactNode) => <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="members" place={context.place} /><nav className="breadcrumbs place-page-breadcrumbs" aria-label="Breadcrumb"><Link href={routes.place(context.place.slug)}>Forums</Link><span>/</span><Link href={routes.placeMembers(context.place.slug)}>Members</Link></nav>{content}</main>;
   if (failed) return frame(<div className="place-page-state"><StatusPanel title="Member unavailable" description="This member could not be found in the place." /></div>);
   if (!member) return frame(<div className="place-page-state"><LoadingPanel label="Loading member" /></div>);
   return frame(<><header className="member-profile"><span className="member-avatar large" aria-hidden="true">{initials(member.displayName)}</span><div><p className="eyebrow">{member.status} member</p><h2>{member.displayName}</h2><p>@{member.handle}</p></div><ReportButton label={member.displayName} placeId={context.place.id} targetId={member.id} targetType="member" /></header><section className="settings-section"><p className="eyebrow">Membership</p><h2>Place roles</h2><div className="member-roles">{member.roles.map((role) => <span key={role.id}>{role.name}</span>)}</div><p className="settings-muted">{member.joinedAt ? `Joined ${formatDate(member.joinedAt)}` : "Membership is awaiting approval."}</p></section></>);

@@ -45,11 +45,11 @@ function VoiceWorkspace({ place }: { place: PlaceContract }) {
   }, [place.id]);
 
   if (!rooms && !error) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading voice rooms" /></main>;
-  if (!rooms?.length) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="voice" place={place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description={error ?? "No voice rooms are available to your current roles."} title="Voice unavailable" /></div></main>;
+  if (!rooms?.length) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="voice" place={place} /><div className="place-page-state"><StatusPanel description={error ?? "No voice rooms are available to your current roles."} title="Voice unavailable" /></div></main>;
   const selected = rooms.find((room) => room.id === selectedId) ?? rooms[0]!;
 
   return <main className="public-main place-workspace-page voice-page" id="main-content">
-    <PlaceForumHeader active="voice" place={place} showMembershipActions={false} />
+    <PlaceForumHeader active="voice" place={place} />
     <section className="voice-layout" aria-label="Voice rooms">
       <aside className="voice-room-list"><p className="eyebrow">Voice rooms</p>{rooms.map((room) => <button aria-current={room.id === selected.id ? "true" : undefined} className={`voice-room-button${room.id === selected.id ? " active" : ""}`} key={room.id} onClick={() => setSelectedId(room.id)} type="button"><Radio size={16} /><span><strong>{room.name}</strong><small>{room.participants.length}/{room.capacity}</small></span></button>)}</aside>
       <VoiceSession key={selected.id} onRoomsChanged={setRooms} placeId={place.id} room={selected} />

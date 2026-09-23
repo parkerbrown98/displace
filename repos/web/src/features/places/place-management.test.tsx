@@ -8,7 +8,7 @@ import { resetAuthenticationForTests, signIn } from "@/features/auth/auth-client
 import { mockServer } from "@/test/mocks/server";
 import { forumNavigationFixture } from "@/features/public-content/public-fixtures";
 import { memberFixture, pendingMemberFixture, placeContextFixture, placeContractFixture, placeInvitesFixture, placeMembersFixture, placeRolesFixture } from "./place-fixtures";
-import { InviteAcceptance, PlaceMembershipActions } from "./place-access";
+import { InviteAcceptance, PlaceMembershipButton } from "./place-access";
 import { PlaceMembers } from "./place-members";
 import { CreatePlacePanel, PlaceSettings, PlaceSettingsIndex, PlaceSettingsLayout } from "./place-settings";
 
@@ -70,11 +70,54 @@ describe("place management", () => {
   });
 
   it("uses server-shaped capabilities for member and management actions", async () => {
-    render(<SessionProvider><PlaceMembershipActions place={placeContractFixture} /></SessionProvider>);
-    expect(await screen.findByRole("link", { name: "Manage place" })).toHaveAttribute("href", "/places/game-makers/settings");
-    expect(screen.getByRole("link", { name: "Members" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Leave" })).toBeDisabled();
+    render(<SessionProvider><PlaceMembershipButton place={placeContractFixture} /></SessionProvider>);
+    expect(await screen.findByRole("button", { name: "Leave" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Leave" })).toHaveAttribute("title", "Transfer ownership before leaving");
+  });
+
+  it("joins an open place and reacts as a member", async () => {
+    let joined = false;
+    mockServer.use(
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/context", () => joined ? HttpResponse.json(placeContextFixture) : HttpResponse.json({ status: 403, title: "Forbidden" }, { status: 403 })),
+      http.post("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/join", () => { joined = true; return HttpResponse.json({ memberId: "member-id", status: "active" }); }),
+    );
+    const user = userEvent.setup();
+    render(<SessionProvider><PlaceMembershipButton place={placeContractFixture} /></SessionProvider>);
+
+    await user.click(await screen.findByRole("button", { name: "Join" }));
+
+    expect(await screen.findByRole("button", { name: "Leave" })).toBeInTheDocument();
+  });
+
+  it("leaves a place and returns to the join state", async () => {
+    mockServer.use(
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/context", () => HttpResponse.json({
+        ...placeContextFixture,
+        viewer: { ...placeContextFixture.viewer, isOwner: false },
+      })),
+      http.delete("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/members/me", () => new HttpResponse(null, { status: 204 })),
+    );
+    const user = userEvent.setup();
+    render(<SessionProvider><PlaceMembershipButton place={placeContractFixture} /></SessionProvider>);
+
+    await user.click(await screen.findByRole("button", { name: "Leave" }));
+
+    expect(await screen.findByRole("button", { name: "Join" })).toBeInTheDocument();
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it("disables approval and invite-only membership after the relevant state", async () => {
+    mockServer.use(
+      http.get("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/context", () => HttpResponse.json({ status: 403, title: "Forbidden" }, { status: 403 })),
+      http.post("http://localhost:3001/api/v1/places/0199-0000-7000-8000-000000000001/join", () => HttpResponse.json({ memberId: "member-id", status: "pending" })),
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(<SessionProvider><PlaceMembershipButton place={{ ...placeContractFixture, joinPolicy: "approval" }} /></SessionProvider>);
+    await user.click(await screen.findByRole("button", { name: "Request to join" }));
+    expect(await screen.findByRole("button", { name: "Request sent" })).toBeDisabled();
+
+    rerender(<SessionProvider><PlaceMembershipButton place={{ ...placeContractFixture, id: "invite-only", joinPolicy: "invite_only" }} /></SessionProvider>);
+    expect(await screen.findByRole("button", { name: "Invite only" })).toBeDisabled();
   });
 
   it("creates a place and opens its settings", async () => {

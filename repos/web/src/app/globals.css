@@ -2841,14 +2841,30 @@ textarea:focus-visible {
 	margin-left: auto;
 }
 
-.place-membership {
-	display: flex;
+.place-membership-button {
+	display: inline-flex;
 	align-items: center;
 	gap: 6px;
+	min-height: 32px;
+	padding: 5px 9px;
 	color: var(--teal);
+	background: transparent;
+	border: 1px solid var(--line);
+	border-radius: 5px;
 	font-size: 12px;
 	font-weight: 800;
 	white-space: nowrap;
+}
+
+.place-membership-button:hover:not(:disabled) {
+	color: white;
+	background: var(--teal);
+	border-color: var(--teal);
+}
+
+.place-membership-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
 }
 
 .place-toolbar-search {
@@ -4465,10 +4481,6 @@ textarea:focus-visible {
 
 	.place-actions {
 		justify-content: flex-start;
-	}
-
-	.place-membership {
-		display: none;
 	}
 
 	.place-toolbar-search {

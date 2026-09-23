@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, Users } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { listChatChannels } from "@/features/chat/chat-client";
@@ -10,7 +10,7 @@ import { useSession } from "@/features/auth/session-provider";
 import { NotificationIndicator } from "@/features/notifications/notification-indicator";
 import { ReportButton } from "@/features/moderation/report-button";
 import { routes } from "@/lib/routes";
-import { PlaceMembershipActions } from "./place-access";
+import { PlaceMembershipButton } from "./place-access";
 import { getPlaceContext } from "./place-client";
 import type { PlaceContract } from "./place-contract";
 import { PlaceIcon } from "./place-icon";
@@ -21,7 +21,6 @@ interface PlaceForumHeaderProps {
   active?: PlaceSection;
   currentSection?: { href: string; label: string };
   place: PlaceContract;
-  showMembershipActions?: boolean;
   showSettings?: boolean;
 }
 
@@ -29,7 +28,6 @@ export function PlaceForumHeader({
   active = "forums",
   currentSection,
   place,
-  showMembershipActions = true,
   showSettings = false,
 }: PlaceForumHeaderProps) {
 	const session = useSession();
@@ -51,7 +49,7 @@ export function PlaceForumHeader({
         <ChatNavLink active={active === "chat"} currentSection={currentSection} place={place} />
       </nav>
       <div className="place-toolbar-actions">
-        <span className="place-membership"><Users size={16} aria-hidden="true" /> {place.joinPolicy === "open" ? "Open membership" : "Membership by request"}</span>
+        <PlaceMembershipButton place={place} />
         <PlaceSearch place={place} />
         <ReportButton label={place.name} placeId={place.id} targetId={place.id} targetType="place" />
         {session.status === "authenticated" ? <Link className="icon-button notification-button" href={routes.notifications} title="Notifications">
@@ -59,7 +57,6 @@ export function PlaceForumHeader({
           <NotificationIndicator />
           <span className="sr-only">Notifications</span>
         </Link> : null}
-        {showMembershipActions ? <PlaceMembershipActions place={place} /> : null}
       </div>
     </header>
   );

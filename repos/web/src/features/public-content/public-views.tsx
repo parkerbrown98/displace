@@ -102,7 +102,7 @@ interface PlaceViewProps {
 export function PlaceView({ feed, navigation, place, tag, topics }: PlaceViewProps) {
   return (
     <main className="public-main place-workspace-page forum-portal" id="main-content">
-      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
+      <PlaceForumHeader active="forums" place={place} />
       <div className="forum-portal-grid">
         <div className="forum-portal-content">
           <ForumNavigation navigation={navigation} placeSlug={place.slug} topics={topics.items} />
@@ -135,7 +135,7 @@ export function ForumView({
 }) {
   return (
     <main className="public-main place-workspace-page forum-subroute" id="main-content">
-      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
+      <PlaceForumHeader active="forums" place={place} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
       </nav>
@@ -171,7 +171,7 @@ export function TopicView({
 }) {
   return (
     <main className="public-main place-workspace-page topic-page forum-subroute" id="main-content">
-      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
+      <PlaceForumHeader active="forums" place={place} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href={routes.place(place.slug)}>Forums</Link>
         {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}

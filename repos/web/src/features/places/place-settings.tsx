@@ -136,7 +136,7 @@ function PlaceSettingsFrame({ children, context, reload }: { children: ReactNode
   const pathname = usePathname();
   const availableSections = availableSettingsSections(context);
 
-  if (availableSections.length === 0) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, role, chat, or voice management." /></div></main>;
+  if (availableSections.length === 0) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="settings" place={context.place} showSettings /><div className="place-page-state"><StatusPanel title="Settings unavailable" description="Your current roles do not grant place, forum, role, chat, or voice management." /></div></main>;
 
   async function refreshAfterForbidden(error: unknown) {
     if (isForbiddenPlaceError(error)) await reload();
@@ -144,7 +144,7 @@ function PlaceSettingsFrame({ children, context, reload }: { children: ReactNode
 
   return <PlaceSettingsContext.Provider value={{ context, refreshAfterForbidden, reload }}>
     <main className="public-main place-workspace-page" id="main-content">
-      <PlaceForumHeader active="settings" place={context.place} showMembershipActions={false} showSettings />
+      <PlaceForumHeader active="settings" place={context.place} showSettings />
       <header className="place-page-heading"><p className="eyebrow">Administration</p><h2>Place settings</h2><p>Manage one part of your community at a time.</p></header>
       <div className="settings-layout">
         <nav aria-label="Place settings sections">{availableSections.map((item) => {

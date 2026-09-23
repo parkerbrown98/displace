@@ -28,7 +28,6 @@ export function PlaceFeatureRoute({
             active="chat"
             currentSection={{ href: sectionHref, label: sectionLabel }}
             place={context.place}
-            showMembershipActions={false}
           />
           <nav className="breadcrumbs place-page-breadcrumbs" aria-label="Breadcrumb">
             <Link href={routes.place(context.place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{sectionLabel}</span>

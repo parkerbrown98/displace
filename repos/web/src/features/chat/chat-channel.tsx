@@ -132,7 +132,7 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
   if (!page) return <main className="public-main standalone-public-state" id="main-content"><StatusPanel tone="error" title="Chat unavailable" description={error ?? "This channel is unavailable."} action={<Link className="secondary-button" href={routes.place(place.slug)}>Return to place</Link>} /></main>;
 
   return <main className="public-main place-workspace-page chat-page" id="main-content">
-    <PlaceForumHeader active="chat" currentSection={{ href: routes.chat(place.slug, page.channel.slug), label: "Chat" }} place={place} showMembershipActions={false} />
+    <PlaceForumHeader active="chat" currentSection={{ href: routes.chat(place.slug, page.channel.slug), label: "Chat" }} place={place} />
     <section className="chat-layout" aria-label="Chat workspace">
       <aside className="chat-channel-list"><p className="eyebrow">Channels</p>{channels.map((channel) => <Link className={`chat-channel-link${channel.id === page.channel.id ? " active" : ""}`} href={routes.chat(place.slug, channel.slug)} key={channel.id}><Hash size={15} />{channel.name}</Link>)}</aside>
       <section className="chat-conversation" aria-label={`${page.channel.name} chat`}>

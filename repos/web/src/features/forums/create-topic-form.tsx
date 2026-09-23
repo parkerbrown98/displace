@@ -21,7 +21,7 @@ export function CreateTopicScreen({ placeId }: { placeId: string }) {
       {({ context }) => context.viewer.permissions.includes("topic.create") ? (
         <CreateTopicLoader context={context} />
       ) : (
-        <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description="Your role does not allow creating topics here." title="Topic creation unavailable" /></div></main>
+        <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} /><div className="place-page-state"><StatusPanel description="Your role does not allow creating topics here." title="Topic creation unavailable" /></div></main>
       )}
     </PlaceWorkspaceGate>
   );
@@ -41,8 +41,8 @@ function CreateTopicLoader({ context }: { context: PlaceContextContract }) {
     return () => { active = false; };
   }, [context.place.id]);
 
-  if (error) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description={error} title="Forums unavailable" tone="error" /></div></main>;
-  if (!navigation) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} showMembershipActions={false} /><div className="place-page-state"><LoadingPanel label="Loading forums" /></div></main>;
+  if (error) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} /><div className="place-page-state"><StatusPanel description={error} title="Forums unavailable" tone="error" /></div></main>;
+  if (!navigation) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={context.place} /><div className="place-page-state"><LoadingPanel label="Loading forums" /></div></main>;
   return <CreateTopicForm navigation={navigation} permissions={context.viewer.permissions} place={context.place} />;
 }
 
@@ -86,12 +86,12 @@ function CreateTopicForm({ navigation, permissions, place }: { navigation: Forum
   }
 
   if (!forums.length) {
-    return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={place} showMembershipActions={false} /><div className="place-page-state"><StatusPanel description="A forum must be created before members can start discussions." title="No forums available" /></div></main>;
+    return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="forums" place={place} /><div className="place-page-state"><StatusPanel description="A forum must be created before members can start discussions." title="No forums available" /></div></main>;
   }
 
   return (
     <main className="public-main place-workspace-page topic-compose-page" id="main-content">
-      <PlaceForumHeader active="forums" place={place} showMembershipActions={false} />
+      <PlaceForumHeader active="forums" place={place} />
       <nav className="breadcrumbs place-page-breadcrumbs" aria-label="Breadcrumb"><Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>New topic</span></nav>
       <header className="place-page-heading">
         <p className="eyebrow">Discussion</p>

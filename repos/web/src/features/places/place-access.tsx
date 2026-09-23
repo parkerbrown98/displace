@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, LogIn, LogOut, Settings, Users } from "lucide-react";
+import { Check, LogIn, LogOut, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useState, type FormEvent } from "react";
@@ -51,11 +51,11 @@ export function PlaceWorkspaceGate({ children, placeId, returnTo = routes.place(
   return children({ context: workspace.context, reload: workspace.reload });
 }
 
-export function PlaceMembershipActions({ place }: { place: PlaceContract }) {
+export function PlaceMembershipButton({ place }: { place: PlaceContract }) {
   const session = useSession();
   const router = useRouter();
   const [context, setContext] = useState<PlaceContextContract | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [requestSent, setRequestSent] = useState(false);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -65,34 +65,29 @@ export function PlaceMembershipActions({ place }: { place: PlaceContract }) {
     return () => { active = false; };
   }, [place.id, session.status]);
 
-  if (session.status === "loading") return <span className="membership-status">Checking membership...</span>;
-  if (session.status !== "authenticated") return <Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.place(place.slug))}`}><LogIn size={16} /> Sign in to join</Link>;
+  if (session.status === "loading") return <button className="place-membership-button" disabled type="button">Checking...</button>;
+  if (session.status !== "authenticated") return <Link className="place-membership-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.place(place.slug))}`}><LogIn size={15} /> Sign in</Link>;
 
   async function join() {
-    setPending(true); setNotice(null);
+    setPending(true);
     try {
       const result = await joinPlace(place.id);
-      if (result.status === "pending") setNotice("Membership request sent.");
+      if (result.status === "pending") setRequestSent(true);
       else setContext(await getPlaceContext(place.id));
-    } catch (error) { setNotice(placeErrorMessage(error, "This place could not be joined.")); }
+    } catch { return; }
     finally { setPending(false); }
   }
 
   async function leave() {
-    setPending(true); setNotice(null);
-    try { await leavePlace(place.id); setContext(null); setNotice("You left this place."); router.refresh(); }
-    catch (error) { setNotice(placeErrorMessage(error, "This place could not be left.")); }
+    setPending(true);
+    try { await leavePlace(place.id); setContext(null); router.refresh(); }
+    catch { return; }
     finally { setPending(false); }
   }
 
-  return <div className="place-actions">
-    {context ? <>
-      <Link className="secondary-button" href={routes.placeMembers(place.slug)}><Users size={16} /> Members</Link>
-      {context.viewer.permissions.some((permission) => ["place.manage", "role.manage", "member.manage", "forum.manage", "chat.manage", "voice.manage"].includes(permission)) ? <Link className="primary-button" href={routes.placeSettings(place.slug)}><Settings size={16} /> Manage place</Link> : null}
-      <button className="secondary-button" disabled={pending || context.viewer.isOwner} onClick={() => void leave()} title={context.viewer.isOwner ? "Transfer ownership before leaving" : undefined} type="button"><LogOut size={16} /> Leave</button>
-    </> : <button className="primary-button" disabled={pending} onClick={() => void join()} type="button">{pending ? "Joining..." : place.joinPolicy === "approval" ? "Request to join" : place.joinPolicy === "invite_only" ? "Invite required" : "Join place"}</button>}
-    {notice ? <span className="action-notice" role="status">{notice}</span> : null}
-  </div>;
+  if (context) return <button className="place-membership-button" disabled={pending || context.viewer.isOwner} onClick={() => void leave()} title={context.viewer.isOwner ? "Transfer ownership before leaving" : undefined} type="button"><LogOut size={15} /> {pending ? "Leaving..." : "Leave"}</button>;
+  if (place.joinPolicy === "invite_only") return <button className="place-membership-button" disabled title="An invitation is required to join" type="button">Invite only</button>;
+  return <button className="place-membership-button" disabled={pending || requestSent} onClick={() => void join()} type="button"><UserPlus size={15} /> {requestSent ? "Request sent" : pending ? "Joining..." : place.joinPolicy === "approval" ? "Request to join" : "Join"}</button>;
 }
 
 export function PlaceSwitcher({ activeSlug }: { activeSlug?: string }) {
