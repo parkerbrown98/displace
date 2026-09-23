@@ -70,9 +70,12 @@ test("indexes public content and delivers chat mentions over the live stack", as
     await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Live" }).click();
     await expect(page.locator(".chat-heading h1")).toContainText("Live room");
     await expect(page.locator(".chat-live-status")).toHaveText("Live");
+    await page.getByRole("button", { name: "Add emoji" }).click();
+    await expect(page.getByRole("textbox", { name: "Type to search for an emoji" })).toBeVisible();
+    await page.keyboard.press("Escape");
     const message = `Realtime mention for @${recipient.handle}`;
     await page.getByLabel("Message Live room").fill(message);
-    await page.getByRole("button", { name: "Send message" }).click();
+    await page.getByLabel("Message Live room").press("Enter");
 
     await expect(recipientPage.getByText(message)).toBeVisible({ timeout: 15_000 });
     await expect(recipientPage.locator(".notification-dot")).toBeVisible({ timeout: 15_000 });

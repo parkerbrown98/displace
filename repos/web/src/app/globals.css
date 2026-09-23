@@ -745,11 +745,100 @@ textarea:focus-visible {
 	height: 30px;
 }
 
-.chat-message p {
+.chat-message-body {
 	margin: 6px 0 0;
 	white-space: pre-wrap;
 	font-size: 14px;
 	line-height: 1.55;
+}
+
+.chat-message-body a {
+	color: var(--teal);
+	font-weight: 700;
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
+	overflow-wrap: anywhere;
+}
+
+.chat-link-previews {
+	display: grid;
+	gap: 8px;
+	max-width: 430px;
+	margin-top: 9px;
+}
+
+.chat-image-preview {
+	display: block;
+	width: min(220px, 100%);
+	aspect-ratio: 1;
+	overflow: hidden;
+	background: #e8e7df;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+}
+
+.chat-image-preview img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.chat-link-card {
+	display: grid;
+	grid-template-columns: 36px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	min-height: 58px;
+	padding: 9px 11px;
+	background: #f0efe9;
+	border: 1px solid var(--line);
+	border-left: 3px solid var(--teal);
+	border-radius: 5px;
+}
+
+.chat-link-card:hover {
+	background: #ebe9e1;
+	border-color: #b9c8c3;
+}
+
+.chat-link-card-mark {
+	display: grid;
+	width: 36px;
+	height: 36px;
+	place-items: center;
+	color: white;
+	background: var(--teal);
+	border-radius: 5px;
+	font-family: Georgia, "Times New Roman", serif;
+	font-weight: 700;
+}
+
+.chat-link-card > span:nth-child(2) {
+	display: grid;
+	min-width: 0;
+	gap: 3px;
+}
+
+.chat-link-card small,
+.chat-link-card strong {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.chat-link-card small {
+	color: var(--muted);
+	font-size: 10px;
+}
+
+.chat-link-card strong {
+	font-size: 13px;
+}
+
+.chat-link-card > svg {
+	color: var(--muted);
 }
 
 .chat-message.deleted {
@@ -765,8 +854,8 @@ textarea:focus-visible {
 
 .chat-composer {
 	display: grid;
-	grid-template-columns: 1fr 44px;
-	gap: 10px;
+	grid-template-columns: minmax(0, 1fr) 36px 44px;
+	gap: 7px;
 	margin: 0 20px 20px;
 	padding: 8px 8px 8px 14px;
 	background: #f0efe9;
@@ -793,6 +882,21 @@ textarea:focus-visible {
 	height: 38px;
 	color: white;
 	background: var(--teal);
+}
+
+.chat-emoji-trigger {
+	align-self: end;
+	width: 36px;
+	height: 38px;
+}
+
+.chat-emoji-popover {
+	z-index: 100;
+	filter: drop-shadow(0 16px 30px rgba(29, 41, 40, 0.2));
+}
+
+.chat-emoji-arrow {
+	fill: var(--paper-raised);
 }
 
 .chat-send:hover {

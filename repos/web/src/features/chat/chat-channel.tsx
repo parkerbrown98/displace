@@ -1,7 +1,7 @@
 "use client";
 
 import { Edit3, Hash, MessageCircle, Mic, MicOff, Send, Trash2, Volume2 } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { StatusPanel } from "@/components/ui/status-panel";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
@@ -15,6 +15,8 @@ import type { VoiceRoomContract } from "@/features/voice/voice-contracts";
 import { routes } from "@/lib/routes";
 import { deleteChatMessage, editChatMessage, listChatChannels, listChatMessages, markChatRead, sendChatMessage } from "./chat-client";
 import type { ChatChannelContract, ChatMessageContract, ChatMessagePageContract } from "./chat-contracts";
+import { ChatEmojiPicker } from "./chat-emoji-picker";
+import { ChatMessageContent } from "./chat-message-content";
 
 export function LiveExperience({ placeSlug }: { placeSlug: string }) {
   return <PlaceWorkspaceGate placeId={placeSlug} returnTo={routes.live(placeSlug)}>{({ context }) => <LiveWorkspace place={context.place} />}</PlaceWorkspaceGate>;
@@ -86,6 +88,9 @@ function ChatConversation({ channel, place }: { channel: ChatChannelContract; pl
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string>();
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [sendPending, setSendPending] = useState(false);
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const sending = useRef(false);
   const typingStop = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -159,14 +164,35 @@ function ChatConversation({ channel, place }: { channel: ChatChannelContract; pl
     typingStop.current = window.setTimeout(() => socket?.emit("chat.typing", { active: false, channelId: page.channel.id, placeId: place.id }), 1_500);
   }
 
+  function insertEmoji(emoji: string) {
+    const textarea = composer.current;
+    const start = textarea?.selectionStart ?? draft.length;
+    const end = textarea?.selectionEnd ?? start;
+    const next = `${draft.slice(0, start)}${emoji}${draft.slice(end)}`;
+    updateDraft(next);
+    requestAnimationFrame(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  }
+
+  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  }
+
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!page || !draft.trim()) return;
+    if (!page || !draft.trim() || sending.current) return;
+    sending.current = true;
+    setSendPending(true);
     try {
       const message = await sendChatMessage(place.id, page.channel.id, draft.trim());
       setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
       setDraft("");
     } catch (cause) { toast.error(placeErrorMessage(cause, "The message could not be sent.")); }
+    finally { sending.current = false; setSendPending(false); }
   }
 
   async function saveEdit(messageId: string, body: string) {
@@ -190,12 +216,12 @@ function ChatConversation({ channel, place }: { channel: ChatChannelContract; pl
         <header className="chat-heading"><div><p className="eyebrow">Text room</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status"><span aria-hidden="true" />{realtimeConnected ? "Live" : "Connecting"}</span></header>
         <div className="chat-message-list">{messages.length ? messages.map((message) => <ChatMessage canManage={page.permissions.canManage} currentUserId={session.user?.id} editing={editingId === message.id} key={message.id} message={message} onCancel={() => setEditingId(undefined)} onDelete={() => void remove(message.id)} onEdit={() => setEditingId(message.id)} onSave={saveEdit} placeId={place.id} />) : <p className="chat-empty">No messages yet. Start the conversation.</p>}</div>
         {typingUsers.length ? <p className="chat-typing" role="status">Someone is typing...</p> : null}
-        {page.permissions.canSend ? <form className="chat-composer" onSubmit={send}><label className="sr-only" htmlFor="chat-message">Message {page.channel.name}</label><textarea id="chat-message" maxLength={10_000} onChange={(event) => updateDraft(event.target.value)} placeholder={`Message #${page.channel.name}`} value={draft} /><button className="icon-button chat-send" disabled={!draft.trim()} title="Send message" type="submit"><Send size={18} /><span className="sr-only">Send message</span></button></form> : <p className="chat-readonly">You can read this channel, but cannot send messages.</p>}
+        {page.permissions.canSend ? <form className="chat-composer" onSubmit={send}><label className="sr-only" htmlFor="chat-message">Message {page.channel.name}</label><textarea id="chat-message" maxLength={4_000} onChange={(event) => updateDraft(event.target.value)} onKeyDown={handleComposerKeyDown} placeholder={`Message #${page.channel.name}`} ref={composer} value={draft} /><ChatEmojiPicker onSelect={insertEmoji} /><button className="icon-button chat-send" disabled={!draft.trim() || sendPending} title="Send message" type="submit"><Send size={18} /><span className="sr-only">Send message</span></button></form> : <p className="chat-readonly">You can read this channel, but cannot send messages.</p>}
       </section>;
 }
 
 function ChatMessage({ canManage, currentUserId, editing, message, onCancel, onDelete, onEdit, onSave, placeId }: { canManage: boolean; currentUserId?: string; editing: boolean; message: ChatMessageContract; onCancel: () => void; onDelete: () => void; onEdit: () => void; onSave: (messageId: string, body: string) => Promise<void>; placeId: string }) {
   const [draft, setDraft] = useState(message.body ?? "");
   const canChange = !message.isDeleted && (canManage || currentUserId === message.author.id);
-  return <article className={`chat-message${message.isDeleted ? " deleted" : ""}`}><header><strong>{message.isDeleted ? "Deleted member" : message.author.displayName}</strong><span>@{message.author.handle}</span><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString()}</time>{!message.isDeleted ? <span className="chat-message-controls"><ReportButton label="chat message" placeId={placeId} targetId={message.id} targetType="chat_message" />{canChange ? <><button className="icon-button" onClick={onEdit} title="Edit message" type="button"><Edit3 aria-hidden="true" size={15} /></button><button className="icon-button destructive-icon-button" onClick={onDelete} title="Delete message" type="button"><Trash2 aria-hidden="true" size={15} /></button></> : null}</span> : null}</header>{message.isDeleted ? <p className="tombstone">This message was removed.</p> : editing ? <form className="chat-edit-form" onSubmit={(event) => { event.preventDefault(); void onSave(message.id, draft.trim()); }}><textarea autoFocus maxLength={10_000} onChange={(event) => setDraft(event.target.value)} value={draft} /><div><button className="primary-button" disabled={!draft.trim()} type="submit">Save</button><button className="secondary-button" onClick={onCancel} type="button">Cancel</button></div></form> : <p>{message.body}</p>}</article>;
+  return <article className={`chat-message${message.isDeleted ? " deleted" : ""}`}><header><strong>{message.isDeleted ? "Deleted member" : message.author.displayName}</strong><span>@{message.author.handle}</span><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString()}</time>{!message.isDeleted ? <span className="chat-message-controls"><ReportButton label="chat message" placeId={placeId} targetId={message.id} targetType="chat_message" />{canChange ? <><button className="icon-button" onClick={onEdit} title="Edit message" type="button"><Edit3 aria-hidden="true" size={15} /></button><button className="icon-button destructive-icon-button" onClick={onDelete} title="Delete message" type="button"><Trash2 aria-hidden="true" size={15} /></button></> : null}</span> : null}</header>{message.isDeleted ? <p className="tombstone">This message was removed.</p> : editing ? <form className="chat-edit-form" onSubmit={(event) => { event.preventDefault(); void onSave(message.id, draft.trim()); }}><textarea autoFocus maxLength={4_000} onChange={(event) => setDraft(event.target.value)} value={draft} /><div><button className="primary-button" disabled={!draft.trim()} type="submit">Save</button><button className="secondary-button" onClick={onCancel} type="button">Cancel</button></div></form> : <ChatMessageContent body={message.body ?? ""} />}</article>;
 }
