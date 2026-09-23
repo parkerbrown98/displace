@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Check, ChevronDown, ChevronRight, CircleAlert, CircleCheck, ClipboardList, Clock3, FileSearch, Gavel, Inbox, MessageSquareText, NotebookPen, ShieldAlert, UserCheck, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
-import { AppShell, ShellTopbar } from "@/components/app-shell/app-shell";
+import { AppShell } from "@/components/app-shell/app-shell";
 import { Select } from "@/components/ui/select";
 import { LoadingPanel, StatusPanel } from "@/components/ui/status-panel";
 import { useSession } from "@/features/auth/session-provider";
@@ -106,7 +106,6 @@ export function ModerationDashboard({ initialPlaceSlug }: { initialPlaceSlug?: s
   }
   return <AppShell activePlaceSlug={activePlace?.slug}>
     <main className="main-content moderation-page" id="main-content">
-      <ShellTopbar />
       <header className="operations-heading moderation-heading"><div><p className="eyebrow">Trust and safety</p><h1>Review reports</h1><p>Triage incoming reports, review the available evidence, and record a clear outcome.</p></div><div className="moderation-overview" aria-label="Queue summary"><span><strong>{reports.length}</strong><small>{statusLabel(status)} loaded</small></span><span><strong>{assignedCount}</strong><small>Assigned to you</small></span><span><strong>{unassignedCount}</strong><small>Unassigned</small></span></div></header>
       {notice ? <p className={`form-message${notice.error ? " form-message-error" : " form-message-success"}`} role={notice.error ? "alert" : "status"}>{notice.text}</p> : null}
       {session.status === "loading" || loading && !placeId ? <LoadingPanel label="Loading moderation queue" /> : session.status !== "authenticated" ? <StatusPanel title="Sign in required" description="Sign in to review moderation cases." /> : places.length === 0 ? <StatusPanel title="No moderation access" description="None of your current place roles grant moderation management." /> : <>
