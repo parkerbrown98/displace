@@ -80,9 +80,9 @@ The browser origin must be allowed by both the API `CORS_ORIGINS` configuration 
 pnpm exec playwright test e2e/places.spec.ts --project=desktop-chromium --workers=1 --grep "uploads and assigns a place image"
 ```
 
-## Voice
+## Live chat and voice
 
-The place voice route lists API-authorized rooms and connects directly to LiveKit only after the member chooses to join. It supports participant summaries, microphone and output selection, mute, deafen, audio-playback recovery, reconnect state, and active speaking-permission revocation. Room ordering, capacity, and listen/speak permissions are managed from place settings by members with `voice.manage`.
+The place Live workspace combines chat channels and API-authorized voice rooms in one full-height view. Channel deep links and the former voice route remain compatible, while `/places/:placeSlug/live` is the primary entry point. Voice connects directly to LiveKit only after the member chooses to join and supports participant summaries, device selection, mute, deafen, audio-playback recovery, reconnect state, and active speaking-permission revocation. Channel and room access remain independently managed from place settings.
 
 Run the controlled real-stack voice journey while API, PostgreSQL, Redis, LiveKit, and coturn are running:
 

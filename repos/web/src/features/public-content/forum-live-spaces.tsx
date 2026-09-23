@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, MessageCircle, Radio, Volume2 } from "lucide-react";
+import { ArrowRight, Radio } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "@/features/auth/session-provider";
@@ -31,25 +31,20 @@ export function ForumLiveSpaces({ placeId, placeSlug }: { placeId: string; place
     return () => { active = false; };
   }, [placeId, session.status]);
 
-  const firstChannel = spaces?.channels[0];
+  const channels = spaces?.channels ?? [];
   const rooms = spaces?.rooms ?? [];
-  if (!firstChannel && rooms.length === 0) return null;
+  if (channels.length === 0 && rooms.length === 0) return null;
 
   const participantCount = rooms.reduce((count, room) => count + room.participants.length, 0);
   return (
     <section className="portal-panel portal-live-spaces">
       <header><Radio size={17} aria-hidden="true" /><h2>Live spaces</h2></header>
       <div className="portal-space-list">
-        {firstChannel ? <Link href={routes.chat(placeSlug, firstChannel.slug)}>
-          <span className="portal-space-icon" aria-hidden="true"><MessageCircle size={17} /></span>
-          <span><strong>Chat</strong><small>#{firstChannel.name} · {spaces!.channels.length} {spaces!.channels.length === 1 ? "channel" : "channels"}</small></span>
+        <Link href={routes.live(placeSlug)}>
+          <span className="portal-space-icon voice" aria-hidden="true"><Radio size={17} /></span>
+          <span><strong>Live</strong><small>{channels.length} {channels.length === 1 ? "channel" : "channels"} · {participantCount ? `${participantCount} listening now` : `${rooms.length} ${rooms.length === 1 ? "room" : "rooms"}`}</small></span>
           <ArrowRight size={15} aria-hidden="true" />
-        </Link> : null}
-        {rooms.length ? <Link href={routes.voice(placeSlug)}>
-          <span className="portal-space-icon voice" aria-hidden="true"><Volume2 size={17} /></span>
-          <span><strong>Voice</strong><small>{participantCount ? `${participantCount} listening now` : `${rooms.length} ${rooms.length === 1 ? "room" : "rooms"} ready`}</small></span>
-          <ArrowRight size={15} aria-hidden="true" />
-        </Link> : null}
+        </Link>
       </div>
     </section>
   );

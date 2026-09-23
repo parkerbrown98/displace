@@ -3,8 +3,8 @@ import { createCommunity, createVoiceRoom, joinCommunity, registerVerifiedUser, 
 
 async function signIn(page: Page, user: E2eUser) {
   await page.goto("/sign-in");
-  await page.getByLabel("Email or handle").fill(user.handle);
-  await page.getByLabel("Password").fill(user.password);
+  await page.getByRole("textbox", { name: "Email or handle" }).first().fill(user.handle);
+  await page.getByRole("textbox", { name: "Password" }).first().fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/discover$/);
 }
@@ -41,7 +41,7 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
   await expect(page.getByRole("button", { name: "Unmute microphone" })).toBeVisible();
 
   await restrictVoiceSpeaking(request, owner, community.placeId, room.id);
-  await expect(page.locator(".form-message[role='alert']")).toContainText("speaking permission changed", { timeout: 15_000 });
+  await expect(page.getByText(/speaking permission changed/i)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("button", { name: "Unmute microphone" })).toBeDisabled();
 
   const ownerContext = await browser.newContext();
@@ -50,11 +50,11 @@ test("connects to LiveKit and enforces mute, permission, and capacity state", as
     await signIn(ownerPage, owner);
     await ownerPage.goto(`/places/${community.placeSlug}/voice`);
     await ownerPage.getByRole("button", { name: "Join room" }).click();
-    await expect(ownerPage.locator(".form-message[role='alert']")).toContainText("Voice room is full.", { timeout: 15_000 });
+    await expect(ownerPage.getByText("Voice room is full.")).toBeVisible({ timeout: 15_000 });
   } finally {
     await ownerContext.close();
   }
 
-  await page.getByRole("button", { name: "Leave" }).click();
+  await page.locator(".voice-controls").getByRole("button", { name: "Leave" }).click();
   await expect(page.locator(".voice-connection")).toHaveText("disconnected");
 });

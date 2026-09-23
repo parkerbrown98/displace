@@ -5,8 +5,8 @@ const apiUrl = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:3001/api/v1";
 
 async function signIn(page: Page, user: E2eUser) {
   await page.goto("/sign-in");
-  await page.getByLabel("Email or handle").fill(user.handle);
-  await page.getByLabel("Password").fill(user.password);
+  await page.getByRole("textbox", { name: "Email or handle" }).first().fill(user.handle);
+  await page.getByRole("textbox", { name: "Password" }).first().fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/discover$/);
 }
@@ -42,15 +42,17 @@ test("indexes public content and delivers chat mentions over the live stack", as
     const destination = new URL(page.url());
     return { pathname: destination.pathname, query: destination.searchParams.get("q") };
   }).toEqual({ pathname: "/discover", query: community.placeName });
-  await expect(page.getByRole("heading", { name: community.placeName })).toBeVisible();
+  await expect(page.getByRole("heading", { exact: true, name: community.placeName })).toBeVisible();
 
   await signIn(page, owner);
   await page.goto(`/places/${community.placeSlug}`);
   const navigation = page.getByRole("navigation", { name: `${community.placeName} navigation` });
   await expect(navigation.getByRole("link", { name: "Settings" })).toBeVisible();
-  await expect(navigation.getByRole("link", { name: "Chat" })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Live" })).toHaveCount(0);
   await navigation.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("navigation", { name: "Place settings sections" }).getByRole("link", { name: "Chat" }).click();
   await expect(page.getByRole("heading", { name: "Chat channels" })).toBeVisible();
+  await page.getByRole("button", { name: "New channel" }).click();
   await page.getByLabel("Channel name").fill("Live room");
   await page.getByLabel("Channel slug").fill("live-room");
   await page.getByRole("button", { name: "Create channel" }).click();
@@ -65,7 +67,7 @@ test("indexes public content and delivers chat mentions over the live stack", as
     await expect(recipientPage.locator(".chat-live-status")).toHaveText("Live");
 
     await page.goto(`/places/${community.placeSlug}`);
-    await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Chat" }).click();
+    await page.getByRole("navigation", { name: `${community.placeName} navigation` }).getByRole("link", { name: "Live" }).click();
     await expect(page.locator(".chat-heading h1")).toContainText("Live room");
     await expect(page.locator(".chat-live-status")).toHaveText("Live");
     const message = `Realtime mention for @${recipient.handle}`;

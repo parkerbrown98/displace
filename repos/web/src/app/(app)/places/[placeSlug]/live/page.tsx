@@ -4,7 +4,7 @@ import { LiveExperience } from "@/features/chat/chat-channel";
 
 export const metadata: Metadata = { title: "Live", robots: { follow: false, index: false } };
 
-export default async function VoicePage({ params }: PageProps<"/places/[placeSlug]/voice">) {
+export default async function LivePage({ params }: { params: Promise<{ placeSlug: string }> }) {
   const { placeSlug } = await params;
   return <PublicShell><LiveExperience placeSlug={placeSlug} /></PublicShell>;
 }

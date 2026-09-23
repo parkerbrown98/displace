@@ -4,7 +4,6 @@ import { Bell, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { listChatChannels } from "@/features/chat/chat-client";
-import type { ChatChannelContract } from "@/features/chat/chat-contracts";
 import { listVoiceRooms } from "@/features/voice/voice-client";
 import { useSession } from "@/features/auth/session-provider";
 import { NotificationIndicator } from "@/features/notifications/notification-indicator";
@@ -15,7 +14,7 @@ import { getPlaceContext } from "./place-client";
 import type { PlaceContract } from "./place-contract";
 import { PlaceIcon } from "./place-icon";
 
-type PlaceSection = "chat" | "forums" | "members" | "moderation" | "settings" | "voice";
+type PlaceSection = "chat" | "forums" | "live" | "members" | "moderation" | "settings" | "voice";
 
 interface PlaceForumHeaderProps {
   active?: PlaceSection;
@@ -42,11 +41,10 @@ export function PlaceForumHeader({
       </div>
       <nav className="place-toolbar-nav" aria-label={`${place.name} navigation`}>
         <PlaceNavLink active={active === "forums"} href={routes.place(place.slug)}>Forums</PlaceNavLink>
+        <LiveNavLink active={["chat", "live", "voice"].includes(active)} currentSection={currentSection} place={place} />
         <PlaceNavLink active={active === "members"} href={routes.placeMembers(place.slug)}>Members</PlaceNavLink>
-        <VoiceNavLink active={active === "voice"} place={place} />
         {moderationVisible ? <PlaceNavLink active={active === "moderation"} href={routes.placeModeration(place.slug)}>Moderation</PlaceNavLink> : null}
         {settingsVisible ? <PlaceNavLink active={active === "settings"} href={routes.placeSettings(place.slug)}>Settings</PlaceNavLink> : null}
-        <ChatNavLink active={active === "chat"} currentSection={currentSection} place={place} />
       </nav>
       <div className="place-toolbar-actions">
         <PlaceMembershipButton place={place} />
@@ -60,18 +58,6 @@ export function PlaceForumHeader({
       </div>
     </header>
   );
-}
-
-function VoiceNavLink({ active, place }: { active: boolean; place: PlaceContract }) {
-  const session = useSession();
-  const [visible, setVisible] = useState(active);
-  useEffect(() => {
-    if (active || session.status !== "authenticated") return;
-    let activeRequest = true;
-    void listVoiceRooms(place.id).then((rooms) => { if (activeRequest) setVisible(rooms.length > 0); }).catch(() => undefined);
-    return () => { activeRequest = false; };
-  }, [active, place.id, session.status]);
-  return visible ? <PlaceNavLink active={active} href={routes.voice(place.slug)}>Voice</PlaceNavLink> : null;
 }
 
 function useSettingsVisibility(placeId: string, showSettings: boolean) {
@@ -112,7 +98,7 @@ function PlaceSearch({ place }: { place: PlaceContract }) {
   return <Link className="icon-button place-search-toggle" href={routes.discoverInPlace(place.id)} title={`Search in ${place.name}`}><Search size={18} /><span className="sr-only">Search in {place.name}</span></Link>;
 }
 
-function ChatNavLink({
+function LiveNavLink({
   active,
   currentSection,
   place,
@@ -122,24 +108,24 @@ function ChatNavLink({
   place: PlaceContract;
 }) {
   const session = useSession();
-  const [channel, setChannel] = useState<ChatChannelContract>();
+  const [destination, setDestination] = useState<string>();
 
   useEffect(() => {
     if (currentSection || session.status !== "authenticated") return;
     let activeRequest = true;
-    void listChatChannels(place.id)
-      .then((channels) => {
-        if (activeRequest) setChannel(channels.at(0));
+    void Promise.all([listChatChannels(place.id), listVoiceRooms(place.id)])
+      .then(([channels, rooms]) => {
+        if (activeRequest) setDestination(channels[0] || rooms[0] ? routes.live(place.slug) : undefined);
       })
       .catch(() => {
-        if (activeRequest) setChannel(undefined);
+        if (activeRequest) setDestination(undefined);
       });
     return () => { activeRequest = false; };
-  }, [currentSection, place.id, session.status]);
+  }, [currentSection, place.id, place.slug, session.status]);
 
   if (currentSection) return <PlaceNavLink active={active} href={currentSection.href}>{currentSection.label}</PlaceNavLink>;
-  if (!channel) return null;
-  return <PlaceNavLink active={active} href={routes.chat(place.slug, channel.slug)}>Chat</PlaceNavLink>;
+  if (!destination) return null;
+  return <PlaceNavLink active={active} href={destination}>Live</PlaceNavLink>;
 }
 
 function PlaceNavLink({ active, children, href }: { active: boolean; children: React.ReactNode; href: string }) {

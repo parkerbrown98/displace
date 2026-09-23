@@ -21,6 +21,13 @@ export function VoiceExperience({ placeSlug }: { placeSlug: string }) {
 }
 
 function VoiceWorkspace({ place }: { place: PlaceContract }) {
+  return <main className="public-main place-workspace-page voice-page" id="main-content">
+    <PlaceForumHeader active="voice" place={place} />
+    <PlaceVoicePanel place={place} />
+  </main>;
+}
+
+export function PlaceVoicePanel({ place }: { place: PlaceContract }) {
   const [rooms, setRooms] = useState<VoiceRoomContract[]>();
   const [selectedId, setSelectedId] = useState<string>();
   const [error, setError] = useState<string>();
@@ -45,17 +52,14 @@ function VoiceWorkspace({ place }: { place: PlaceContract }) {
     return () => { socket.off("connect", join); socket.off("voice.room.updated", updated); };
   }, [place.id]);
 
-  if (!rooms && !error) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading voice rooms" /></main>;
-  if (!rooms?.length) return <main className="public-main place-workspace-page" id="main-content"><PlaceForumHeader active="voice" place={place} /><div className="place-page-state"><StatusPanel description={error ?? "No voice rooms are available to your current roles."} title="Voice unavailable" /></div></main>;
+  if (!rooms && !error) return <div className="live-voice-state"><LoadingPanel label="Loading voice rooms" /></div>;
+  if (!rooms?.length) return <div className="live-voice-state"><StatusPanel description={error ?? "No voice rooms are available to your current roles."} title="Voice unavailable" /></div>;
   const selected = rooms.find((room) => room.id === selectedId) ?? rooms[0]!;
 
-  return <main className="public-main place-workspace-page voice-page" id="main-content">
-    <PlaceForumHeader active="voice" place={place} />
-    <section className="voice-layout" aria-label="Voice rooms">
+  return <section className="voice-layout" aria-label="Voice rooms">
       <aside className="voice-room-list"><p className="eyebrow">Voice rooms</p>{rooms.map((room) => <button aria-current={room.id === selected.id ? "true" : undefined} className={`voice-room-button${room.id === selected.id ? " active" : ""}`} key={room.id} onClick={() => setSelectedId(room.id)} type="button"><Radio size={16} /><span><strong>{room.name}</strong><small>{room.participants.length}/{room.capacity}</small></span></button>)}</aside>
       <VoiceSession key={selected.id} onRoomsChanged={setRooms} placeId={place.id} room={selected} />
-    </section>
-  </main>;
+    </section>;
 }
 
 function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (rooms: VoiceRoomContract[]) => void; placeId: string; room: VoiceRoomContract }) {
@@ -91,8 +95,8 @@ function VoiceSession({ onRoomsChanged, placeId, room }: { onRoomsChanged: (room
   }, [room.participants]);
 
   useEffect(() => {
-    if (room.canSpeak || !liveRoom.current || !microphoneEnabled) return;
-    void liveRoom.current.localParticipant.setMicrophoneEnabled(false).finally(() => setMicrophoneEnabled(false));
+    if (room.canSpeak || !liveRoom.current) return;
+    if (microphoneEnabled) void liveRoom.current.localParticipant.setMicrophoneEnabled(false).finally(() => setMicrophoneEnabled(false));
     toast.error("Your speaking permission changed. You can continue listening.");
   }, [microphoneEnabled, room.canSpeak]);
 

@@ -35,6 +35,7 @@ export const routes = {
   topic: (placeSlug: string, topicSlug: string) =>
     `/places/${placeSlug}/topics/${topicSlug}`,
   createTopic: (placeSlug: string) => `/places/${placeSlug}/topics/new`,
+  live: (placeSlug: string) => `/places/${placeSlug}/live`,
   chat: (placeSlug: string, channelSlug: string) =>
     `/places/${placeSlug}/chat/${channelSlug}`,
   voice: (placeSlug: string) => `/places/${placeSlug}/voice`,

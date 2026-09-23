@@ -11,12 +11,35 @@ import { PlaceForumHeader } from "@/features/places/place-forum-header";
 import { PlaceWorkspaceGate, placeErrorMessage } from "@/features/places/place-access";
 import type { PlaceContract } from "@/features/places/place-contract";
 import { realtimeSocket } from "@/features/realtime/realtime-client";
+import { PlaceVoicePanel } from "@/features/voice/voice-experience";
 import { routes } from "@/lib/routes";
 import { deleteChatMessage, editChatMessage, listChatChannels, listChatMessages, markChatRead, sendChatMessage } from "./chat-client";
 import type { ChatChannelContract, ChatMessageContract, ChatMessagePageContract } from "./chat-contracts";
 
 export function ChatChannel({ channelSlug, placeSlug }: { channelSlug: string; placeSlug: string }) {
   return <PlaceWorkspaceGate placeId={placeSlug} returnTo={routes.chat(placeSlug, channelSlug)}>{({ context }) => <ChatWorkspace channelSlug={channelSlug} place={context.place} />}</PlaceWorkspaceGate>;
+}
+
+export function LiveExperience({ placeSlug }: { placeSlug: string }) {
+  return <PlaceWorkspaceGate placeId={placeSlug} returnTo={routes.live(placeSlug)}>{({ context }) => <LiveWorkspace place={context.place} />}</PlaceWorkspaceGate>;
+}
+
+function LiveWorkspace({ place }: { place: PlaceContract }) {
+  const [channels, setChannels] = useState<ChatChannelContract[]>();
+
+  useEffect(() => {
+    let active = true;
+    void listChatChannels(place.id).then((items) => { if (active) setChannels(items); }).catch(() => { if (active) setChannels([]); });
+    return () => { active = false; };
+  }, [place.id]);
+
+  if (!channels) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading live spaces" /></main>;
+  if (channels[0]) return <ChatWorkspace channelSlug={channels[0].slug} place={place} />;
+
+  return <main className="public-main place-workspace-page live-page" id="main-content">
+    <PlaceForumHeader active="live" currentSection={{ href: routes.live(place.slug), label: "Live" }} place={place} />
+    <section className="live-voice-only" aria-label="Live workspace"><PlaceVoicePanel place={place} /></section>
+  </main>;
 }
 
 function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: PlaceContract }) {
@@ -131,9 +154,9 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
   if (loading) return <main className="public-main standalone-public-state" id="main-content"><LoadingPanel label="Loading chat" /></main>;
   if (!page) return <main className="public-main standalone-public-state" id="main-content"><StatusPanel tone="error" title="Chat unavailable" description={error ?? "This channel is unavailable."} action={<Link className="secondary-button" href={routes.place(place.slug)}>Return to place</Link>} /></main>;
 
-  return <main className="public-main place-workspace-page chat-page" id="main-content">
-    <PlaceForumHeader active="chat" currentSection={{ href: routes.chat(place.slug, page.channel.slug), label: "Chat" }} place={place} />
-    <section className="chat-layout" aria-label="Chat workspace">
+  return <main className="public-main place-workspace-page live-page chat-page" id="main-content">
+    <PlaceForumHeader active="live" currentSection={{ href: routes.live(place.slug), label: "Live" }} place={place} />
+    <section className="live-layout" aria-label="Live workspace">
       <aside className="chat-channel-list"><p className="eyebrow">Channels</p>{channels.map((channel) => <Link className={`chat-channel-link${channel.id === page.channel.id ? " active" : ""}`} href={routes.chat(place.slug, channel.slug)} key={channel.id}><Hash size={15} />{channel.name}</Link>)}</aside>
       <section className="chat-conversation" aria-label={`${page.channel.name} chat`}>
         <header className="chat-heading"><div><p className="eyebrow">Live discussion</p><h1><Hash size={24} />{page.channel.name}</h1></div><span className="chat-live-status">{realtimeConnected ? "Live" : "Connecting"}</span></header>
@@ -141,6 +164,7 @@ function ChatWorkspace({ channelSlug, place }: { channelSlug: string; place: Pla
         {typingUsers.length ? <p className="chat-typing" role="status">Someone is typing...</p> : null}
         {page.permissions.canSend ? <form className="chat-composer" onSubmit={send}><label className="sr-only" htmlFor="chat-message">Message {page.channel.name}</label><textarea id="chat-message" maxLength={10_000} onChange={(event) => updateDraft(event.target.value)} placeholder={`Message #${page.channel.name}`} value={draft} /><button className="icon-button chat-send" disabled={!draft.trim()} title="Send message" type="submit"><Send size={18} /><span className="sr-only">Send message</span></button></form> : <p className="chat-readonly">You can read this channel, but cannot send messages.</p>}
       </section>
+      <PlaceVoicePanel place={place} />
     </section>
   </main>;
 }
