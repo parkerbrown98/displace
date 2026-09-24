@@ -36,12 +36,12 @@ export function AppShell({ activeNavigation, activePlaceSlug, children }: AppShe
   const authenticated = session.status === "authenticated";
   const currentPlaceSlug = activePlaceSlug ?? pathname.match(/^\/places\/([^/]+)/)?.[1];
   const currentNavigation = activeNavigation === undefined
-    ? pathname === routes.discover
-      ? "discover"
-      : pathname === routes.saved
-        ? "saved"
-        : pathname.startsWith("/places/")
-          ? "home"
+    ? pathname === routes.home
+      ? "home"
+      : pathname === routes.discover
+        ? "discover"
+        : pathname === routes.saved
+          ? "saved"
           : null
     : activeNavigation;
   const brand = <Link className="brand" href={routes.home} aria-label="Displace home">
@@ -50,7 +50,7 @@ export function AppShell({ activeNavigation, activePlaceSlug, children }: AppShe
   </Link>;
   const navigation = (idSuffix: string) => <>
     <nav className="primary-nav" aria-label="Primary navigation">
-      <Link className={`nav-item${currentNavigation === "home" ? " active" : ""}`} href={currentPlaceSlug ? routes.place(currentPlaceSlug) : routes.home}>
+      <Link className={`nav-item${currentNavigation === "home" ? " active" : ""}`} href={routes.home}>
         <HomeIcon size={18} /> Home
       </Link>
       {!singlePlace ? <Link className={`nav-item${currentNavigation === "discover" ? " active" : ""}`} href={routes.discover}>
