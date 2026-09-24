@@ -21,6 +21,7 @@ import {
   type CreateForumTagDto,
   type CreateTopicDto,
   type EditPostDto,
+  type FeedQueryDto,
   type ForumCursorQueryDto,
   type MarkTopicReadDto,
   type TopicQueryDto,
@@ -30,6 +31,7 @@ import {
 } from './forums.dto.js';
 import {
   ForumsRepository,
+  type FeedCursor,
   type PostCursor,
   type SavedItemCursor,
   type TopicCursor,
@@ -299,6 +301,55 @@ export class ForumsService {
               ...(query.feed === 'popular'
                 ? { replyCount: last.replyCount }
                 : {}),
+            })
+          : undefined,
+    };
+  }
+
+  async listFeed(userId: string | undefined, query: FeedQueryDto) {
+    const cursor = query.cursor
+      ? this.decodeFeedCursor(query.cursor, query.sort)
+      : undefined;
+    const asOf = cursor?.asOf ?? this.clock.now();
+    const records = await this.forums.listFeed({
+      asOf,
+      cursor,
+      limit: query.limit,
+      sort: query.sort,
+      userId,
+    });
+    const hasMore = records.length > query.limit;
+    const page = records.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page.map((record) => ({
+        excerpt: record.excerpt,
+        forum: { id: record.forumId, name: record.forumName },
+        isFollowing: record.isFollowing,
+        isSaved: record.isSaved,
+        originalPostId: record.originalPostId,
+        place: {
+          id: record.placeId,
+          name: record.placeName,
+          slug: record.placeSlug,
+        },
+        reactionCount: record.reactionCount,
+        sources: [
+          ...(record.isFollowing ? (['following'] as const) : []),
+          ...(record.isJoined ? (['joined'] as const) : []),
+          ...(record.isTrending ? (['trending'] as const) : []),
+        ],
+        topic: this.toTopic(record),
+        viewerHasReacted: record.viewerHasReacted,
+      })),
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              asOf: asOf.toISOString(),
+              id: last.id,
+              latestPostAt: last.latestPostAt.toISOString(),
+              score: last.score,
+              sort: query.sort,
             })
           : undefined,
     };
@@ -947,6 +998,31 @@ export class ForumsService {
       latestPostAt: new Date(cursor.latestPostAt),
       replyCount:
         typeof cursor.replyCount === 'number' ? cursor.replyCount : undefined,
+    };
+  }
+
+  private decodeFeedCursor(
+    value: string,
+    sort: string,
+  ): FeedCursor & { asOf: Date } {
+    const cursor = this.cursors.decode<Record<string, unknown>>(value);
+    if (
+      typeof cursor.id !== 'string' ||
+      typeof cursor.score !== 'number' ||
+      !Number.isFinite(cursor.score) ||
+      cursor.sort !== sort ||
+      typeof cursor.asOf !== 'string' ||
+      Number.isNaN(Date.parse(cursor.asOf)) ||
+      typeof cursor.latestPostAt !== 'string' ||
+      Number.isNaN(Date.parse(cursor.latestPostAt))
+    ) {
+      throw new BadRequestException('Feed cursor is invalid.');
+    }
+    return {
+      asOf: new Date(cursor.asOf),
+      id: cursor.id,
+      latestPostAt: new Date(cursor.latestPostAt),
+      score: cursor.score,
     };
   }
 

@@ -35,6 +35,8 @@ import {
   CreateForumTagDto,
   CreateTopicDto,
   EditPostDto,
+  FeedPageDto,
+  FeedQueryDto,
   ForumCursorQueryDto,
   ForumDto,
   ForumGroupDto,
@@ -58,6 +60,21 @@ import {
 import { ForumsService } from './forums.service.js';
 
 const UUID_V7_PIPE = new ParseUUIDPipe({ version: '7' });
+
+@ApiTags('Feed')
+@Controller({ path: 'feed', version: '1' })
+export class FeedController {
+  constructor(private readonly service: ForumsService) {}
+
+  @Get()
+  @ApiOkResponse({ type: FeedPageDto })
+  list(
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Query() query: FeedQueryDto,
+  ) {
+    return this.service.listFeed(user?.id, query);
+  }
+}
 
 @ApiTags('Forums')
 @Controller({ path: 'places/:placeId', version: '1' })

@@ -1,7 +1,19 @@
-import { redirect } from "next/navigation";
-import { routes } from "@/lib/routes";
+import type { Metadata } from "next";
+import { AppShell, ShellTopbar } from "@/components/app-shell/app-shell";
+import { HomeFeed } from "@/features/home-feed/home-feed";
 
-export default function Home() {
-  const configuredPlace = process.env.NEXT_PUBLIC_SINGLE_PLACE_SLUG;
-  redirect(configuredPlace ? routes.place(configuredPlace) : routes.discover);
+export const metadata: Metadata = {
+  title: "Home",
+  description: "Fresh conversations from across Displace.",
+};
+
+export default function HomePage() {
+  return (
+    <AppShell activeNavigation="home">
+      <div className="public-shell">
+        <ShellTopbar />
+        <HomeFeed />
+      </div>
+    </AppShell>
+  );
 }

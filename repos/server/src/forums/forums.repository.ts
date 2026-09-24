@@ -10,6 +10,7 @@ import {
   count,
   desc,
   eq,
+  getTableColumns,
   inArray,
   isNull,
   lt,
@@ -77,6 +78,12 @@ export interface PostCursor {
 export interface SavedItemCursor {
   id: string;
   savedAt: Date;
+}
+
+export interface FeedCursor {
+  id: string;
+  latestPostAt: Date;
+  score: number;
 }
 
 export interface IdempotentCreate {
@@ -625,6 +632,142 @@ export class ForumsRepository {
       )
       .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
     return this.attachTopicMetadata(options.placeId, records);
+  }
+
+  async listFeed(options: {
+    asOf: Date;
+    cursor?: FeedCursor;
+    limit: number;
+    sort: 'best' | 'hot' | 'new' | 'top';
+    userId?: string;
+  }) {
+    const isJoined = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${placeMembers}
+          where ${placeMembers.placeId} = ${topics.placeId}
+            and ${placeMembers.userId} = ${options.userId}
+            and ${placeMembers.status} = 'active'
+        )`
+      : sql<boolean>`false`;
+    const isFollowing = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${topicFollows}
+          where ${topicFollows.placeId} = ${topics.placeId}
+            and ${topicFollows.topicId} = ${topics.id}
+            and ${topicFollows.userId} = ${options.userId}
+        )`
+      : sql<boolean>`false`;
+    const isTrending = sql<boolean>`(
+      ${places.visibility} = 'public' and ${forums.visibility} = 'public'
+    )`;
+    const isSaved = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${savedTopics}
+          where ${savedTopics.placeId} = ${topics.placeId}
+            and ${savedTopics.topicId} = ${topics.id}
+            and ${savedTopics.userId} = ${options.userId}
+        )`
+      : sql<boolean>`false`;
+    const originalPostId = sql<string>`(
+      select ${posts.id} from ${posts}
+      where ${posts.topicId} = ${topics.id} and ${posts.deletedAt} is null
+      order by ${posts.createdAt}, ${posts.id}
+      limit 1
+    )`;
+    const excerpt = sql<string>`coalesce((
+      select ${posts.plainText} from ${posts}
+      where ${posts.topicId} = ${topics.id} and ${posts.deletedAt} is null
+      order by ${posts.createdAt}, ${posts.id}
+      limit 1
+    ), '')`;
+    const reactionCount = sql<number>`(
+      select count(*)::integer from ${postReactions}
+      where ${postReactions.postId} = (${originalPostId})
+        and ${postReactions.reaction} = 'like'
+    )`;
+    const viewerHasReacted = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${postReactions}
+          where ${postReactions.postId} = (${originalPostId})
+            and ${postReactions.userId} = ${options.userId}
+            and ${postReactions.reaction} = 'like'
+        )`
+      : sql<boolean>`false`;
+    const activity = sql<number>`(
+      ${topics.replyCount} * 5 + ${topics.viewCount} * 0.1 + (${reactionCount}) * 3 + 1
+    )`;
+    const ageHours = sql<number>`greatest(
+      extract(epoch from (${options.asOf}::timestamptz - ${topics.latestPostAt})) / 3600,
+      0
+    )`;
+    const hotScore = sql<number>`((${activity}) / power((${ageHours}) + 2, 1.25))`;
+    const score = options.sort === 'new'
+      ? sql<number>`extract(epoch from ${topics.latestPostAt})`
+      : options.sort === 'top'
+        ? activity
+        : options.sort === 'best' && options.userId
+          ? sql<number>`(
+              case when ${isFollowing} then 1000 when ${isJoined} then 100 else 0 end
+              + (${hotScore})
+            )`
+          : hotScore;
+    const cursor = options.cursor
+      ? or(
+          sql`${score} < ${options.cursor.score}`,
+          and(
+            sql`${score} = ${options.cursor.score}`,
+            lt(topics.latestPostAt, options.cursor.latestPostAt),
+          ),
+          and(
+            sql`${score} = ${options.cursor.score}`,
+            eq(topics.latestPostAt, options.cursor.latestPostAt),
+            lt(topics.id, options.cursor.id),
+          ),
+        )
+      : undefined;
+    const records = await this.database
+      .select({
+        ...getTableColumns(topics),
+        excerpt,
+        forumName: forums.name,
+        isFollowing,
+        isJoined,
+        isSaved,
+        isTrending,
+        originalPostId,
+        placeName: places.name,
+        placeSlug: places.slug,
+        reactionCount,
+        score: sql<number>`(${score})::double precision`,
+        viewerHasReacted,
+      })
+      .from(topics)
+      .innerJoin(forums, eq(forums.id, topics.forumId))
+      .innerJoin(places, eq(places.id, topics.placeId))
+      .where(
+        and(
+          isNull(topics.deletedAt),
+          isNull(forums.archivedAt),
+          isNull(forums.readPermission),
+          isNull(places.archivedAt),
+          options.userId ? or(isTrending, isJoined) : isTrending,
+          cursor,
+        ),
+      )
+      .orderBy(desc(score), desc(topics.latestPostAt), desc(topics.id))
+      .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
+    const metadata = (
+      await Promise.all(
+        [...new Set(records.map((record) => record.placeId))].map((placeId) =>
+          this.attachTopicMetadata(
+            placeId,
+            records.filter((record) => record.placeId === placeId),
+          ),
+        ),
+      )
+    ).flat();
+    const metadataById = new Map(metadata.map((record) => [record.id, record]));
+    return records.map((record) => metadataById.get(record.id)!);
   }
 
   async findTopic(placeId: string, topicId: string) {

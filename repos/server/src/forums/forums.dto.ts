@@ -32,6 +32,19 @@ export enum TopicFeedDto {
   Popular = 'popular',
 }
 
+export enum FeedSortDto {
+  Best = 'best',
+  Hot = 'hot',
+  New = 'new',
+  Top = 'top',
+}
+
+export enum FeedSourceDto {
+  Following = 'following',
+  Joined = 'joined',
+  Trending = 'trending',
+}
+
 export class ForumCursorQueryDto {
   @ApiPropertyOptional()
   @IsString()
@@ -220,6 +233,13 @@ export class TopicQueryDto extends ForumCursorQueryDto {
   tag?: string;
 }
 
+export class FeedQueryDto extends ForumCursorQueryDto {
+  @ApiPropertyOptional({ enum: FeedSortDto, default: FeedSortDto.Best })
+  @IsEnum(FeedSortDto)
+  @IsOptional()
+  sort: FeedSortDto = FeedSortDto.Best;
+}
+
 export class MarkTopicReadDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsUUID('7')
@@ -382,6 +402,52 @@ export class TopicDto {
 export class TopicPageDto {
   @ApiProperty({ type: TopicDto, isArray: true })
   items: TopicDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
+}
+
+export class FeedPlaceDto {
+  @ApiProperty()
+  id: string;
+  @ApiProperty()
+  slug: string;
+  @ApiProperty()
+  name: string;
+}
+
+export class FeedForumDto {
+  @ApiProperty()
+  id: string;
+  @ApiProperty()
+  name: string;
+}
+
+export class FeedItemDto {
+  @ApiProperty({ type: TopicDto })
+  topic: TopicDto;
+  @ApiProperty({ type: FeedPlaceDto })
+  place: FeedPlaceDto;
+  @ApiProperty({ type: FeedForumDto })
+  forum: FeedForumDto;
+  @ApiProperty()
+  originalPostId: string;
+  @ApiProperty()
+  excerpt: string;
+  @ApiProperty()
+  reactionCount: number;
+  @ApiProperty()
+  viewerHasReacted: boolean;
+  @ApiProperty()
+  isFollowing: boolean;
+  @ApiProperty()
+  isSaved: boolean;
+  @ApiProperty({ enum: FeedSourceDto, isArray: true })
+  sources: FeedSourceDto[];
+}
+
+export class FeedPageDto {
+  @ApiProperty({ type: FeedItemDto, isArray: true })
+  items: FeedItemDto[];
   @ApiPropertyOptional()
   nextCursor?: string;
 }
