@@ -112,6 +112,68 @@ textarea:focus-visible {
 	border-right: 1px solid var(--line);
 }
 
+.sidebar-desktop-content {
+	display: contents;
+}
+
+.mobile-sidebar-bar {
+	display: none;
+}
+
+.mobile-menu-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 80;
+	background: rgba(29, 41, 40, 0.44);
+	backdrop-filter: blur(3px);
+}
+
+.mobile-menu-content {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 81;
+	display: flex;
+	width: min(340px, calc(100vw - 32px));
+	flex-direction: column;
+	overflow-y: auto;
+	background: var(--paper);
+	border-right: 1px solid var(--ink);
+	box-shadow: 18px 0 55px rgba(29, 41, 40, 0.22);
+	animation: mobile-menu-in 180ms ease-out;
+}
+
+.mobile-menu-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 62px;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--line);
+}
+
+.mobile-menu-heading .brand,
+.mobile-sidebar-bar .brand {
+	padding: 0;
+}
+
+.mobile-menu-navigation {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	padding: 18px 16px;
+}
+
+.mobile-menu-navigation .profile-row {
+	margin-top: auto;
+}
+
+@keyframes mobile-menu-in {
+	from { transform: translateX(-100%); }
+	to { transform: translateX(0); }
+}
+
 .brand {
 	display: flex;
 	align-items: center;
@@ -5465,46 +5527,26 @@ textarea:focus-visible {
 	.place-directory-item { grid-template-rows: 120px minmax(220px, auto); }
 
 	.sidebar {
-		position: static;
-		display: block;
-		height: auto;
-		padding: 15px 16px;
+		position: sticky;
+		z-index: 60;
+		height: 62px;
+		padding: 0 16px;
 		border-right: 0;
 		border-bottom: 1px solid var(--line);
 	}
 
-	.brand { padding: 0 0 14px; }
+	.sidebar-desktop-content { display: none; }
 
-	.primary-nav {
-		grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+	.mobile-sidebar-bar {
+		display: flex;
+		height: 100%;
+		align-items: center;
+		justify-content: space-between;
 	}
 
-	.nav-item {
-		justify-content: center;
-		min-width: 0;
-	}
-
-	.places,
-	.profile-row { display: none; }
-
-	.sidebar-session-status,
-	.sidebar-auth-callout {
-		margin-top: 14px;
-		padding: 12px;
-	}
-
-	.sidebar-auth-callout h2,
-	.sidebar-auth-callout p { display: none; }
-
-	.sidebar-auth-actions {
-		grid-template-columns: 1fr 1fr;
-		margin-top: 0;
-	}
-
-	.sidebar-auth-actions .primary-button {
-		width: auto;
-		padding: 8px 14px;
-		font-size: 13px;
+	.mobile-menu-trigger {
+		width: 38px;
+		height: 38px;
 	}
 
 	.main-content { padding: 0 18px 40px; }
@@ -5533,7 +5575,8 @@ textarea:focus-visible {
 
 	.auth-form .primary-button,
 	.status-panel .primary-button,
-	.settings-form .primary-button {
+	.settings-form .primary-button,
+	.sidebar-auth-actions .primary-button {
 		width: auto;
 		padding: 8px 14px;
 		font-size: 13px;

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSession } from "@/features/auth/session-provider";
 import { AppShell } from "./app-shell";
@@ -79,5 +80,18 @@ describe("AppShell", () => {
     render(<AppShell><main>Admin content</main></AppShell>);
 
     expect(screen.getByRole("link", { name: "Administration" })).toHaveAttribute("href", "/admin");
+  });
+
+  it("opens and closes the mobile navigation menu", async () => {
+    const user = userEvent.setup();
+    render(<AppShell><main>Public content</main></AppShell>);
+
+    await user.click(screen.getByRole("button", { name: "Open navigation" }));
+    const dialog = screen.getByRole("dialog", { name: "Navigation" });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("Join the conversation");
+
+    await user.click(screen.getByRole("button", { name: "Close navigation" }));
+    expect(screen.queryByRole("dialog", { name: "Navigation" })).not.toBeInTheDocument();
   });
 });
