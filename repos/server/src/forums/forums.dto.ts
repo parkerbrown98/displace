@@ -350,6 +350,8 @@ export class TopicDto {
   forumId: string;
   @ApiProperty()
   authorUserId: string;
+  @ApiProperty({ type: PostAuthorDto })
+  author: PostAuthorDto;
   @ApiProperty()
   title: string;
   @ApiProperty({ enum: ['open', 'locked'] })

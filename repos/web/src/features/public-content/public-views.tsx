@@ -319,7 +319,7 @@ function TopicDirectory({
               {topic.tags.map((topicTag) => <span className="category-tag" key={topicTag.id}>{topicTag.name}</span>)}
             </div>
             <h3><Link href={routes.topic(placeSlug, topic.id)}>{topic.title}</Link></h3>
-            <time dateTime={topic.latestPostAt}>Active {formatPublicDate(topic.latestPostAt)}</time>
+            <p className="topic-row-author">By <Link href={routes.member(topic.author.handle)}>{topic.author.displayName}</Link></p>
           </div>
           <dl><div><dt>Replies</dt><dd>{topic.replyCount}</dd></div><div><dt>Views</dt><dd>{formatCount(topic.viewCount)}</dd></div></dl>
         </article>

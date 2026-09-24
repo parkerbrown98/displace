@@ -33,6 +33,12 @@ export interface TopicContract {
   id: string;
   forumId: string;
   authorUserId: string;
+  author: {
+    displayName: string;
+    handle: string;
+    id: string;
+    joinedAt: string;
+  };
   title: string;
   status: "locked" | "open";
   isPinned: boolean;

@@ -519,7 +519,19 @@ export class ForumsRepository {
                 ),
               )
           : [];
+      const [author] = await transaction
+        .select({
+          displayName: users.displayName,
+          handle: users.handle,
+          id: users.id,
+          joinedAt: users.createdAt,
+        })
+        .from(users)
+        .where(eq(users.id, authorUserId))
+        .limit(1);
+      if (!author) throw new Error('Topic author was not found.');
       const response = {
+        author,
         authorUserId: topic.authorUserId,
         createdAt: topic.createdAt,
         forumId: topic.forumId,
@@ -1574,13 +1586,22 @@ export class ForumsRepository {
     }
   }
 
-  private async attachTopicMetadata<T extends { id: string }>(
+  private async attachTopicMetadata<T extends { authorUserId: string; id: string }>(
     placeId: string,
     records: T[],
   ) {
     if (records.length === 0) return [];
     const topicIds = records.map((record) => record.id);
-    const [links, originalPosts] = await Promise.all([
+    const [authors, links, originalPosts] = await Promise.all([
+      this.database
+        .select({
+          displayName: users.displayName,
+          handle: users.handle,
+          id: users.id,
+          joinedAt: users.createdAt,
+        })
+        .from(users)
+        .where(inArray(users.id, [...new Set(records.map((record) => record.authorUserId))])),
       this.database
         .select({ tag: forumTags, topicId: topicTags.topicId })
         .from(topicTags)
@@ -1606,15 +1627,20 @@ export class ForumsRepository {
         )
         .orderBy(posts.topicId, posts.createdAt, posts.id),
     ]);
-    return records.map((record) => ({
-      ...record,
-      previewImage: firstImage(
-        originalPosts.find((post) => post.topicId === record.id)?.document ?? {},
-      ),
-      tags: links
-        .filter((link) => link.topicId === record.id)
-        .map((link) => link.tag),
-    }));
+    return records.map((record) => {
+      const author = authors.find((item) => item.id === record.authorUserId);
+      if (!author) throw new Error('Topic author was not found.');
+      return {
+        ...record,
+        author,
+        previewImage: firstImage(
+          originalPosts.find((post) => post.topicId === record.id)?.document ?? {},
+        ),
+        tags: links
+          .filter((link) => link.topicId === record.id)
+          .map((link) => link.tag),
+      };
+    });
   }
 
   private async audit(

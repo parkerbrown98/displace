@@ -204,6 +204,9 @@ describe('forum lifecycle', () => {
     );
     expect(topicResponse.statusCode).toBe(201);
     const topic = topicResponse.json<{ id: string }>();
+    expect(topicResponse.json()).toMatchObject({
+      author: { displayName: expect.any(String), handle: member.handle, id: member.id },
+    });
     expect(topicResponse.json()).not.toHaveProperty('placeId');
     expect(topicResponse.json()).not.toHaveProperty('deletedAt');
     expect(topicResponse.json()).not.toHaveProperty('updatedAt');
@@ -328,7 +331,10 @@ describe('forum lifecycle', () => {
 
     const following = await request(member, 'GET', `/places/${place.id}/topics?feed=following`);
     expect(following.statusCode).toBe(200);
-    expect(following.json<{ items: Array<{ id: string }> }>().items).toContainEqual(expect.objectContaining({ id: topic.id }));
+    expect(following.json<{ items: Array<{ id: string }> }>().items).toContainEqual(expect.objectContaining({
+      author: expect.objectContaining({ handle: member.handle, id: member.id }),
+      id: topic.id,
+    }));
 
     const firstPage = await request(member, 'GET', `/places/${place.id}/topics/${topic.id}/posts?limit=1`);
     const firstPageBody = firstPage.json<{ items: Array<{ id: string }>; nextCursor: string }>();

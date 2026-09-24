@@ -1063,6 +1063,12 @@ export class ForumsService {
 
   private toTopic<
     T extends {
+      author: {
+        displayName: string;
+        handle: string;
+        id: string;
+        joinedAt: Date;
+      };
       authorUserId: string;
       createdAt: Date;
       forumId: string;
@@ -1083,6 +1089,7 @@ export class ForumsService {
     },
   >(topic: T) {
     return {
+      author: topic.author,
       authorUserId: topic.authorUserId,
       createdAt: topic.createdAt,
       forumId: topic.forumId,

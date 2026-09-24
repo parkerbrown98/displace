@@ -1,9 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { placeContractFixture } from "@/features/places/place-fixtures";
-import { postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
+import { forumNavigationFixture, postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
 import { RichText } from "./rich-text";
-import { TopicView } from "./public-views";
+import { PlaceView, TopicView } from "./public-views";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }) }));
 const sessionState = vi.hoisted(() => ({ authenticated: false }));
@@ -15,6 +15,14 @@ vi.mock("@/features/auth/session-provider", () => ({
 }));
 
 describe("public content rendering", () => {
+  it("shows topic authors instead of latest activity dates", () => {
+    const topic = topicPageFixture.items[0]!;
+    render(<PlaceView feed="latest" navigation={forumNavigationFixture} place={placeContractFixture} topics={{ items: [topic] }} />);
+
+    expect(screen.getByRole("link", { name: topic.author.displayName })).toHaveAttribute("href", `/members/${topic.author.handle}`);
+    expect(screen.queryByText(/^Active /)).not.toBeInTheDocument();
+  });
+
   it("renders only allowlisted rich-text nodes and safe links", () => {
     const { container } = render(
       <RichText document={{

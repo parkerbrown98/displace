@@ -4242,14 +4242,22 @@ textarea:focus-visible {
 	color: var(--teal);
 }
 
+.public-topic-main {
+	display: grid;
+	min-width: 0;
+	align-content: center;
+	gap: 3px;
+}
+
 .public-topics-empty {
 	border-bottom: 1px solid var(--line);
 }
 
 .topic-flags {
 	gap: 7px;
-	min-height: 21px;
+	min-height: 16px;
 	color: var(--muted);
+	line-height: 1;
 }
 
 .topic-flags > span:not(.category-tag) {
@@ -4269,17 +4277,28 @@ textarea:focus-visible {
 }
 
 .public-topic-row h3 {
-	margin: 6px 0 8px;
+	margin: 0;
 	font-family: Georgia, "Times New Roman", serif;
 	font-size: 21px;
 	font-weight: 500;
+	line-height: 1.25;
 }
 
 .public-topic-row time,
+.topic-row-author,
 .post time,
 .profile-summary time {
 	color: var(--muted);
 	font-size: 12px;
+}
+
+.topic-row-author {
+	line-height: 1.35;
+}
+
+.topic-row-author a:hover {
+	color: var(--ink);
+	text-decoration: underline;
 }
 
 .public-topic-row dl {
@@ -5262,7 +5281,7 @@ textarea:focus-visible {
 	}
 
 	.public-topic-row h3 {
-		margin-top: 8px;
+		margin: 0;
 		font-size: 22px;
 		line-height: 1.25;
 	}
