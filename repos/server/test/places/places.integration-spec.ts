@@ -54,8 +54,9 @@ describe('places lifecycle', () => {
       payload: { name: 'Open Place', slug: `open-${suffix()}` },
       url: '/api/v1/places',
     });
-    expect(created.statusCode).toBe(201);
-    const openPlace = created.json<{ id: string; slug: string }>();
+    expect(created.statusCode, created.body).toBe(201);
+    const openPlace = created.json<{ id: string; memberCount: number; slug: string }>();
+    expect(openPlace.memberCount).toBe(1);
 
     const assets = new AssetsRepository(context.database);
     const now = new Date();
@@ -93,6 +94,9 @@ describe('places lifecycle', () => {
     });
     expect(anonymousRead.statusCode).toBe(200);
     expect(anonymousRead.json()).not.toHaveProperty('viewer');
+    expect(anonymousRead.json()).toEqual(
+      expect.objectContaining({ memberCount: 1 }),
+    );
 
     const filteredDiscovery = await app.inject({
       method: 'GET',
@@ -100,7 +104,7 @@ describe('places lifecycle', () => {
     });
     expect(filteredDiscovery.statusCode).toBe(200);
     expect(filteredDiscovery.json<{ items: Array<{ id: string }> }>().items).toEqual([
-      expect.objectContaining({ hasBanner: true, id: openPlace.id }),
+      expect.objectContaining({ hasBanner: true, id: openPlace.id, memberCount: 1 }),
     ]);
 
     const publicBanner = await app.inject({

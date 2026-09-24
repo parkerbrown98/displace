@@ -7,6 +7,7 @@ export const placeContractFixture: PlaceContract = {
   slug: "game-makers",
   name: "Game Makers",
   description: "Thoughtful discussion for people making games at every scale.",
+  memberCount: 3,
   visibility: "public",
   joinPolicy: "open",
   settings: {},

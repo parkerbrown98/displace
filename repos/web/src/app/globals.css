@@ -3462,9 +3462,10 @@ textarea:focus-visible {
 .place-toolbar {
 	display: flex;
 	align-items: center;
-	gap: 18px;
-	min-height: 78px;
-	padding: 12px 0;
+	flex-wrap: wrap;
+	column-gap: 18px;
+	row-gap: 0;
+	padding: 12px 0 0;
 	border-bottom: 1px solid var(--ink);
 }
 
@@ -3492,11 +3493,6 @@ textarea:focus-visible {
 	min-width: 0;
 }
 
-.place-toolbar-title .eyebrow {
-	margin-bottom: 2px;
-	white-space: nowrap;
-}
-
 .place-toolbar-title h1 {
 	overflow: hidden;
 	margin: 0;
@@ -3507,12 +3503,22 @@ textarea:focus-visible {
 	white-space: nowrap;
 }
 
+.place-toolbar-member-count {
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
 .place-toolbar-nav {
 	display: flex;
-	align-self: stretch;
+	order: 3;
+	align-self: auto;
 	align-items: stretch;
 	gap: 2px;
-	margin-left: 10px;
+	width: 100%;
+	min-height: 40px;
+	margin-left: 0;
 }
 
 .place-toolbar-nav a {

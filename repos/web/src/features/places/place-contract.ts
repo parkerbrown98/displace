@@ -4,6 +4,7 @@ export interface PlaceContract {
   slug: string;
   name: string;
   description: string;
+  memberCount: number;
   visibility: "private" | "public" | "unlisted";
   joinPolicy: "approval" | "invite_only" | "open";
   settings: Record<string, unknown>;
