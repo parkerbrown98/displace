@@ -6113,9 +6113,8 @@ textarea:focus-visible {
 
 /* Home feed */
 .home-feed-page {
-	width: min(1240px, calc(100% - 48px));
-	margin: 0 auto;
-	padding: 34px 0 80px;
+	width: 100%;
+	padding: 42px clamp(24px, 4vw, 68px) 80px;
 }
 
 .feed-overview {
@@ -6123,8 +6122,7 @@ textarea:focus-visible {
 	align-items: flex-end;
 	justify-content: space-between;
 	gap: 30px;
-	max-width: 1050px;
-	margin: 0 auto 28px;
+	margin: 0 0 28px;
 }
 
 .feed-overview h1 {
@@ -6144,9 +6142,8 @@ textarea:focus-visible {
 
 .feed-layout {
 	display: grid;
-	grid-template-columns: minmax(0, 760px) minmax(220px, 260px);
-	justify-content: center;
-	gap: 30px;
+	grid-template-columns: minmax(0, 1fr) clamp(240px, 22vw, 320px);
+	gap: clamp(24px, 3vw, 44px);
 }
 
 .feed-stream {
@@ -6667,7 +6664,7 @@ textarea:focus-visible {
 @keyframes feed-pulse { 50% { opacity: 0.48; } }
 
 @media (max-width: 980px) {
-	.home-feed-page { width: min(780px, calc(100% - 40px)); }
+	.home-feed-page { padding-right: 20px; padding-left: 20px; }
 	.feed-layout { grid-template-columns: minmax(0, 1fr); }
 	.feed-rail { display: none; }
 }
