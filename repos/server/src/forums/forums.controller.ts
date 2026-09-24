@@ -53,6 +53,7 @@ import {
   TopicDto,
   TopicPageDto,
   TopicQueryDto,
+  TopicViewerStateDto,
   UpdateForumDto,
   UpdateForumGroupDto,
   UpdateTopicDto,
@@ -236,6 +237,18 @@ export class ForumsController {
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     return this.service.getTopic(placeId, topicId, user?.id);
+  }
+
+  @Get('topics/:topicId/viewer-state')
+  @UseGuards(AuthenticatedGuard, PlaceContextGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: TopicViewerStateDto })
+  viewerState(
+    @CurrentPlace() place: AuthorizedPlace,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('topicId', UUID_V7_PIPE) topicId: string,
+  ) {
+    return this.service.getTopicViewerState(place.id, topicId, user.id);
   }
 
   @Patch('topics/:topicId')

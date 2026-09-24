@@ -459,6 +459,24 @@ export class PostPageDto {
   nextCursor?: string;
 }
 
+export class PostViewerStateDto {
+  @ApiProperty()
+  postId: string;
+  @ApiProperty()
+  isSaved: boolean;
+  @ApiProperty({ isArray: true, type: String })
+  reactions: string[];
+}
+
+export class TopicViewerStateDto {
+  @ApiProperty()
+  isFollowing: boolean;
+  @ApiProperty()
+  isSaved: boolean;
+  @ApiProperty({ isArray: true, type: PostViewerStateDto })
+  posts: PostViewerStateDto[];
+}
+
 export class SavedTopicDto {
   @ApiProperty()
   placeId: string;

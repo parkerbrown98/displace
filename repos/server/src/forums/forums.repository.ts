@@ -904,6 +904,91 @@ export class ForumsRepository {
       .limit(Math.min(Math.max(limit, 1), 100) + 1);
   }
 
+  async getTopicViewerState(
+    placeId: string,
+    topicId: string,
+    userId: string,
+  ) {
+    const [followed, saved, savedPostRecords, reactionRecords] =
+      await Promise.all([
+        this.database
+          .select({ topicId: topicFollows.topicId })
+          .from(topicFollows)
+          .where(
+            and(
+              eq(topicFollows.placeId, placeId),
+              eq(topicFollows.topicId, topicId),
+              eq(topicFollows.userId, userId),
+            ),
+          )
+          .limit(1),
+        this.database
+          .select({ topicId: savedTopics.topicId })
+          .from(savedTopics)
+          .where(
+            and(
+              eq(savedTopics.placeId, placeId),
+              eq(savedTopics.topicId, topicId),
+              eq(savedTopics.userId, userId),
+            ),
+          )
+          .limit(1),
+        this.database
+          .select({ postId: savedPosts.postId })
+          .from(savedPosts)
+          .innerJoin(
+            posts,
+            and(
+              eq(posts.placeId, savedPosts.placeId),
+              eq(posts.id, savedPosts.postId),
+            ),
+          )
+          .where(
+            and(
+              eq(savedPosts.placeId, placeId),
+              eq(savedPosts.userId, userId),
+              eq(posts.topicId, topicId),
+            ),
+          ),
+        this.database
+          .select({
+            postId: postReactions.postId,
+            reaction: postReactions.reaction,
+          })
+          .from(postReactions)
+          .innerJoin(
+            posts,
+            and(
+              eq(posts.placeId, postReactions.placeId),
+              eq(posts.id, postReactions.postId),
+            ),
+          )
+          .where(
+            and(
+              eq(postReactions.placeId, placeId),
+              eq(postReactions.userId, userId),
+              eq(posts.topicId, topicId),
+            ),
+          ),
+      ]);
+    const savedPostIds = new Set(savedPostRecords.map((item) => item.postId));
+    const postIds = new Set([
+      ...savedPostIds,
+      ...reactionRecords.map((item) => item.postId),
+    ]);
+    return {
+      isFollowing: followed.length > 0,
+      isSaved: saved.length > 0,
+      posts: [...postIds].map((postId) => ({
+        isSaved: savedPostIds.has(postId),
+        postId,
+        reactions: reactionRecords
+          .filter((item) => item.postId === postId)
+          .map((item) => item.reaction),
+      })),
+    };
+  }
+
   async listPostAuthors(userIds: string[]) {
     if (userIds.length === 0) return [];
     return this.database

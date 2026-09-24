@@ -422,6 +422,15 @@ export class ForumsService {
     };
   }
 
+  async getTopicViewerState(
+    placeId: string,
+    topicId: string,
+    userId: string,
+  ) {
+    await this.requireTopicRead(placeId, topicId, userId);
+    return this.forums.getTopicViewerState(placeId, topicId, userId);
+  }
+
   async reply(
     placeId: string,
     topicId: string,

@@ -7,7 +7,7 @@ import type {
   PostContract,
   TopicContract,
 } from "@/features/public-content/public-contracts";
-import type { PostRevisionContract, RichTextDocumentContract, SavedPageContract, SavedPostContract, SavedTopicContract } from "./forum-contract";
+import type { PostRevisionContract, RichTextDocumentContract, SavedPageContract, SavedPostContract, SavedTopicContract, TopicViewerStateContract } from "./forum-contract";
 
 const placePath = (placeId: string) => `/places/${encodeURIComponent(placeId)}`;
 const idempotencyHeaders = () => ({ "Idempotency-Key": crypto.randomUUID() });
@@ -81,6 +81,10 @@ export function createReply(placeId: string, topicId: string, document: RichText
     headers: idempotencyHeaders(),
     method: "POST",
   });
+}
+
+export function getTopicViewerState(placeId: string, topicId: string): Promise<TopicViewerStateContract> {
+  return authenticatedRead(`${placePath(placeId)}/topics/${encodeURIComponent(topicId)}/viewer-state`);
 }
 
 export function updateTopic(placeId: string, topicId: string, input: { title?: string; tagIds?: string[] }): Promise<TopicContract> {

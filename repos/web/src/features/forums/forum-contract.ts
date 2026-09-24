@@ -45,6 +45,18 @@ export interface PostRevisionContract {
   createdAt: string;
 }
 
+export interface PostViewerStateContract {
+  postId: string;
+  isSaved: boolean;
+  reactions: string[];
+}
+
+export interface TopicViewerStateContract {
+  isFollowing: boolean;
+  isSaved: boolean;
+  posts: PostViewerStateContract[];
+}
+
 export interface SavedTopicContract {
   placeId: string;
   placeSlug: string;
