@@ -123,6 +123,12 @@ describe('places lifecycle', () => {
     expect(publicIcon.headers['cross-origin-resource-policy']).toBe('cross-origin');
     expect(publicIcon.headers.location).toContain('icon');
 
+    const unrelatedPostImage = await app.inject({
+      method: 'GET',
+      url: `/api/v1/public/places/${openPlace.id}/images/posts/${banner.id}`,
+    });
+    expect(unrelatedPostImage.statusCode).toBe(404);
+
     const anonymousContext = await app.inject({
       method: 'GET',
       url: `/api/v1/places/${openPlace.id}/context`,

@@ -5,7 +5,12 @@ import type { Database } from '../database/database.types.js';
 import {
   assets,
   assetVariants,
+  forums,
   placeProfileAssets,
+  postAssets,
+  posts,
+  places,
+  topics,
   uploadIntents,
   userProfileAssets,
 } from '../database/schema/index.js';
@@ -142,6 +147,43 @@ export class AssetsRepository implements AssetsRepositoryPort {
       .select()
       .from(assets)
       .where(and(eq(assets.id, assetId), eq(assets.placeId, placeId)))
+      .limit(1);
+    return asset;
+  }
+
+  async findPublicPostImage(assetId: string, placeId: string) {
+    const [asset] = await this.database
+      .select({ id: assets.id })
+      .from(assets)
+      .innerJoin(
+        postAssets,
+        and(
+          eq(postAssets.assetId, assets.id),
+          eq(postAssets.placeId, assets.placeId),
+        ),
+      )
+      .innerJoin(posts, eq(posts.id, postAssets.postId))
+      .innerJoin(topics, eq(topics.id, posts.topicId))
+      .innerJoin(forums, eq(forums.id, topics.forumId))
+      .innerJoin(places, eq(places.id, assets.placeId))
+      .where(
+        and(
+          eq(assets.id, assetId),
+          eq(assets.placeId, placeId),
+          eq(assets.status, 'ready'),
+          inArray(assets.detectedMimeType, [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+          ]),
+          eq(places.visibility, 'public'),
+          isNull(places.archivedAt),
+          eq(forums.visibility, 'public'),
+          isNull(forums.readPermission),
+          isNull(topics.deletedAt),
+          isNull(posts.deletedAt),
+        ),
+      )
       .limit(1);
     return asset;
   }

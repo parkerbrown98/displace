@@ -38,6 +38,7 @@ export interface TopicContract {
   isPinned: boolean;
   replyCount: number;
   viewCount: number;
+  previewImage: { alt: string; assetId: string } | null;
   tags: ForumTagContract[];
   latestPostAt: string;
   createdAt: string;

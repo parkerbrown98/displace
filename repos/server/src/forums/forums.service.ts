@@ -1069,6 +1069,7 @@ export class ForumsService {
       id: string;
       isPinned: boolean;
       latestPostAt: Date;
+      previewImage?: { alt: string; assetId: string } | null;
       replyCount: number;
       status: 'locked' | 'open';
       tags: Array<{
@@ -1088,6 +1089,7 @@ export class ForumsService {
       id: topic.id,
       isPinned: topic.isPinned,
       latestPostAt: topic.latestPostAt,
+      previewImage: topic.previewImage ?? null,
       replyCount: topic.replyCount,
       status: topic.status,
       tags: topic.tags.map((tag) => this.toTag(tag)),

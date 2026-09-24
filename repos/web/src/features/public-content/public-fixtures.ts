@@ -59,6 +59,10 @@ export const topicPageFixture: TopicPageContract = {
       isPinned: true,
       replyCount: 42,
       viewCount: 1204,
+      previewImage: {
+        alt: "Dialogue tool preview",
+        assetId: "01990000-7000-8000-8000-000000000501",
+      },
       tags: [forumNavigationFixture.tags[0]!],
       latestPostAt: "2026-09-20T12:52:00.000Z",
       createdAt: "2026-09-15T09:00:00.000Z",
@@ -72,6 +76,7 @@ export const topicPageFixture: TopicPageContract = {
       isPinned: false,
       replyCount: 18,
       viewCount: 684,
+      previewImage: null,
       tags: [forumNavigationFixture.tags[1]!],
       latestPostAt: "2026-09-20T12:26:00.000Z",
       createdAt: "2026-09-18T15:30:00.000Z",

@@ -20,6 +20,7 @@ import type {
 } from "./public-contracts";
 import { ForumLiveSpaces } from "./forum-live-spaces";
 import { ForumMemberPreview } from "./forum-member-preview";
+import { TopicRowPreview } from "./topic-row-preview";
 
 export function PlaceDirectory({ joinPolicy, page, tag }: { joinPolicy?: string; page: PlacePageContract; tag?: string }) {
   const facets = page.tags ?? [];
@@ -310,7 +311,8 @@ function TopicDirectory({
       </div>
       {topics.length ? topics.map((topic) => (
         <article className="public-topic-row" key={topic.id}>
-          <div>
+          <TopicRowPreview placeId={placeId} previewImage={topic.previewImage} />
+          <div className="public-topic-main">
             <div className="topic-flags">
               {topic.isPinned ? <Pin size={14} aria-label="Pinned" /> : null}
               {topic.status === "locked" ? <Lock size={14} aria-label="Locked" /> : null}

@@ -360,6 +360,15 @@ export class TopicDto {
   replyCount: number;
   @ApiProperty()
   viewCount: number;
+  @ApiPropertyOptional({
+    nullable: true,
+    type: 'object',
+    properties: {
+      alt: { type: 'string' },
+      assetId: { type: 'string', format: 'uuid' },
+    },
+  })
+  previewImage: { alt: string; assetId: string } | null;
   @ApiProperty({ type: ForumTagDto, isArray: true })
   tags: ForumTagDto[];
   @ApiProperty({ format: 'date-time' })

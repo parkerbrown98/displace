@@ -84,6 +84,30 @@ export interface IdempotentCreate {
   requestHash: string;
 }
 
+export interface TopicPreviewImage {
+  alt: string;
+  assetId: string;
+}
+
+function firstImage(node: RichTextDocument | Record<string, unknown>): TopicPreviewImage | null {
+  const attrs = 'attrs' in node ? node.attrs : undefined;
+  if (node.type === 'image' && attrs && typeof attrs === 'object') {
+    const imageAttrs = attrs as Record<string, unknown>;
+    const assetId = imageAttrs.assetId;
+    const alt = imageAttrs.alt;
+    if (typeof assetId === 'string') {
+      return { alt: typeof alt === 'string' ? alt : '', assetId };
+    }
+  }
+  const content = 'content' in node ? node.content : undefined;
+  if (!Array.isArray(content)) return null;
+  for (const child of content) {
+    const image = firstImage(child);
+    if (image) return image;
+  }
+  return null;
+}
+
 @Injectable()
 export class ForumsRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
@@ -502,6 +526,7 @@ export class ForumsRepository {
         id: topic.id,
         isPinned: topic.isPinned,
         latestPostAt: topic.latestPostAt,
+        previewImage: firstImage(content.document),
         replyCount: topic.replyCount,
         status: topic.status,
         tags: tagRecords.map((tag) => ({
@@ -587,7 +612,7 @@ export class ForumsRepository {
             ]),
       )
       .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
-    return this.attachTags(options.placeId, records);
+    return this.attachTopicMetadata(options.placeId, records);
   }
 
   async findTopic(placeId: string, topicId: string) {
@@ -603,7 +628,7 @@ export class ForumsRepository {
       )
       .limit(1);
     if (!record) return undefined;
-    return (await this.attachTags(placeId, [record]))[0];
+    return (await this.attachTopicMetadata(placeId, [record]))[0];
   }
 
   async listSavedTopics(
@@ -1549,26 +1574,43 @@ export class ForumsRepository {
     }
   }
 
-  private async attachTags<T extends { id: string }>(
+  private async attachTopicMetadata<T extends { id: string }>(
     placeId: string,
     records: T[],
   ) {
     if (records.length === 0) return [];
-    const links = await this.database
-      .select({ tag: forumTags, topicId: topicTags.topicId })
-      .from(topicTags)
-      .innerJoin(forumTags, eq(forumTags.id, topicTags.tagId))
-      .where(
-        and(
-          eq(topicTags.placeId, placeId),
-          inArray(
-            topicTags.topicId,
-            records.map((record) => record.id),
+    const topicIds = records.map((record) => record.id);
+    const [links, originalPosts] = await Promise.all([
+      this.database
+        .select({ tag: forumTags, topicId: topicTags.topicId })
+        .from(topicTags)
+        .innerJoin(forumTags, eq(forumTags.id, topicTags.tagId))
+        .where(
+          and(
+            eq(topicTags.placeId, placeId),
+            inArray(topicTags.topicId, topicIds),
           ),
         ),
-      );
+      this.database
+        .selectDistinctOn([posts.topicId], {
+          document: posts.document,
+          topicId: posts.topicId,
+        })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.placeId, placeId),
+            inArray(posts.topicId, topicIds),
+            isNull(posts.deletedAt),
+          ),
+        )
+        .orderBy(posts.topicId, posts.createdAt, posts.id),
+    ]);
     return records.map((record) => ({
       ...record,
+      previewImage: firstImage(
+        originalPosts.find((post) => post.topicId === record.id)?.document ?? {},
+      ),
       tags: links
         .filter((link) => link.topicId === record.id)
         .map((link) => link.tag),
