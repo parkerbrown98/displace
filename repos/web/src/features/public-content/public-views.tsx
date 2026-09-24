@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, MessagesSquare, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
@@ -259,7 +259,7 @@ function ForumNavigation({ navigation, placeSlug, topics }: { navigation: ForumN
               return (
                 <article className="forum-row" key={forum.id}>
                   <Link className="forum-row-main" href={routes.forum(placeSlug, forum.id)}>
-                    <span className="forum-row-icon"><MessageSquareText size={19} aria-hidden="true" /></span>
+                    <span className="forum-row-icon"><MessagesSquare size={19} aria-hidden="true" /></span>
                     <span className="forum-row-copy"><strong>{forum.name}</strong><small>{forum.description}</small></span>
                   </Link>
                   <div className="forum-row-count"><strong>{forumTopics.length}</strong><small>shown</small></div>
