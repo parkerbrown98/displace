@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"resend-mcp": {
+			"url": "https://mcp.resend.com/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}
