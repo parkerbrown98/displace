@@ -81,12 +81,9 @@ services:
       REFRESH_TOKEN_PEPPER: ${REFRESH_TOKEN_PEPPER:-development-refresh-token-pepper-change-me}
       COOKIE_SECRET: ${COOKIE_SECRET:-development-cookie-signing-secret-change-me}
       CURSOR_SECRET: ${CURSOR_SECRET:-development-cursor-signing-secret-change-me}
-      SMTP_HOST: ${SMTP_HOST:-mailpit}
-      SMTP_PORT: ${SMTP_PORT:-1025}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-no-reply@localhost.invalid}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@localhost.invalid}
+      MAIL_CAPTURE_URL: http://mailpit:8025
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
@@ -148,7 +145,9 @@ services:
       MEILISEARCH_HOST: http://meilisearch:7700
       LIVEKIT_URL: http://livekit:7880
       LIVEKIT_PUBLIC_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}
-      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@localhost.invalid}
+      MAIL_CAPTURE_URL: http://mailpit:8025
     volumes:
       - ./repos/server:/workspace
       - worker_node_modules:/workspace/node_modules
@@ -211,7 +210,6 @@ services:
   mailpit:
     image: axllent/mailpit:v1.27
     ports:
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
       - "${MAILPIT_UI_PORT:-8025}:8025"
 
   minio:

@@ -6,10 +6,24 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Worker, type Job } from 'bullmq';
-import nodemailer, { type Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 import type { AppEnvironment } from '../config/environment.js';
 import { getRedisConnection } from './auth-mail-queue.service.js';
 import { AUTH_MAIL_QUEUE, type AuthMailJob } from './auth-mail.types.js';
+
+const templateAliases = {
+  'reset-password': 'displace-reset-password',
+  'verify-email': 'displace-verify-email',
+} as const;
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
 @Injectable()
 export class AuthMailWorkerService
@@ -17,34 +31,19 @@ export class AuthMailWorkerService
 {
   private readonly logger = new Logger(AuthMailWorkerService.name);
   private readonly applicationUrl: string;
-  private readonly capturesMail: boolean;
+  private readonly captureUrl?: string;
   private readonly from: string;
   private readonly redisUrl: string;
-  private readonly transporter: Transporter;
+  private readonly resend?: Resend;
   private worker?: Worker<AuthMailJob>;
 
   constructor(config: ConfigService<AppEnvironment, true>) {
     this.applicationUrl = config.get('CORS_ORIGINS', { infer: true })[0]!;
-    this.from = config.get('SMTP_FROM', { infer: true });
+    this.captureUrl = config.get('MAIL_CAPTURE_URL', { infer: true });
+    this.from = config.get('EMAIL_FROM', { infer: true });
     this.redisUrl = config.get('REDIS_URL', { infer: true });
-    const host = config.get('SMTP_HOST', { infer: true });
-    const isProduction = config.get('NODE_ENV', { infer: true }) === 'production';
-    const secure = config.get('SMTP_SECURE', { infer: true });
-    this.capturesMail = !host;
-    this.transporter = host
-      ? nodemailer.createTransport({
-          auth: config.get('SMTP_USER', { infer: true })
-            ? {
-                pass: config.get('SMTP_PASSWORD', { infer: true })!,
-                user: config.get('SMTP_USER', { infer: true })!,
-              }
-            : undefined,
-          host,
-          port: config.get('SMTP_PORT', { infer: true }),
-          requireTLS: isProduction && !secure,
-          secure,
-        })
-      : nodemailer.createTransport({ jsonTransport: true });
+    const apiKey = config.get('RESEND_API_KEY', { infer: true });
+    this.resend = apiKey ? new Resend(apiKey) : undefined;
   }
 
   onApplicationBootstrap(): void {
@@ -73,7 +72,6 @@ export class AuthMailWorkerService
 
   async onApplicationShutdown(): Promise<void> {
     await this.worker?.close();
-    this.transporter.close();
   }
 
   private async process(job: Job<AuthMailJob>): Promise<void> {
@@ -87,17 +85,60 @@ export class AuthMailWorkerService
     const path = isVerification ? 'verify-email' : 'reset-password';
     const action = isVerification ? 'Verify email' : 'Reset password';
     const url = `${this.applicationUrl}/${path}?token=${encodeURIComponent(job.data.token)}`;
-    await this.transporter.sendMail({
-      from: this.from,
-      subject: `${action} for Displace`,
-      text: `${action}: ${url}\n\nThis link expires automatically. If you did not request it, ignore this message.`,
-      to: job.data.recipient,
-    });
-    if (this.capturesMail) {
+    const subject = `${action} for Displace`;
+    const text = `${action}: ${url}\n\nThis link expires automatically. If you did not request it, ignore this message.`;
+
+    if (this.captureUrl) {
+      const response = await fetch(
+        new URL('/api/v1/send', this.captureUrl),
+        {
+          body: JSON.stringify({
+            From: { Email: this.from, Name: 'Displace' },
+            HTML: `<p>${action}:</p><p><a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p><p>This link expires automatically. If you did not request it, ignore this message.</p>`,
+            Subject: subject,
+            Text: text,
+            To: [{ Email: job.data.recipient }],
+          }),
+          headers: { 'content-type': 'application/json' },
+          method: 'POST',
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          `Mail capture failed with status ${response.status}: ${await response.text()}`,
+        );
+      }
       this.logger.debug(
         { kind: job.data.kind, recipient: job.data.recipient },
         'Captured development authentication email',
       );
+      return;
+    }
+
+    if (!this.resend) {
+      this.logger.warn(
+        { kind: job.data.kind, recipient: job.data.recipient },
+        'Authentication email was not sent because delivery is not configured',
+      );
+      return;
+    }
+
+    if (!job.id) {
+      throw new Error('Authentication mail job is missing its idempotency ID.');
+    }
+    const { error } = await this.resend.emails.send(
+      {
+        from: `Displace <${this.from}>`,
+        template: {
+          id: templateAliases[job.data.kind],
+          variables: { ACTION_URL: url },
+        },
+        to: [job.data.recipient],
+      },
+      { idempotencyKey: `${job.data.kind}/${job.id}` },
+    );
+    if (error) {
+      throw new Error(`Resend could not send authentication email: ${error.message}`);
     }
   }
 }

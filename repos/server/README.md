@@ -48,7 +48,7 @@ Run the worker alongside the API to deliver verification and password-reset mail
 pnpm worker:dev
 ```
 
-When `SMTP_HOST` is unset, the worker captures messages in structured development logs. Docker Compose configures Mailpit at `http://localhost:8025`. OIDC is enabled only when all `OIDC_*` settings are supplied and uses discovery, authorization code flow, PKCE, state, and nonce validation. Set `OIDC_REDIRECT_URL` to the API callback, such as `http://localhost:3001/api/v1/auth/oidc/callback`. After issuing browser cookies, the callback redirects to `/auth/callback` on the first configured `CORS_ORIGINS` application origin. Existing local accounts must sign in before linking a provider identity.
+Production mail is delivered through Resend using `RESEND_API_KEY` and `EMAIL_FROM`. The sender must belong to a verified Resend domain; use a sending-only API key restricted to that domain. The worker references the published `displace-verify-email` and `displace-reset-password` Resend template aliases and uses the BullMQ job ID as the idempotency key. Docker Compose posts development messages to Mailpit's HTTP capture API at `http://localhost:8025`; set `MAIL_CAPTURE_URL` when running the worker directly, or leave both delivery settings unset to log and discard development mail. OIDC is enabled only when all `OIDC_*` settings are supplied and uses discovery, authorization code flow, PKCE, state, and nonce validation. Set `OIDC_REDIRECT_URL` to the API callback, such as `http://localhost:3001/api/v1/auth/oidc/callback`. After issuing browser cookies, the callback redirects to `/auth/callback` on the first configured `CORS_ORIGINS` application origin. Existing local accounts must sign in before linking a provider identity.
 
 ## Places And Permissions
 

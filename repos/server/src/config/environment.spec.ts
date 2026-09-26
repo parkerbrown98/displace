@@ -27,13 +27,44 @@ describe('validateEnvironment', () => {
     ).toThrow(/must be changed in production/);
   });
 
-  it('requires SMTP delivery in production', () => {
+  it('requires Resend delivery in production', () => {
     expect(() =>
       validateEnvironment({
         NODE_ENV: 'production',
         PUBLIC_URL: 'https://displace.example',
       }),
-    ).toThrow(/SMTP_HOST is required in production/);
+    ).toThrow(/RESEND_API_KEY is required in production/);
+  });
+
+  it('rejects placeholder Resend delivery settings in production', () => {
+    expect(() =>
+      validateEnvironment({
+        EMAIL_FROM: 'mail@displace.example',
+        NODE_ENV: 'production',
+        PUBLIC_URL: 'https://displace.example',
+        RESEND_API_KEY: 'change-me-resend-api-key',
+      }),
+    ).toThrow(/RESEND_API_KEY must be changed in production/);
+  });
+
+  it('requires a configured sender in production', () => {
+    expect(() =>
+      validateEnvironment({
+        NODE_ENV: 'production',
+        PUBLIC_URL: 'https://displace.example',
+        RESEND_API_KEY: 're_test',
+      }),
+    ).toThrow(/EMAIL_FROM must use a verified Resend domain in production/);
+  });
+
+  it('rejects development mail capture in production', () => {
+    expect(() =>
+      validateEnvironment({
+        MAIL_CAPTURE_URL: 'https://mail.example',
+        NODE_ENV: 'production',
+        PUBLIC_URL: 'https://displace.example',
+      }),
+    ).toThrow(/MAIL_CAPTURE_URL cannot be configured in production/);
   });
 
   it('requires a secure public LiveKit URL in production', () => {

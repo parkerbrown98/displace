@@ -242,12 +242,9 @@ const environmentSchema = z
       .default(developmentSecrets.REFRESH_TOKEN_PEPPER),
     COOKIE_SECRET: z.string().min(32).default(developmentSecrets.COOKIE_SECRET),
     CURSOR_SECRET: z.string().min(32).default(developmentSecrets.CURSOR_SECRET),
-    SMTP_HOST: optionalString,
-    SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(1025),
-    SMTP_SECURE: booleanValue.default(false),
-    SMTP_USER: optionalString,
-    SMTP_PASSWORD: optionalString,
-    SMTP_FROM: z.email().default('no-reply@localhost.invalid'),
+    RESEND_API_KEY: optionalString,
+    EMAIL_FROM: z.email().default('no-reply@localhost.invalid'),
+    MAIL_CAPTURE_URL: optionalUrl,
     OIDC_ISSUER_URL: optionalUrl,
     OIDC_CLIENT_ID: optionalString,
     OIDC_CLIENT_SECRET: optionalString,
@@ -293,14 +290,6 @@ const environmentSchema = z
       });
     }
 
-    if (Boolean(environment.SMTP_USER) !== Boolean(environment.SMTP_PASSWORD)) {
-      context.addIssue({
-        code: 'custom',
-        path: ['SMTP_USER'],
-        message: 'SMTP_USER and SMTP_PASSWORD must be configured together.',
-      });
-    }
-
     if (
       environment.MALWARE_SCANNER_REQUIRED &&
       !environment.MALWARE_SCANNER_URL
@@ -317,11 +306,27 @@ const environmentSchema = z
       return;
     }
 
-    if (!environment.SMTP_HOST) {
+    if (!environment.RESEND_API_KEY) {
       context.addIssue({
         code: 'custom',
-        path: ['SMTP_HOST'],
-        message: 'SMTP_HOST is required in production.',
+        path: ['RESEND_API_KEY'],
+        message: 'RESEND_API_KEY is required in production.',
+      });
+    }
+
+    if (environment.EMAIL_FROM === 'no-reply@localhost.invalid') {
+      context.addIssue({
+        code: 'custom',
+        path: ['EMAIL_FROM'],
+        message: 'EMAIL_FROM must use a verified Resend domain in production.',
+      });
+    }
+
+    if (environment.MAIL_CAPTURE_URL) {
+      context.addIssue({
+        code: 'custom',
+        path: ['MAIL_CAPTURE_URL'],
+        message: 'MAIL_CAPTURE_URL cannot be configured in production.',
       });
     }
 
@@ -400,6 +405,7 @@ const environmentSchema = z
       ['MEILISEARCH_MASTER_KEY', 'displace-dev-search-key'],
       ['LIVEKIT_API_KEY', 'devkey'],
       ['LIVEKIT_API_SECRET', 'secret'],
+      ['RESEND_API_KEY', 'change-me-resend-api-key'],
     ] as const;
     for (const [name, developmentValue] of insecureServiceValues) {
       if (environment[name] === developmentValue) {
