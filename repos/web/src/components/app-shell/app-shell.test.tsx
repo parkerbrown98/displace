@@ -1,9 +1,12 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSession } from "@/features/auth/session-provider";
 import { AppShell } from "./app-shell";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/discover" }));
+const navigation = vi.hoisted(() => ({ pathname: "/discover" }));
+
+vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }));
 vi.mock("@/features/auth/session-provider", () => ({ useSession: vi.fn() }));
 vi.mock("@/features/places/place-access", () => ({
   PlaceSwitcher: ({ activeSlug }: { activeSlug?: string }) => <div data-active-slug={activeSlug} data-testid="place-switcher" />,
@@ -13,6 +16,7 @@ const session = vi.mocked(useSession);
 
 describe("AppShell", () => {
   beforeEach(() => {
+    navigation.pathname = "/discover";
     session.mockReturnValue({
       refreshProfile: vi.fn(),
       signInAccount: vi.fn(),
@@ -79,5 +83,27 @@ describe("AppShell", () => {
     render(<AppShell><main>Admin content</main></AppShell>);
 
     expect(screen.getByRole("link", { name: "Administration" })).toHaveAttribute("href", "/admin");
+  });
+
+  it("does not mark the index Home link active on place pages", () => {
+    navigation.pathname = "/places/open-web-club";
+
+    render(<AppShell><main>Place content</main></AppShell>);
+
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Home" })).not.toHaveClass("active");
+  });
+
+  it("opens and closes the mobile navigation menu", async () => {
+    const user = userEvent.setup();
+    render(<AppShell><main>Public content</main></AppShell>);
+
+    await user.click(screen.getByRole("button", { name: "Open navigation" }));
+    const dialog = screen.getByRole("dialog", { name: "Navigation" });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("Join the conversation");
+
+    await user.click(screen.getByRole("button", { name: "Close navigation" }));
+    expect(screen.queryByRole("dialog", { name: "Navigation" })).not.toBeInTheDocument();
   });
 });

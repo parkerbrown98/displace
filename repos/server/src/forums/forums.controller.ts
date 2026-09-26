@@ -35,6 +35,8 @@ import {
   CreateForumTagDto,
   CreateTopicDto,
   EditPostDto,
+  FeedPageDto,
+  FeedQueryDto,
   ForumCursorQueryDto,
   ForumDto,
   ForumGroupDto,
@@ -51,6 +53,7 @@ import {
   TopicDto,
   TopicPageDto,
   TopicQueryDto,
+  TopicViewerStateDto,
   UpdateForumDto,
   UpdateForumGroupDto,
   UpdateTopicDto,
@@ -58,6 +61,21 @@ import {
 import { ForumsService } from './forums.service.js';
 
 const UUID_V7_PIPE = new ParseUUIDPipe({ version: '7' });
+
+@ApiTags('Feed')
+@Controller({ path: 'feed', version: '1' })
+export class FeedController {
+  constructor(private readonly service: ForumsService) {}
+
+  @Get()
+  @ApiOkResponse({ type: FeedPageDto })
+  list(
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Query() query: FeedQueryDto,
+  ) {
+    return this.service.listFeed(user?.id, query);
+  }
+}
 
 @ApiTags('Forums')
 @Controller({ path: 'places/:placeId', version: '1' })
@@ -219,6 +237,18 @@ export class ForumsController {
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     return this.service.getTopic(placeId, topicId, user?.id);
+  }
+
+  @Get('topics/:topicId/viewer-state')
+  @UseGuards(AuthenticatedGuard, PlaceContextGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: TopicViewerStateDto })
+  viewerState(
+    @CurrentPlace() place: AuthorizedPlace,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('topicId', UUID_V7_PIPE) topicId: string,
+  ) {
+    return this.service.getTopicViewerState(place.id, topicId, user.id);
   }
 
   @Patch('topics/:topicId')

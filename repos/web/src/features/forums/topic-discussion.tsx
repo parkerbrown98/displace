@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Edit3, EyeOff, History, Lock, MessageSquareReply, Pin, Send, Star, Trash2 } from "lucide-react";
+import { Bookmark, Edit3, Eye, EyeOff, History, Lock, MessageSquareReply, Pin, Send, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -18,6 +18,7 @@ import {
   deletePost,
   deleteTopic,
   editPost,
+  getTopicViewerState,
   listPostRevisions,
   markTopicRead,
   markTopicUnread,
@@ -43,6 +44,9 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
   const [pending, setPending] = useState(false);
   const [followed, setFollowed] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(() => new Set());
+  const [unread, setUnread] = useState(false);
+  const [viewerStateReady, setViewerStateReady] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const canModerate = context?.viewer.permissions.includes("forum.manage") ?? false;
   const canReply = context?.viewer.permissions.includes("post.create") ?? false;
@@ -51,8 +55,30 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
 
   useEffect(() => {
     if (session.status !== "authenticated") return;
+    let active = true;
     const lastReadPostId = initialPosts.items.at(-1)?.id;
-    void markTopicRead(place.id, initialTopic.id, lastReadPostId).catch(() => undefined);
+    void getTopicViewerState(place.id, initialTopic.id).then((state) => {
+      if (!active) return;
+      setFollowed(state.isFollowing);
+      setSaved(state.isSaved);
+      setSavedPostIds(new Set(state.posts.filter((post) => post.isSaved).map((post) => post.postId)));
+      setPosts((current) => current.map((post) => {
+        const postState = state.posts.find((item) => item.postId === post.id);
+        return {
+          ...post,
+          reactions: post.reactions.map((reaction) => ({
+            ...reaction,
+            reacted: postState?.reactions.includes(reaction.reaction) ?? false,
+          })),
+        };
+      }));
+    }).catch(() => undefined).finally(() => {
+      if (active) setViewerStateReady(true);
+    });
+    void markTopicRead(place.id, initialTopic.id, lastReadPostId).then(() => {
+      if (active) setUnread(false);
+    }).catch(() => undefined);
+    return () => { active = false; };
   }, [initialPosts.items, initialTopic.id, place.id, session.status]);
 
   async function reply(event: FormEvent<HTMLFormElement>) {
@@ -84,6 +110,18 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
     catch (cause) { toast.error(placeErrorMessage(cause, "Save status could not be changed.")); }
   }
 
+  async function toggleUnread() {
+    const next = !unread;
+    const lastReadPostId = posts.at(-1)?.id;
+    try {
+      if (next) await markTopicUnread(place.id, topic.id);
+      else await markTopicRead(place.id, topic.id, lastReadPostId);
+      setUnread(next);
+    } catch (cause) {
+      toast.error(placeErrorMessage(cause, "Read status could not be changed."));
+    }
+  }
+
   async function renameTopic(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = String(new FormData(event.currentTarget).get("title"));
@@ -107,11 +145,11 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
           </div>
           {session.status === "authenticated" ? (
             <section className="topic-member-toolbar" aria-label="Topic actions">
-              <button aria-pressed={followed} className="secondary-button" onClick={() => void toggleFollow()} type="button"><Star size={16} />{followed ? "Following" : "Follow"}</button>
-              <button aria-pressed={saved} className="secondary-button" onClick={() => void toggleSave()} type="button"><Bookmark size={16} />{saved ? "Saved" : "Save"}</button>
-              <button className="secondary-button" onClick={() => void markTopicUnread(place.id, topic.id)} type="button"><EyeOff size={16} />Mark unread</button>
+              <button aria-pressed={followed} className="secondary-button" disabled={!viewerStateReady} onClick={() => void toggleFollow()} type="button"><Star size={16} />{followed ? "Following" : "Follow"}</button>
+              <button aria-pressed={saved} className="secondary-button" disabled={!viewerStateReady} onClick={() => void toggleSave()} type="button"><Bookmark size={16} />{saved ? "Saved" : "Save"}</button>
+              <button aria-pressed={unread} className="secondary-button" onClick={() => void toggleUnread()} type="button">{unread ? <Eye size={16} /> : <EyeOff size={16} />}{unread ? "Unread" : "Mark unread"}</button>
               <ReportButton label="topic" placeId={place.id} targetId={topic.id} targetType="topic" />
-              {isTopicAuthor || canModerate ? <button className="icon-button" onClick={() => setEditingTitle((value) => !value)} title="Edit topic title" type="button"><Edit3 size={16} /></button> : null}
+              {isTopicAuthor || canModerate ? <button aria-pressed={editingTitle} className="icon-button" onClick={() => setEditingTitle((value) => !value)} title="Edit topic title" type="button"><Edit3 size={16} /></button> : null}
               {canModerate ? <>
                 <button aria-pressed={topic.status === "locked"} className="icon-button" onClick={() => void setTopicLock(place.id, topic.id, topic.status !== "locked").then(setTopic).catch((cause) => toast.error(placeErrorMessage(cause, "Lock status could not be changed.")))} title={topic.status === "locked" ? "Unlock topic" : "Lock topic"} type="button"><Lock size={16} /></button>
                 <button aria-pressed={topic.isPinned} className="icon-button" onClick={() => void setTopicPin(place.id, topic.id, !topic.isPinned).then(setTopic).catch((cause) => toast.error(placeErrorMessage(cause, "Pin status could not be changed.")))} title={topic.isPinned ? "Unpin topic" : "Pin topic"} type="button"><Pin size={16} /></button>
@@ -128,7 +166,7 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
         {editingTitle ? <form className="topic-title-form" onSubmit={renameTopic}><label className="form-field">Topic title<input defaultValue={topic.title} maxLength={300} name="title" required /></label><button className="primary-button" type="submit">Save title</button></form> : null}
       </header>
       <section className="post-list" aria-label="Posts">
-        {posts.map((post, index) => <DiscussionPost canModerate={canModerate} canUpload={canUpload} key={post.id} number={index + 1} onChange={(next) => setPosts((current) => current.map((item) => item.id === next.id ? next : item))} placeId={place.id} post={post} />)}
+        {posts.map((post, index) => <DiscussionPost canModerate={canModerate} canUpload={canUpload} isSaved={savedPostIds.has(post.id)} key={post.id} number={index + 1} onChange={(next) => setPosts((current) => current.map((item) => item.id === next.id ? next : item))} onSavedChange={(next) => setSavedPostIds((current) => { const updated = new Set(current); if (next) updated.add(post.id); else updated.delete(post.id); return updated; })} placeId={place.id} post={post} />)}
       </section>
       {session.status === "anonymous" ? <p className="topic-reply-prompt"><Link className="primary-button" href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.topic(place.slug, topic.id))}`}>Sign in to reply</Link></p> : null}
       {canReply && (topic.status === "open" || canModerate) ? (
@@ -142,13 +180,12 @@ export function TopicDiscussion({ initialPosts, initialTopic, place }: { initial
   );
 }
 
-function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, post }: { canModerate: boolean; canUpload: boolean; number: number; onChange: (post: PostContract) => void; placeId: string; post: PostContract }) {
+function DiscussionPost({ canModerate, canUpload, isSaved, number, onChange, onSavedChange, placeId, post }: { canModerate: boolean; canUpload: boolean; isSaved: boolean; number: number; onChange: (post: PostContract) => void; onSavedChange: (saved: boolean) => void; placeId: string; post: PostContract }) {
   const session = useSession();
   const author = post.author;
   const [editing, setEditing] = useState(false);
   const [document, setDocument] = useState<RichTextDocumentContract>();
   const [editorEmpty, setEditorEmpty] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [revisions, setRevisions] = useState<PostRevisionContract[]>();
   const canEdit = !post.isDeleted && (canModerate || session.user?.id === post.authorUserId);
 
@@ -194,11 +231,11 @@ function DiscussionPost({ canModerate, canUpload, number, onChange, placeId, pos
         <div className="post-body">{post.isDeleted || !post.document ? <p className="tombstone">This post was removed.</p> : editing ? <div className="post-editor"><ForumEditor canUpload={canUpload} initialDocument={post.document as RichTextDocumentContract} label="Edit post" onChange={(next, isEmpty) => { setDocument(next); setEditorEmpty(isEmpty); }} placeId={placeId} /><div><button className="primary-button" disabled={editorEmpty} onClick={() => void saveEdit()} type="button">Save edit</button><button className="secondary-button" onClick={() => setEditing(false)} type="button">Cancel</button></div></div> : <RichText document={post.document} placeId={placeId} />}</div>
         {!post.isDeleted && session.status === "authenticated" ? <footer className="post-actions">
           {["like", "helpful", "insightful"].map((reaction) => { const summary = post.reactions.find((item) => item.reaction === reaction); return <button aria-pressed={summary?.reacted ?? false} key={reaction} onClick={() => void react(reaction, !(summary?.reacted ?? false))} type="button">{reaction}{summary?.count ? ` ${summary.count}` : ""}</button>; })}
-          <button aria-pressed={saved} onClick={() => void setPostSave(placeId, post.id, !saved).then(() => setSaved(!saved)).catch((cause) => toast.error(placeErrorMessage(cause, "Save status could not be changed.")))} type="button"><Bookmark size={14} />{saved ? "Saved" : "Save"}</button>
+          <button aria-pressed={isSaved} onClick={() => void setPostSave(placeId, post.id, !isSaved).then(() => onSavedChange(!isSaved)).catch((cause) => toast.error(placeErrorMessage(cause, "Save status could not be changed.")))} type="button"><Bookmark size={14} />{isSaved ? "Saved" : "Save"}</button>
           <ReportButton label={`post ${number}`} placeId={placeId} targetId={post.id} targetType="post" />
-          {canEdit ? <button onClick={() => setEditing(true)} type="button"><Edit3 size={14} />Edit</button> : null}
+          {canEdit ? <button aria-pressed={editing} onClick={() => setEditing(true)} type="button"><Edit3 size={14} />Edit</button> : null}
           {canEdit ? <button onClick={() => void remove()} type="button"><Trash2 size={14} />Delete</button> : null}
-          {canModerate ? <button onClick={() => void listPostRevisions(placeId, post.id).then(setRevisions).catch((cause) => toast.error(placeErrorMessage(cause, "Revisions could not be loaded.")))} type="button"><History size={14} />History</button> : null}
+          {canModerate ? <button aria-pressed={Boolean(revisions)} onClick={() => void listPostRevisions(placeId, post.id).then(setRevisions).catch((cause) => toast.error(placeErrorMessage(cause, "Revisions could not be loaded.")))} type="button"><History size={14} />History</button> : null}
         </footer> : null}
         {revisions ? <div className="post-revisions"><strong>Revision history</strong>{revisions.length ? <ol>{revisions.map((revision) => <li key={revision.id}>Version {revision.version} · {new Date(revision.createdAt).toLocaleString()}</li>)}</ol> : <p>No earlier revisions.</p>}</div> : null}
       </div>

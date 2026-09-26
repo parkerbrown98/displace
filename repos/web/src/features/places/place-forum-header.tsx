@@ -37,7 +37,10 @@ export function PlaceForumHeader({
     <header className="place-toolbar">
       <div className="place-toolbar-identity">
         <PlaceIcon className="place-toolbar-mark" place={place} />
-        <div className="place-toolbar-title"><p className="eyebrow">{place.visibility} community</p><h1>{place.name}</h1></div>
+        <div className="place-toolbar-title">
+          <h1>{place.name}</h1>
+          <p className="place-toolbar-member-count">{place.memberCount.toLocaleString()} {place.memberCount === 1 ? "member" : "members"}</p>
+        </div>
       </div>
       <nav className="place-toolbar-nav" aria-label={`${place.name} navigation`}>
         <PlaceNavLink active={active === "forums"} href={routes.place(place.slug)}>Forums</PlaceNavLink>

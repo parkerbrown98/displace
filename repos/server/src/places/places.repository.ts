@@ -69,6 +69,13 @@ export interface MemberRecord {
   userId: string;
 }
 
+const activeMemberCount = sql<number>`(
+  select count(*)::int
+  from place_members as counted_place_members
+  where counted_place_members.place_id = places.id
+    and counted_place_members.status = 'active'
+)`;
+
 @Injectable()
 export class PlacesRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
@@ -147,7 +154,10 @@ export class PlacesRepository {
       );
     if (isId) {
       const [place] = await this.database
-        .select()
+        .select({
+          ...getTableColumns(places),
+          memberCount: activeMemberCount,
+        })
         .from(places)
         .where(eq(places.id, identifier))
         .limit(1);
@@ -156,7 +166,10 @@ export class PlacesRepository {
       }
     }
     const [place] = await this.database
-      .select()
+      .select({
+        ...getTableColumns(places),
+        memberCount: activeMemberCount,
+      })
       .from(places)
       .where(eq(places.slug, identifier))
       .limit(1);
@@ -184,6 +197,7 @@ export class PlacesRepository {
       .select({
         ...getTableColumns(places),
         hasBanner: sql<boolean>`${placeProfileAssets.assetId} is not null`,
+        memberCount: activeMemberCount,
       })
       .from(places)
       .leftJoin(
@@ -260,6 +274,7 @@ export class PlacesRepository {
         description: places.description,
         id: places.id,
         joinPolicy: places.joinPolicy,
+        memberCount: activeMemberCount,
         name: places.name,
         ownerUserId: places.ownerUserId,
         settings: places.settings,

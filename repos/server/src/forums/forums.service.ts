@@ -21,6 +21,7 @@ import {
   type CreateForumTagDto,
   type CreateTopicDto,
   type EditPostDto,
+  type FeedQueryDto,
   type ForumCursorQueryDto,
   type MarkTopicReadDto,
   type TopicQueryDto,
@@ -30,6 +31,7 @@ import {
 } from './forums.dto.js';
 import {
   ForumsRepository,
+  type FeedCursor,
   type PostCursor,
   type SavedItemCursor,
   type TopicCursor,
@@ -304,6 +306,55 @@ export class ForumsService {
     };
   }
 
+  async listFeed(userId: string | undefined, query: FeedQueryDto) {
+    const cursor = query.cursor
+      ? this.decodeFeedCursor(query.cursor, query.sort)
+      : undefined;
+    const asOf = cursor?.asOf ?? this.clock.now();
+    const records = await this.forums.listFeed({
+      asOf,
+      cursor,
+      limit: query.limit,
+      sort: query.sort,
+      userId,
+    });
+    const hasMore = records.length > query.limit;
+    const page = records.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page.map((record) => ({
+        excerpt: record.excerpt,
+        forum: { id: record.forumId, name: record.forumName },
+        isFollowing: record.isFollowing,
+        isSaved: record.isSaved,
+        originalPostId: record.originalPostId,
+        place: {
+          id: record.placeId,
+          name: record.placeName,
+          slug: record.placeSlug,
+        },
+        reactionCount: record.reactionCount,
+        sources: [
+          ...(record.isFollowing ? (['following'] as const) : []),
+          ...(record.isJoined ? (['joined'] as const) : []),
+          ...(record.isTrending ? (['trending'] as const) : []),
+        ],
+        topic: this.toTopic(record),
+        viewerHasReacted: record.viewerHasReacted,
+      })),
+      nextCursor:
+        hasMore && last
+          ? this.cursors.encode({
+              asOf: asOf.toISOString(),
+              id: last.id,
+              latestPostAt: last.latestPostAt.toISOString(),
+              score: last.score,
+              sort: query.sort,
+            })
+          : undefined,
+    };
+  }
+
   async getTopic(identifier: string, topicId: string, userId?: string) {
     const { authorization, placeId } = await this.readContext(
       identifier,
@@ -369,6 +420,15 @@ export class ForumsService {
             })
           : undefined,
     };
+  }
+
+  async getTopicViewerState(
+    placeId: string,
+    topicId: string,
+    userId: string,
+  ) {
+    await this.requireTopicRead(placeId, topicId, userId);
+    return this.forums.getTopicViewerState(placeId, topicId, userId);
   }
 
   async reply(
@@ -950,6 +1010,31 @@ export class ForumsService {
     };
   }
 
+  private decodeFeedCursor(
+    value: string,
+    sort: string,
+  ): FeedCursor & { asOf: Date } {
+    const cursor = this.cursors.decode<Record<string, unknown>>(value);
+    if (
+      typeof cursor.id !== 'string' ||
+      typeof cursor.score !== 'number' ||
+      !Number.isFinite(cursor.score) ||
+      cursor.sort !== sort ||
+      typeof cursor.asOf !== 'string' ||
+      Number.isNaN(Date.parse(cursor.asOf)) ||
+      typeof cursor.latestPostAt !== 'string' ||
+      Number.isNaN(Date.parse(cursor.latestPostAt))
+    ) {
+      throw new BadRequestException('Feed cursor is invalid.');
+    }
+    return {
+      asOf: new Date(cursor.asOf),
+      id: cursor.id,
+      latestPostAt: new Date(cursor.latestPostAt),
+      score: cursor.score,
+    };
+  }
+
   private decodePostCursor(value: string): PostCursor {
     const cursor = this.cursors.decode<Record<string, unknown>>(value);
     if (
@@ -1063,12 +1148,19 @@ export class ForumsService {
 
   private toTopic<
     T extends {
+      author: {
+        displayName: string;
+        handle: string;
+        id: string;
+        joinedAt: Date;
+      };
       authorUserId: string;
       createdAt: Date;
       forumId: string;
       id: string;
       isPinned: boolean;
       latestPostAt: Date;
+      previewImage?: { alt: string; assetId: string } | null;
       replyCount: number;
       status: 'locked' | 'open';
       tags: Array<{
@@ -1082,12 +1174,14 @@ export class ForumsService {
     },
   >(topic: T) {
     return {
+      author: topic.author,
       authorUserId: topic.authorUserId,
       createdAt: topic.createdAt,
       forumId: topic.forumId,
       id: topic.id,
       isPinned: topic.isPinned,
       latestPostAt: topic.latestPostAt,
+      previewImage: topic.previewImage ?? null,
       replyCount: topic.replyCount,
       status: topic.status,
       tags: topic.tags.map((tag) => this.toTag(tag)),

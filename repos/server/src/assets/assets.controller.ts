@@ -41,6 +41,7 @@ import {
   SetAssetReferenceDto,
   UploadIntentDto,
 } from './assets.dto.js';
+import { AssetsRepository } from './assets.repository.js';
 import { AssetsService } from './assets.service.js';
 
 const UUID_V7_PIPE = new ParseUUIDPipe({ version: '7' });
@@ -58,6 +59,7 @@ enum PlaceImageKind {
 export class PublicPlaceImagesController {
   constructor(
     private readonly assets: AssetsService,
+    private readonly assetsRepository: AssetsRepository,
     private readonly places: PlacesRepository,
     private readonly config: ConfigService<AppEnvironment, true>,
   ) {}
@@ -74,6 +76,20 @@ export class PublicPlaceImagesController {
   @Redirect(undefined, HttpStatus.TEMPORARY_REDIRECT)
   async getIcon(@Param('placeId', UUID_V7_PIPE) placeId: string) {
     return this.getImage(placeId, 'icon');
+  }
+
+  @Get('posts/:assetId')
+  @Header('Cross-Origin-Resource-Policy', 'cross-origin')
+  @Redirect(undefined, HttpStatus.TEMPORARY_REDIRECT)
+  async getPostImage(
+    @Param('placeId', UUID_V7_PIPE) placeId: string,
+    @Param('assetId', UUID_V7_PIPE) assetId: string,
+  ) {
+    if (!(await this.assetsRepository.findPublicPostImage(assetId, placeId))) {
+      throw new NotFoundException('Post image was not found.');
+    }
+    const download = await this.assets.createDownloadUrl(placeId, assetId);
+    return { statusCode: HttpStatus.TEMPORARY_REDIRECT, url: download.url };
   }
 
   private async getImage(placeId: string, kind: 'banner' | 'icon') {

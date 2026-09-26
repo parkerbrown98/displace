@@ -139,6 +139,8 @@ export class PlaceDto {
   name: string;
   @ApiProperty()
   description: string;
+  @ApiProperty({ minimum: 0 })
+  memberCount: number;
   @ApiProperty({ enum: PlaceVisibilityDto })
   visibility: PlaceVisibilityDto;
   @ApiProperty({ enum: PlaceJoinPolicyDto })

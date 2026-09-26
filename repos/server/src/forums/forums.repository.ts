@@ -10,6 +10,7 @@ import {
   count,
   desc,
   eq,
+  getTableColumns,
   inArray,
   isNull,
   lt,
@@ -79,9 +80,39 @@ export interface SavedItemCursor {
   savedAt: Date;
 }
 
+export interface FeedCursor {
+  id: string;
+  latestPostAt: Date;
+  score: number;
+}
+
 export interface IdempotentCreate {
   key: string;
   requestHash: string;
+}
+
+export interface TopicPreviewImage {
+  alt: string;
+  assetId: string;
+}
+
+function firstImage(node: RichTextDocument | Record<string, unknown>): TopicPreviewImage | null {
+  const attrs = 'attrs' in node ? node.attrs : undefined;
+  if (node.type === 'image' && attrs && typeof attrs === 'object') {
+    const imageAttrs = attrs as Record<string, unknown>;
+    const assetId = imageAttrs.assetId;
+    const alt = imageAttrs.alt;
+    if (typeof assetId === 'string') {
+      return { alt: typeof alt === 'string' ? alt : '', assetId };
+    }
+  }
+  const content = 'content' in node ? node.content : undefined;
+  if (!Array.isArray(content)) return null;
+  for (const child of content) {
+    const image = firstImage(child);
+    if (image) return image;
+  }
+  return null;
 }
 
 @Injectable()
@@ -495,13 +526,26 @@ export class ForumsRepository {
                 ),
               )
           : [];
+      const [author] = await transaction
+        .select({
+          displayName: users.displayName,
+          handle: users.handle,
+          id: users.id,
+          joinedAt: users.createdAt,
+        })
+        .from(users)
+        .where(eq(users.id, authorUserId))
+        .limit(1);
+      if (!author) throw new Error('Topic author was not found.');
       const response = {
+        author,
         authorUserId: topic.authorUserId,
         createdAt: topic.createdAt,
         forumId: topic.forumId,
         id: topic.id,
         isPinned: topic.isPinned,
         latestPostAt: topic.latestPostAt,
+        previewImage: firstImage(content.document),
         replyCount: topic.replyCount,
         status: topic.status,
         tags: tagRecords.map((tag) => ({
@@ -587,7 +631,143 @@ export class ForumsRepository {
             ]),
       )
       .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
-    return this.attachTags(options.placeId, records);
+    return this.attachTopicMetadata(options.placeId, records);
+  }
+
+  async listFeed(options: {
+    asOf: Date;
+    cursor?: FeedCursor;
+    limit: number;
+    sort: 'best' | 'hot' | 'new' | 'top';
+    userId?: string;
+  }) {
+    const isJoined = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${placeMembers}
+          where ${placeMembers.placeId} = ${topics.placeId}
+            and ${placeMembers.userId} = ${options.userId}
+            and ${placeMembers.status} = 'active'
+        )`
+      : sql<boolean>`false`;
+    const isFollowing = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${topicFollows}
+          where ${topicFollows.placeId} = ${topics.placeId}
+            and ${topicFollows.topicId} = ${topics.id}
+            and ${topicFollows.userId} = ${options.userId}
+        )`
+      : sql<boolean>`false`;
+    const isTrending = sql<boolean>`(
+      ${places.visibility} = 'public' and ${forums.visibility} = 'public'
+    )`;
+    const isSaved = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${savedTopics}
+          where ${savedTopics.placeId} = ${topics.placeId}
+            and ${savedTopics.topicId} = ${topics.id}
+            and ${savedTopics.userId} = ${options.userId}
+        )`
+      : sql<boolean>`false`;
+    const originalPostId = sql<string>`(
+      select ${posts.id} from ${posts}
+      where ${posts.topicId} = ${topics.id} and ${posts.deletedAt} is null
+      order by ${posts.createdAt}, ${posts.id}
+      limit 1
+    )`;
+    const excerpt = sql<string>`coalesce((
+      select ${posts.plainText} from ${posts}
+      where ${posts.topicId} = ${topics.id} and ${posts.deletedAt} is null
+      order by ${posts.createdAt}, ${posts.id}
+      limit 1
+    ), '')`;
+    const reactionCount = sql<number>`(
+      select count(*)::integer from ${postReactions}
+      where ${postReactions.postId} = (${originalPostId})
+        and ${postReactions.reaction} = 'like'
+    )`;
+    const viewerHasReacted = options.userId
+      ? sql<boolean>`exists (
+          select 1 from ${postReactions}
+          where ${postReactions.postId} = (${originalPostId})
+            and ${postReactions.userId} = ${options.userId}
+            and ${postReactions.reaction} = 'like'
+        )`
+      : sql<boolean>`false`;
+    const activity = sql<number>`(
+      ${topics.replyCount} * 5 + ${topics.viewCount} * 0.1 + (${reactionCount}) * 3 + 1
+    )`;
+    const ageHours = sql<number>`greatest(
+      extract(epoch from (${options.asOf}::timestamptz - ${topics.latestPostAt})) / 3600,
+      0
+    )`;
+    const hotScore = sql<number>`((${activity}) / power((${ageHours}) + 2, 1.25))`;
+    const score = options.sort === 'new'
+      ? sql<number>`extract(epoch from ${topics.latestPostAt})`
+      : options.sort === 'top'
+        ? activity
+        : options.sort === 'best' && options.userId
+          ? sql<number>`(
+              case when ${isFollowing} then 1000 when ${isJoined} then 100 else 0 end
+              + (${hotScore})
+            )`
+          : hotScore;
+    const cursor = options.cursor
+      ? or(
+          sql`${score} < ${options.cursor.score}`,
+          and(
+            sql`${score} = ${options.cursor.score}`,
+            lt(topics.latestPostAt, options.cursor.latestPostAt),
+          ),
+          and(
+            sql`${score} = ${options.cursor.score}`,
+            eq(topics.latestPostAt, options.cursor.latestPostAt),
+            lt(topics.id, options.cursor.id),
+          ),
+        )
+      : undefined;
+    const records = await this.database
+      .select({
+        ...getTableColumns(topics),
+        excerpt,
+        forumName: forums.name,
+        isFollowing,
+        isJoined,
+        isSaved,
+        isTrending,
+        originalPostId,
+        placeName: places.name,
+        placeSlug: places.slug,
+        reactionCount,
+        score: sql<number>`(${score})::double precision`,
+        viewerHasReacted,
+      })
+      .from(topics)
+      .innerJoin(forums, eq(forums.id, topics.forumId))
+      .innerJoin(places, eq(places.id, topics.placeId))
+      .where(
+        and(
+          isNull(topics.deletedAt),
+          isNull(forums.archivedAt),
+          isNull(forums.readPermission),
+          isNull(places.archivedAt),
+          options.userId ? or(isTrending, isJoined) : isTrending,
+          cursor,
+        ),
+      )
+      .orderBy(desc(score), desc(topics.latestPostAt), desc(topics.id))
+      .limit(Math.min(Math.max(options.limit, 1), 100) + 1);
+    const metadata = (
+      await Promise.all(
+        [...new Set(records.map((record) => record.placeId))].map((placeId) =>
+          this.attachTopicMetadata(
+            placeId,
+            records.filter((record) => record.placeId === placeId),
+          ),
+        ),
+      )
+    ).flat();
+    const metadataById = new Map(metadata.map((record) => [record.id, record]));
+    return records.map((record) => metadataById.get(record.id)!);
   }
 
   async findTopic(placeId: string, topicId: string) {
@@ -603,7 +783,7 @@ export class ForumsRepository {
       )
       .limit(1);
     if (!record) return undefined;
-    return (await this.attachTags(placeId, [record]))[0];
+    return (await this.attachTopicMetadata(placeId, [record]))[0];
   }
 
   async listSavedTopics(
@@ -722,6 +902,91 @@ export class ForumsRepository {
       )
       .orderBy(asc(posts.createdAt), asc(posts.id))
       .limit(Math.min(Math.max(limit, 1), 100) + 1);
+  }
+
+  async getTopicViewerState(
+    placeId: string,
+    topicId: string,
+    userId: string,
+  ) {
+    const [followed, saved, savedPostRecords, reactionRecords] =
+      await Promise.all([
+        this.database
+          .select({ topicId: topicFollows.topicId })
+          .from(topicFollows)
+          .where(
+            and(
+              eq(topicFollows.placeId, placeId),
+              eq(topicFollows.topicId, topicId),
+              eq(topicFollows.userId, userId),
+            ),
+          )
+          .limit(1),
+        this.database
+          .select({ topicId: savedTopics.topicId })
+          .from(savedTopics)
+          .where(
+            and(
+              eq(savedTopics.placeId, placeId),
+              eq(savedTopics.topicId, topicId),
+              eq(savedTopics.userId, userId),
+            ),
+          )
+          .limit(1),
+        this.database
+          .select({ postId: savedPosts.postId })
+          .from(savedPosts)
+          .innerJoin(
+            posts,
+            and(
+              eq(posts.placeId, savedPosts.placeId),
+              eq(posts.id, savedPosts.postId),
+            ),
+          )
+          .where(
+            and(
+              eq(savedPosts.placeId, placeId),
+              eq(savedPosts.userId, userId),
+              eq(posts.topicId, topicId),
+            ),
+          ),
+        this.database
+          .select({
+            postId: postReactions.postId,
+            reaction: postReactions.reaction,
+          })
+          .from(postReactions)
+          .innerJoin(
+            posts,
+            and(
+              eq(posts.placeId, postReactions.placeId),
+              eq(posts.id, postReactions.postId),
+            ),
+          )
+          .where(
+            and(
+              eq(postReactions.placeId, placeId),
+              eq(postReactions.userId, userId),
+              eq(posts.topicId, topicId),
+            ),
+          ),
+      ]);
+    const savedPostIds = new Set(savedPostRecords.map((item) => item.postId));
+    const postIds = new Set([
+      ...savedPostIds,
+      ...reactionRecords.map((item) => item.postId),
+    ]);
+    return {
+      isFollowing: followed.length > 0,
+      isSaved: saved.length > 0,
+      posts: [...postIds].map((postId) => ({
+        isSaved: savedPostIds.has(postId),
+        postId,
+        reactions: reactionRecords
+          .filter((item) => item.postId === postId)
+          .map((item) => item.reaction),
+      })),
+    };
   }
 
   async listPostAuthors(userIds: string[]) {
@@ -1549,30 +1814,61 @@ export class ForumsRepository {
     }
   }
 
-  private async attachTags<T extends { id: string }>(
+  private async attachTopicMetadata<T extends { authorUserId: string; id: string }>(
     placeId: string,
     records: T[],
   ) {
     if (records.length === 0) return [];
-    const links = await this.database
-      .select({ tag: forumTags, topicId: topicTags.topicId })
-      .from(topicTags)
-      .innerJoin(forumTags, eq(forumTags.id, topicTags.tagId))
-      .where(
-        and(
-          eq(topicTags.placeId, placeId),
-          inArray(
-            topicTags.topicId,
-            records.map((record) => record.id),
+    const topicIds = records.map((record) => record.id);
+    const [authors, links, originalPosts] = await Promise.all([
+      this.database
+        .select({
+          displayName: users.displayName,
+          handle: users.handle,
+          id: users.id,
+          joinedAt: users.createdAt,
+        })
+        .from(users)
+        .where(inArray(users.id, [...new Set(records.map((record) => record.authorUserId))])),
+      this.database
+        .select({ tag: forumTags, topicId: topicTags.topicId })
+        .from(topicTags)
+        .innerJoin(forumTags, eq(forumTags.id, topicTags.tagId))
+        .where(
+          and(
+            eq(topicTags.placeId, placeId),
+            inArray(topicTags.topicId, topicIds),
           ),
         ),
-      );
-    return records.map((record) => ({
-      ...record,
-      tags: links
-        .filter((link) => link.topicId === record.id)
-        .map((link) => link.tag),
-    }));
+      this.database
+        .selectDistinctOn([posts.topicId], {
+          document: posts.document,
+          topicId: posts.topicId,
+        })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.placeId, placeId),
+            inArray(posts.topicId, topicIds),
+            isNull(posts.deletedAt),
+          ),
+        )
+        .orderBy(posts.topicId, posts.createdAt, posts.id),
+    ]);
+    return records.map((record) => {
+      const author = authors.find((item) => item.id === record.authorUserId);
+      if (!author) throw new Error('Topic author was not found.');
+      return {
+        ...record,
+        author,
+        previewImage: firstImage(
+          originalPosts.find((post) => post.topicId === record.id)?.document ?? {},
+        ),
+        tags: links
+          .filter((link) => link.topicId === record.id)
+          .map((link) => link.tag),
+      };
+    });
   }
 
   private async audit(

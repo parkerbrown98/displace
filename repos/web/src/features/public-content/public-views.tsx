@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, MessagesSquare, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
@@ -20,6 +20,7 @@ import type {
 } from "./public-contracts";
 import { ForumLiveSpaces } from "./forum-live-spaces";
 import { ForumMemberPreview } from "./forum-member-preview";
+import { TopicRowPreview } from "./topic-row-preview";
 
 export function PlaceDirectory({ joinPolicy, page, tag }: { joinPolicy?: string; page: PlacePageContract; tag?: string }) {
   const facets = page.tags ?? [];
@@ -258,7 +259,7 @@ function ForumNavigation({ navigation, placeSlug, topics }: { navigation: ForumN
               return (
                 <article className="forum-row" key={forum.id}>
                   <Link className="forum-row-main" href={routes.forum(placeSlug, forum.id)}>
-                    <span className="forum-row-icon"><MessageSquareText size={19} aria-hidden="true" /></span>
+                    <span className="forum-row-icon"><MessagesSquare size={19} aria-hidden="true" /></span>
                     <span className="forum-row-copy"><strong>{forum.name}</strong><small>{forum.description}</small></span>
                   </Link>
                   <div className="forum-row-count"><strong>{forumTopics.length}</strong><small>shown</small></div>
@@ -310,14 +311,15 @@ function TopicDirectory({
       </div>
       {topics.length ? topics.map((topic) => (
         <article className="public-topic-row" key={topic.id}>
-          <div>
+          <TopicRowPreview placeId={placeId} previewImage={topic.previewImage} />
+          <div className="public-topic-main">
             <div className="topic-flags">
               {topic.isPinned ? <Pin size={14} aria-label="Pinned" /> : null}
               {topic.status === "locked" ? <Lock size={14} aria-label="Locked" /> : null}
               {topic.tags.map((topicTag) => <span className="category-tag" key={topicTag.id}>{topicTag.name}</span>)}
             </div>
             <h3><Link href={routes.topic(placeSlug, topic.id)}>{topic.title}</Link></h3>
-            <time dateTime={topic.latestPostAt}>Active {formatPublicDate(topic.latestPostAt)}</time>
+            <p className="topic-row-author">By <Link href={routes.member(topic.author.handle)}>{topic.author.displayName}</Link></p>
           </div>
           <dl><div><dt>Replies</dt><dd>{topic.replyCount}</dd></div><div><dt>Views</dt><dd>{formatCount(topic.viewCount)}</dd></div></dl>
         </article>

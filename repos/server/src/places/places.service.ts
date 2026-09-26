@@ -61,7 +61,8 @@ export class PlacesService {
       throw new ForbiddenException('Only the configured place can be created.');
     }
     try {
-      return await this.places.create(userId, input, this.clock.now());
+      const place = await this.places.create(userId, input, this.clock.now());
+      return this.requirePlace(place.id);
     } catch (error) {
       if (this.isUniqueViolation(error)) {
         throw new ConflictException('A place with that slug already exists.');
@@ -157,7 +158,7 @@ export class PlacesService {
     if (!place) {
       throw new NotFoundException('Place was not found.');
     }
-    return place;
+    return this.requirePlace(place.id);
   }
 
   async updateSettings(
@@ -166,12 +167,16 @@ export class PlacesService {
     settings: Record<string, unknown>,
   ) {
     await this.requireVerified(userId);
-    return this.places.updateSettings(
+    const place = await this.places.updateSettings(
       placeId,
       this.normalizeSettings(settings),
       userId,
       this.clock.now(),
     );
+    if (!place) {
+      throw new NotFoundException('Place was not found.');
+    }
+    return this.requirePlace(place.id);
   }
 
   private normalizeSettings(settings: Record<string, unknown>) {

@@ -23,6 +23,7 @@ const topic: SavedTopicContract = {
   placeSlug: "game-makers",
   savedAt: "2026-09-22T12:00:00.000Z",
   topic: {
+    author: { displayName: "Mara Vale", handle: "mara", id: "author-id", joinedAt: "2026-01-01T12:00:00.000Z" },
     authorUserId: "author-id",
     createdAt: "2026-09-20T12:00:00.000Z",
     forumId: "forum-id",
@@ -30,6 +31,7 @@ const topic: SavedTopicContract = {
     isPinned: false,
     latestPostAt: "2026-09-23T12:00:00.000Z",
     replyCount: 4,
+    previewImage: null,
     status: "open",
     tags: [{ color: null, id: "tag-id", name: "Design", slug: "design" }],
     title: "Designing a better inventory",

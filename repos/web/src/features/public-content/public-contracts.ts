@@ -33,11 +33,18 @@ export interface TopicContract {
   id: string;
   forumId: string;
   authorUserId: string;
+  author: {
+    displayName: string;
+    handle: string;
+    id: string;
+    joinedAt: string;
+  };
   title: string;
   status: "locked" | "open";
   isPinned: boolean;
   replyCount: number;
   viewCount: number;
+  previewImage: { alt: string; assetId: string } | null;
   tags: ForumTagContract[];
   latestPostAt: string;
   createdAt: string;
