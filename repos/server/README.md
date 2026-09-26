@@ -181,6 +181,18 @@ Terminate TLS for the web app, API, MinIO, and LiveKit signaling endpoints with 
 docker compose --env-file .env.production -f compose.prod.yaml up --build -d
 ```
 
+### Trusted Reverse Proxy
+
+`TRUST_PROXY` determines which immediate peers may supply `X-Forwarded-For` and `X-Forwarded-Proto`. It is required because the API uses the resolved client IP for authentication rate limits and audit records. In production it must be a proxy IP, a CIDR, or a comma-separated list of those values; `true` is intentionally rejected.
+
+For Nginx, Caddy, or another proxy running on the same Docker host and forwarding to `http://127.0.0.1:${API_PORT}`, trust the subnet of the Compose `edge` network. Docker NAT makes the API see the bridge gateway rather than `127.0.0.1`. Obtain the actual subnet after the stack has been created:
+
+```bash
+docker network inspect displace_edge --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+```
+
+Set the resulting value in `.env.production`, for example `TRUST_PROXY=172.22.0.0/16`, then recreate the API and worker. If the proxy is in a separate container or host, set `TRUST_PROXY` to its fixed IP or dedicated private CIDR instead. When placing the API behind an external load balancer, set `API_BIND_ADDRESS=0.0.0.0`, restrict inbound port `3001` to that load balancer with a firewall or security group, and trust only the load balancer's documented source range.
+
 The one-shot `database-migrate` service bootstraps the least-privilege runtime database role and applies migrations before the API and worker start. Production seeding is intentionally excluded. Check startup and readiness with:
 
 ```bash
