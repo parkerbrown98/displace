@@ -1,0 +1,25 @@
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+
+# Build and test output
+dist/
+coverage/
+playwright-report/
+test-results/
+.vite/
+*.tsbuildinfo
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Rust and Tauri generated output
+src-tauri/target/
+src-tauri/gen/
+
+# Logs and operating-system metadata
+*.log
+.DS_Store
+Thumbs.db
