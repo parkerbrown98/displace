@@ -1,6 +1,6 @@
 import {
   ArrowRight, Compass, FileText, Hash, Lock, MapPin, MessageSquareText, Plus,
-  MessagesSquare, Pin, Search, Settings, UsersRound,
+  MessagesSquare, Pin, Search, UsersRound,
 } from 'lucide-react';
 import { useDeferredValue, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { useRemoteResource } from '../../lib/remote-resource';
 import { DesktopApiError } from '../../lib/api/desktop-api';
 import { useSession } from '../auth/session-provider';
 import type { ForumNavigation, Place, Topic } from './place-client';
+import { PlaceToolbar } from './place-toolbar';
 import { usePlaceClient } from './use-place-client';
 
 export function DiscoverRoute() {
@@ -106,7 +107,8 @@ export function PlaceRoute() {
   }
 
   return <div className="community-view place-workbench">
-    <header className="place-header"><span className="place-monogram">{initials(place.name)}</span><div><span className="eyebrow">{place.visibility} community</span><h2>{place.name}</h2><p>{place.description || 'A place for focused conversation.'}</p><div className="place-meta"><span><UsersRound size={14} />{place.memberCount} members</span><span>{place.joinPolicy === 'open' ? <Compass size={14} /> : <Lock size={14} />}{joinLabel(place.joinPolicy)}</span></div></div><div className="place-actions">{context?.viewer.permissions.includes('place.manage') ? <Link className="button secondary" to={`/places/${place.slug}/settings`}><Settings size={16} />Settings</Link> : session.status === 'authenticated' && !context ? <button className="button primary" onClick={join}>Join place</button> : null}</div></header>
+    <PlaceToolbar active="forums" context={context} place={place} />
+    <header className="place-header"><span className="place-monogram">{initials(place.name)}</span><div><span className="eyebrow">{place.visibility} community</span><h2>{place.name}</h2><p>{place.description || 'A place for focused conversation.'}</p><div className="place-meta"><span><UsersRound size={14} />{place.memberCount} members</span><span>{place.joinPolicy === 'open' ? <Compass size={14} /> : <Lock size={14} />}{joinLabel(place.joinPolicy)}</span></div></div><div className="place-actions">{session.status === 'authenticated' && !context ? <button className="button primary" onClick={join}>Join place</button> : null}</div></header>
     {actionMessage ? <p className="inline-notice" role="status">{actionMessage}</p> : null}
     <div className="forum-workbench">
       <aside className="forum-index" aria-label="Forum boards"><div className="panel-title"><MessagesSquare size={16} /><h3>Boards</h3></div>{navigation.groups.map((group) => <section key={group.id}><h4>{group.name}</h4>{group.forums.map((forum) => <Link className={forum.id === forumId ? 'active' : ''} key={forum.id} to={`/places/${place.slug}/forums/${forum.id}`}><span>{forum.name}</span><small>{forum.description}</small></Link>)}</section>)}</aside>

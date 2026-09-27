@@ -17,9 +17,17 @@ export type RichTextDocument = components['schemas']['RichTextDocumentDto']['doc
 export type PublicProfile = components['schemas']['PublicProfileDto'];
 export type SearchPage = components['schemas']['SearchPageDto'];
 export type MemberPage = components['schemas']['MemberPageDto'];
+export type Member = components['schemas']['MemberDto'];
 export type RolePage = components['schemas']['RolePageDto'];
+export type Role = components['schemas']['RoleDto'];
 export type InvitePage = components['schemas']['InvitePageDto'];
 export type Invite = components['schemas']['InviteDto'];
+export type Forum = components['schemas']['ForumDto'];
+export type ForumGroup = components['schemas']['ForumGroupDto'];
+export type ForumTag = components['schemas']['ForumTagDto'];
+export type ChatChannel = components['schemas']['ChatChannelDto'];
+export type VoiceRoom = components['schemas']['VoiceRoomDto'];
+export type PlacePermission = PlaceContext['viewer']['permissions'][number];
 export type PlaceWriteInput = components['schemas']['CreatePlaceDto'];
 
 export interface PlaceDiscoveryParameters {
@@ -192,9 +200,13 @@ export class PlaceClient {
     return this.protectedRead(`place:${placeId}:context`, `/api/v1/places/${encodeURIComponent(placeId)}/context`);
   }
 
-  members(placeId: string, query?: string): Promise<MemberPage> {
-    const path = `/api/v1/places/${encodeURIComponent(placeId)}/members?status=active&limit=24&sort=last_seen${query ? `&q=${encodeURIComponent(query)}` : ''}`;
-    return this.protectedRead(`place:${placeId}:members:${query ?? ''}`, path);
+  members(placeId: string, query?: string, status: 'active' | 'pending' = 'active'): Promise<MemberPage> {
+    const path = `/api/v1/places/${encodeURIComponent(placeId)}/members?status=${status}&limit=24&sort=last_seen${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+    return this.protectedRead(`place:${placeId}:members:${status}:${query ?? ''}`, path);
+  }
+
+  member(placeId: string, memberId: string): Promise<Member> {
+    return this.protectedRead(`place:${placeId}:member:${memberId}`, `/api/v1/places/${encodeURIComponent(placeId)}/members/${encodeURIComponent(memberId)}`);
   }
 
   roles(placeId: string): Promise<RolePage> {
@@ -203,6 +215,18 @@ export class PlaceClient {
 
   invites(placeId: string): Promise<InvitePage> {
     return this.protectedRead(`place:${placeId}:invites`, `/api/v1/places/${encodeURIComponent(placeId)}/invites`);
+  }
+
+  forumSettings(placeId: string): Promise<ForumNavigation> {
+    return this.protectedRead(`place:${placeId}:forum-settings`, `/api/v1/places/${encodeURIComponent(placeId)}/forums`);
+  }
+
+  chatChannels(placeId: string): Promise<ChatChannel[]> {
+    return this.protectedRead(`place:${placeId}:chat-channels`, `/api/v1/places/${encodeURIComponent(placeId)}/chat/channels`);
+  }
+
+  voiceRooms(placeId: string): Promise<VoiceRoom[]> {
+    return this.protectedRead(`place:${placeId}:voice-rooms`, `/api/v1/places/${encodeURIComponent(placeId)}/voice/rooms`);
   }
 
   async create(input: PlaceWriteInput): Promise<Place> {
@@ -247,6 +271,135 @@ export class PlaceClient {
     return invite;
   }
 
+  async revokeInvite(placeId: string, inviteId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/invites/${encodeURIComponent(inviteId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'invites');
+  }
+
+  async approveMember(placeId: string, memberId: string): Promise<Member> {
+    const member = await this.auth.authenticatedRequest<Member>(`/api/v1/places/${encodeURIComponent(placeId)}/members/${encodeURIComponent(memberId)}/approve`, { method: 'POST' });
+    this.invalidateManagement(placeId, 'members');
+    return member;
+  }
+
+  async removeMember(placeId: string, memberId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/members/${encodeURIComponent(memberId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'members');
+  }
+
+  async transferOwnership(placeId: string, userId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/ownership`, { body: { userId }, method: 'POST' });
+    this.invalidatePlace(placeId);
+  }
+
+  async createRole(placeId: string, input: components['schemas']['CreateRoleDto']): Promise<Role> {
+    const role = await this.auth.authenticatedRequest<Role>(`/api/v1/places/${encodeURIComponent(placeId)}/roles`, { body: input, method: 'POST' });
+    this.invalidateManagement(placeId, 'roles');
+    return role;
+  }
+
+  async updateRole(placeId: string, roleId: string, input: components['schemas']['UpdateRoleDto']): Promise<Role> {
+    const role = await this.auth.authenticatedRequest<Role>(`/api/v1/places/${encodeURIComponent(placeId)}/roles/${encodeURIComponent(roleId)}`, { body: input, method: 'PATCH' });
+    this.invalidateManagement(placeId, 'roles');
+    return role;
+  }
+
+  async deleteRole(placeId: string, roleId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'roles');
+  }
+
+  async assignRole(placeId: string, memberId: string, roleId: string): Promise<Member> {
+    const member = await this.auth.authenticatedRequest<Member>(`/api/v1/places/${encodeURIComponent(placeId)}/members/${encodeURIComponent(memberId)}/roles`, { body: { roleId }, method: 'POST' });
+    this.invalidateManagement(placeId, 'members');
+    return member;
+  }
+
+  async removeRole(placeId: string, memberId: string, roleId: string): Promise<Member> {
+    const member = await this.auth.authenticatedRequest<Member>(`/api/v1/places/${encodeURIComponent(placeId)}/members/${encodeURIComponent(memberId)}/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'members');
+    return member;
+  }
+
+  async createForumGroup(placeId: string, input: components['schemas']['CreateForumGroupDto']): Promise<ForumGroup> {
+    const group = await this.auth.authenticatedRequest<ForumGroup>(`/api/v1/places/${encodeURIComponent(placeId)}/forum-groups`, { body: input, method: 'POST' });
+    this.invalidateManagement(placeId, 'forum-settings');
+    return group;
+  }
+
+  async updateForumGroup(placeId: string, groupId: string, input: components['schemas']['UpdateForumGroupDto']): Promise<ForumGroup> {
+    const group = await this.auth.authenticatedRequest<ForumGroup>(`/api/v1/places/${encodeURIComponent(placeId)}/forum-groups/${encodeURIComponent(groupId)}`, { body: input, method: 'PATCH' });
+    this.invalidateManagement(placeId, 'forum-settings');
+    return group;
+  }
+
+  async deleteForumGroup(placeId: string, groupId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/forum-groups/${encodeURIComponent(groupId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'forum-settings');
+  }
+
+  async createForum(placeId: string, input: components['schemas']['CreateForumDto']): Promise<Forum> {
+    const forum = await this.auth.authenticatedRequest<Forum>(`/api/v1/places/${encodeURIComponent(placeId)}/forums`, { body: input, method: 'POST' });
+    this.invalidateManagement(placeId, 'forum-settings');
+    return forum;
+  }
+
+  async updateForum(placeId: string, forumId: string, input: components['schemas']['UpdateForumDto']): Promise<Forum> {
+    const forum = await this.auth.authenticatedRequest<Forum>(`/api/v1/places/${encodeURIComponent(placeId)}/forums/${encodeURIComponent(forumId)}`, { body: input, method: 'PATCH' });
+    this.invalidateManagement(placeId, 'forum-settings');
+    return forum;
+  }
+
+  async archiveForum(placeId: string, forumId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/forums/${encodeURIComponent(forumId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'forum-settings');
+  }
+
+  async createForumTag(placeId: string, input: components['schemas']['CreateForumTagDto']): Promise<ForumTag> {
+    const tag = await this.auth.authenticatedRequest<ForumTag>(`/api/v1/places/${encodeURIComponent(placeId)}/forum-tags`, { body: input, method: 'POST' });
+    this.invalidateManagement(placeId, 'forum-settings');
+    return tag;
+  }
+
+  async deleteForumTag(placeId: string, tagId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/forum-tags/${encodeURIComponent(tagId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'forum-settings');
+  }
+
+  async createChatChannel(placeId: string, input: components['schemas']['CreateChatChannelDto']): Promise<ChatChannel> {
+    const channel = await this.auth.authenticatedRequest<ChatChannel>(`/api/v1/places/${encodeURIComponent(placeId)}/chat/channels`, { body: input, method: 'POST' });
+    this.invalidateManagement(placeId, 'chat-channels');
+    return channel;
+  }
+
+  async updateChatChannel(placeId: string, channelId: string, input: components['schemas']['UpdateChatChannelDto']): Promise<ChatChannel> {
+    const channel = await this.auth.authenticatedRequest<ChatChannel>(`/api/v1/places/${encodeURIComponent(placeId)}/chat/channels/${encodeURIComponent(channelId)}`, { body: input, method: 'PATCH' });
+    this.invalidateManagement(placeId, 'chat-channels');
+    return channel;
+  }
+
+  async archiveChatChannel(placeId: string, channelId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/chat/channels/${encodeURIComponent(channelId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'chat-channels');
+  }
+
+  async createVoiceRoom(placeId: string, input: components['schemas']['CreateVoiceRoomDto']): Promise<VoiceRoom> {
+    const room = await this.auth.authenticatedRequest<VoiceRoom>(`/api/v1/places/${encodeURIComponent(placeId)}/voice/rooms`, { body: input, method: 'POST' });
+    this.invalidateManagement(placeId, 'voice-rooms');
+    return room;
+  }
+
+  async updateVoiceRoom(placeId: string, roomId: string, input: components['schemas']['UpdateVoiceRoomDto']): Promise<VoiceRoom> {
+    const room = await this.auth.authenticatedRequest<VoiceRoom>(`/api/v1/places/${encodeURIComponent(placeId)}/voice/rooms/${encodeURIComponent(roomId)}`, { body: input, method: 'PATCH' });
+    this.invalidateManagement(placeId, 'voice-rooms');
+    return room;
+  }
+
+  async archiveVoiceRoom(placeId: string, roomId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`/api/v1/places/${encodeURIComponent(placeId)}/voice/rooms/${encodeURIComponent(roomId)}`, { method: 'DELETE' });
+    this.invalidateManagement(placeId, 'voice-rooms');
+  }
+
   private protectedRead<T>(key: string, path: string): Promise<T> {
     return this.cache.getOrLoad(key, async () => {
       try {
@@ -271,6 +424,11 @@ export class PlaceClient {
     this.cache.deletePrefix(`place:${placeId}:`);
     this.cache.deletePrefix('public:/api/v1/places');
     this.cache.deletePrefix('authorized:/api/v1/places');
+  }
+
+  private invalidateManagement(placeId: string, resource: string): void {
+    this.cache.deletePrefix(`place:${placeId}:${resource}`);
+    this.cache.deletePrefix(`place:${placeId}:context`);
   }
 
   private async setTopicFlag(placeId: string, topicId: string, flag: 'follow' | 'save', enabled: boolean): Promise<void> {

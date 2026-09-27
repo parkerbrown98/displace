@@ -109,6 +109,46 @@ describe('PlaceClient', () => {
       ['/api/v1/places/place/topics/topic/pin', { method: 'POST' }],
     ]);
   });
+
+  it('maps member, invitation, and role administration to scoped endpoints', async () => {
+    const authenticatedRequest = vi.fn().mockResolvedValue({ id: 'result', token: 'invite-token' });
+    const client = new PlaceClient(createAuth(stubApi(), authenticatedRequest, true), new ReadCache());
+
+    await client.createInvite('place/id', { email: 'member@example.com', roleId: 'role/id' });
+    await client.approveMember('place/id', 'member/id');
+    await client.assignRole('place/id', 'member/id', 'role/id');
+    await client.removeRole('place/id', 'member/id', 'role/id');
+    await client.transferOwnership('place/id', 'user/id');
+    await client.removeMember('place/id', 'member/id');
+
+    expect(authenticatedRequest.mock.calls).toEqual([
+      ['/api/v1/places/place%2Fid/invites', { body: { email: 'member@example.com', expiresInHours: 168, maxUses: 1, roleId: 'role/id' }, method: 'POST' }],
+      ['/api/v1/places/place%2Fid/members/member%2Fid/approve', { method: 'POST' }],
+      ['/api/v1/places/place%2Fid/members/member%2Fid/roles', { body: { roleId: 'role/id' }, method: 'POST' }],
+      ['/api/v1/places/place%2Fid/members/member%2Fid/roles/role%2Fid', { method: 'DELETE' }],
+      ['/api/v1/places/place%2Fid/ownership', { body: { userId: 'user/id' }, method: 'POST' }],
+      ['/api/v1/places/place%2Fid/members/member%2Fid', { method: 'DELETE' }],
+    ]);
+  });
+
+  it('maps forum, chat, and voice settings mutations to scoped endpoints', async () => {
+    const authenticatedRequest = vi.fn().mockResolvedValue({ id: 'result' });
+    const client = new PlaceClient(createAuth(stubApi(), authenticatedRequest, true), new ReadCache());
+
+    await client.createForumGroup('place', { description: '', name: 'Guides', position: 0 });
+    await client.createForum('place', { groupId: 'group', name: 'General', position: 0, visibility: 'members' });
+    await client.createForumTag('place', { color: '#123456', name: 'Help', slug: 'help' });
+    await client.createChatChannel('place', { name: 'Lobby', position: 0, slug: 'lobby', visibility: 'members' });
+    await client.createVoiceRoom('place', { capacity: 25, listenPermission: 'voice.join', name: 'Standup', position: 0, slug: 'standup', speakPermission: 'voice.join' });
+
+    expect(authenticatedRequest.mock.calls).toEqual([
+      ['/api/v1/places/place/forum-groups', { body: { description: '', name: 'Guides', position: 0 }, method: 'POST' }],
+      ['/api/v1/places/place/forums', { body: { groupId: 'group', name: 'General', position: 0, visibility: 'members' }, method: 'POST' }],
+      ['/api/v1/places/place/forum-tags', { body: { color: '#123456', name: 'Help', slug: 'help' }, method: 'POST' }],
+      ['/api/v1/places/place/chat/channels', { body: { name: 'Lobby', position: 0, slug: 'lobby', visibility: 'members' }, method: 'POST' }],
+      ['/api/v1/places/place/voice/rooms', { body: { capacity: 25, listenPermission: 'voice.join', name: 'Standup', position: 0, slug: 'standup', speakPermission: 'voice.join' }, method: 'POST' }],
+    ]);
+  });
 });
 
 function createAuth(api: DesktopApi, authenticatedRequest = vi.fn(), authenticated = false) {

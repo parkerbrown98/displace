@@ -12,7 +12,9 @@ import { SessionProvider } from '../features/auth/session-provider';
 import { DiscoverRoute, PlaceRoute, ProfileRoute, SearchRoute } from '../features/places/browse-routes';
 import { CreateTopicRoute } from '../features/forums/create-topic-route';
 import { TopicDiscussionRoute } from '../features/forums/topic-discussion-route';
-import { CreatePlaceRoute, PlaceSettingsRoute } from '../features/places/management-routes';
+import { CreatePlaceRoute } from '../features/places/management-routes';
+import { PlaceMemberRoute, PlaceMembersRoute } from '../features/places/place-members-route';
+import { PlaceSettingsRoute } from '../features/places/place-settings-route';
 import { createNativePlatform, type NativePlatform } from '../lib/platform/native-platform';
 import { PlatformContext } from '../lib/platform/platform-context';
 
@@ -28,9 +30,12 @@ const router = createHashRouter([
       { path: 'places/new', element: <CreatePlaceRoute /> },
       { path: 'places/:placeSlug', element: <PlaceRoute /> },
       { path: 'places/:placeSlug/forums/:forumId', element: <PlaceRoute /> },
+      { path: 'places/:placeSlug/members', element: <PlaceMembersRoute /> },
+      { path: 'places/:placeSlug/members/:memberId', element: <PlaceMemberRoute /> },
       { path: 'places/:placeSlug/topics/new', element: <CreateTopicRoute /> },
       { path: 'places/:placeSlug/topics/:topicId', element: <TopicDiscussionRoute /> },
       { path: 'places/:placeSlug/settings', element: <PlaceSettingsRoute /> },
+      { path: 'places/:placeSlug/settings/:section', element: <PlaceSettingsRoute /> },
       { path: 'members/:handle', element: <ProfileRoute /> },
       { path: 'sign-in', element: <SignInRoute /> },
       { path: 'register', element: <RegisterRoute /> },
