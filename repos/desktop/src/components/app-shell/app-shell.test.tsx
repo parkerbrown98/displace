@@ -9,10 +9,15 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../features/auth/session-provider', () => ({ useSession: mocks.useSession }));
+vi.mock('../../features/notifications/notification-context', () => ({
+  notificationTarget: () => null,
+  useNotifications: () => ({ markRead: vi.fn(), notifications: [], unreadCount: 0 }),
+}));
 vi.mock('../../features/places/use-place-client', () => ({
   usePlaceClient: () => ({ mine: mocks.mine }),
 }));
 vi.mock('../../lib/realtime/connectivity', () => ({ useConnectivity: () => 'connected' }));
+vi.mock('../../lib/realtime/realtime-context', () => ({ useRealtimeState: () => 'connected' }));
 
 describe('AppShell sidebar', () => {
   beforeEach(() => {
@@ -37,7 +42,7 @@ describe('AppShell sidebar', () => {
 
     expect(screen.getByRole('link', { name: 'Create a place' })).toHaveAttribute('href', '/places/new');
     expect(await screen.findByRole('link', { name: /Studio/ })).toHaveClass('active');
-    expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Notifications' })).toHaveAttribute('href', '/notifications');
     expect(screen.queryByText('Connected')).not.toBeInTheDocument();
     expect(mocks.mine).toHaveBeenCalledOnce();
   });

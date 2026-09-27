@@ -71,6 +71,7 @@ export function createNativePlatform(): NativePlatform {
   if (!isTauri()) return new MemoryNativePlatform();
 
   let pendingUpdate: Update | null = null;
+  let notificationPermissionDenied = false;
 
   return {
     beginOidcTransaction: (callbackScheme) => invoke('begin_oidc_transaction', { callbackScheme }),
@@ -111,8 +112,10 @@ export function createNativePlatform(): NativePlatform {
     },
     completeOidcAuthentication: (callbackUrl, callbackScheme, apiOrigin) => invoke('complete_oidc_authentication', { apiOrigin, callbackScheme, callbackUrl }),
     async notify(title, body) {
+      if (notificationPermissionDenied) return false;
       let allowed = await isPermissionGranted();
       if (!allowed) allowed = (await requestPermission()) === 'granted';
+      notificationPermissionDenied = !allowed;
       if (allowed) sendNotification({ title, body });
       return allowed;
     },

@@ -71,6 +71,13 @@ OIDC opens in the system browser and returns only the provider authorization res
 - Native capabilities are restricted to the primary window and the declared deep-link, file-dialog, notification, and updater plugins.
 - Diagnostics contain only application version, platform, architecture, and secure-storage availability. They contain no tokens, account data, message content, paths, or device names.
 
+## Realtime, Chat, and Notifications
+
+- One authenticated Socket.IO connection owns reconnect backoff, token renewal, place/channel subscriptions, presence heartbeats, and resume reconciliation. Screens consume it through `src/lib/realtime`; they do not create sockets.
+- Place members can open `/places/:placeSlug/live` for channel history, cursor pagination, send/edit/delete actions, typing state, and read tracking. Durable writes use REST with client command and idempotency identifiers, while realtime events are deduplicated into the REST state.
+- `/notifications` provides the durable inbox, unread state, cursor pagination, internal routing, desktop-alert consent, privacy-safe previews, and per-channel mute controls. Desktop alerts are disabled by default and are shown only while the application is unfocused.
+- Search supports result-type and authorized-place filters, highlighted server results, opaque cursor pagination, and `Cmd+K` or `Ctrl+K` access from anywhere in the application.
+
 ## Design Direction
 
 The web app defines the shared Displace visual family: warm paper surfaces, ink, teal, teal-soft, coral, mustard, Trebuchet body copy, Georgia display type, restrained borders, compact radii, Lucide icons, and direct product language. Keep these core tokens aligned when either client evolves.

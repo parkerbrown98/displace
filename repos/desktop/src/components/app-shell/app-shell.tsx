@@ -2,9 +2,11 @@ import { Bell, Compass, Home, LogIn, Plus, Search, Settings, WifiOff } from 'luc
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../features/auth/session-provider';
+import { notificationTarget, useNotifications } from '../../features/notifications/notification-context';
 import { usePlaceClient } from '../../features/places/use-place-client';
 import { useRemoteResource } from '../../lib/remote-resource';
 import { useConnectivity } from '../../lib/realtime/connectivity';
+import { useRealtimeState } from '../../lib/realtime/realtime-context';
 
 const navigation = [
   { label: 'Home', path: '/', icon: Home },
@@ -57,15 +59,27 @@ function SidebarPlaces() {
 
 export function AppShell() {
   const connectivity = useConnectivity();
+  const realtimeState = useRealtimeState();
   const location = useLocation();
   const navigate = useNavigate();
   const session = useSession();
+  const inbox = useNotifications();
 
   useEffect(() => {
     if (session.sessionExpired && location.pathname !== '/session-expired') {
       navigate(`/session-expired?returnTo=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
     }
   }, [location.pathname, location.search, navigate, session.sessionExpired]);
+
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'k' || (!event.metaKey && !event.ctrlKey)) return;
+      event.preventDefault();
+      navigate('/search');
+    };
+    window.addEventListener('keydown', openSearch);
+    return () => window.removeEventListener('keydown', openSearch);
+  }, [navigate]);
 
   return (
     <div className="app-shell">
@@ -81,6 +95,9 @@ export function AppShell() {
               <span>{label}</span>
             </NavLink>
           ))}
+          {session.status === 'authenticated' ? <NavLink to="/notifications" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+            <Bell aria-hidden="true" size={18} /><span>Notifications</span>{inbox.unreadCount ? <strong className="nav-count">{inbox.unreadCount > 99 ? '99+' : inbox.unreadCount}</strong> : null}
+          </NavLink> : null}
         </nav>
         <section className="sidebar-places">
           <div className="sidebar-section-heading">
@@ -105,12 +122,17 @@ export function AppShell() {
         </div>
       </main>
       <aside className="context-panel" aria-label="Activity">
-        <h2>Activity</h2>
-        <div className="empty-activity">
+        <div className="activity-heading"><h2>Activity</h2>{session.status === 'authenticated' ? <Link to="/notifications">View all</Link> : null}</div>
+        {inbox.notifications.length ? <ol className="activity-list">{inbox.notifications.slice(0, 4).map((notification) => {
+          const target = notificationTarget(notification);
+          const content = <><strong>{notification.type === 'chat.mention' ? 'Chat mention' : 'New update'}</strong><span>{new Date(notification.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></>;
+          return <li className={notification.readAt ? '' : 'unread'} key={notification.id}>{target ? <Link onClick={() => void inbox.markRead(notification.id)} to={target}>{content}</Link> : <div>{content}</div>}</li>;
+        })}</ol> : <div className="empty-activity">
           <span className="activity-icon"><Bell aria-hidden="true" size={20} /></span>
           <p>No new activity</p>
           <span>Replies and mentions will appear here.</span>
-        </div>
+        </div>}
+        {session.status === 'authenticated' ? <p className={`context-connection ${realtimeState}`}><span aria-hidden="true" />{realtimeState === 'connected' ? 'Live updates connected' : realtimeState === 'offline' ? 'Waiting for network' : 'Reconnecting live updates'}</p> : null}
       </aside>
       <div className="offline-banner" hidden={connectivity === 'connected'} role="status">
         <WifiOff aria-hidden="true" size={16} /> Offline

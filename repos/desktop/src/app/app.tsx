@@ -12,11 +12,15 @@ import { SessionProvider } from '../features/auth/session-provider';
 import { DiscoverRoute, PlaceRoute, ProfileRoute, SearchRoute } from '../features/places/browse-routes';
 import { CreateTopicRoute } from '../features/forums/create-topic-route';
 import { TopicDiscussionRoute } from '../features/forums/topic-discussion-route';
+import { ChatRoute } from '../features/chat/chat-route';
+import { NotificationProvider } from '../features/notifications/notification-context';
+import { NotificationRoute } from '../features/notifications/notification-route';
 import { CreatePlaceRoute } from '../features/places/management-routes';
 import { PlaceMemberRoute, PlaceMembersRoute } from '../features/places/place-members-route';
 import { PlaceSettingsRoute } from '../features/places/place-settings-route';
 import { createNativePlatform, type NativePlatform } from '../lib/platform/native-platform';
 import { PlatformContext } from '../lib/platform/platform-context';
+import { RealtimeProvider } from '../lib/realtime/realtime-context';
 
 const router = createHashRouter([
   {
@@ -27,9 +31,11 @@ const router = createHashRouter([
       { index: true, element: <HomeRoute /> },
       { path: 'discover', element: <DiscoverRoute /> },
       { path: 'search', element: <SearchRoute /> },
+      { path: 'notifications', element: <NotificationRoute /> },
       { path: 'places/new', element: <CreatePlaceRoute /> },
       { path: 'places/:placeSlug', element: <PlaceRoute /> },
       { path: 'places/:placeSlug/forums/:forumId', element: <PlaceRoute /> },
+      { path: 'places/:placeSlug/live', element: <ChatRoute /> },
       { path: 'places/:placeSlug/members', element: <PlaceMembersRoute /> },
       { path: 'places/:placeSlug/members/:memberId', element: <PlaceMemberRoute /> },
       { path: 'places/:placeSlug/topics/new', element: <CreateTopicRoute /> },
@@ -55,8 +61,12 @@ export function App({ config, platform = createNativePlatform(), fetchImplementa
     <PlatformContext value={platform}>
       <FeedbackProvider>
         <SessionProvider client={client}>
-          <a className="skip-link" href="#main-content">Skip to content</a>
-          <RouterProvider router={router} />
+          <RealtimeProvider config={config}>
+            <NotificationProvider>
+              <a className="skip-link" href="#main-content">Skip to content</a>
+              <RouterProvider router={router} />
+            </NotificationProvider>
+          </RealtimeProvider>
         </SessionProvider>
       </FeedbackProvider>
     </PlatformContext>

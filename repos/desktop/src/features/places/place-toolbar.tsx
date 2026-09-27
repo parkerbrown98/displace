@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Place, PlaceContext } from './place-client';
 
-type PlaceSection = 'forums' | 'members' | 'settings';
+type PlaceSection = 'forums' | 'live' | 'members' | 'settings';
 
 const managementPermissions: PlaceContext['viewer']['permissions'][number][] = [
   'place.manage',
@@ -24,6 +24,7 @@ export function PlaceToolbar({ action, active, context, place }: { action?: Reac
     <div className="place-toolbar-end">
       <nav aria-label={`${place.name} navigation`}>
         <PlaceLink active={active === 'forums'} to={`/places/${place.slug}`}>Forums</PlaceLink>
+        {context ? <PlaceLink active={active === 'live'} to={`/places/${place.slug}/live`}>Live</PlaceLink> : null}
         {context ? <PlaceLink active={active === 'members'} to={`/places/${place.slug}/members`}>Members</PlaceLink> : null}
         {showSettings ? <PlaceLink active={active === 'settings'} to={`/places/${place.slug}/settings`}><Settings size={14} />Settings</PlaceLink> : null}
       </nav>

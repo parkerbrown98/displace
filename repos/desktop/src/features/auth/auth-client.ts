@@ -35,6 +35,10 @@ export class NativeAuthClient {
     return this.#user;
   }
 
+  get accessToken(): string | null {
+    return this.#accessToken;
+  }
+
   onSessionInvalidated(listener: () => void): () => void {
     this.#invalidationListeners.add(listener);
     return () => this.#invalidationListeners.delete(listener);
@@ -101,6 +105,11 @@ export class NativeAuthClient {
       this.#refreshRequest = null;
     });
     return this.#refreshRequest;
+  }
+
+  async renewAuthentication(): Promise<NativeAuthentication | null> {
+    this.#accessToken = null;
+    return this.refreshAuthentication();
   }
 
   async forgotPassword(email: string): Promise<MessageResponse> {

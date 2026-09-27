@@ -57,24 +57,27 @@ export function DiscoverRoute() {
 
 export function SearchRoute() {
   const client = usePlaceClient();
+  const session = useSession();
   const navigate = useNavigate();
   const [parameters] = useSearchParams();
   const query = parameters.get('q')?.trim() ?? '';
   const type = parseSearchType(parameters.get('type'));
+  const placeId = parameters.get('placeId') ?? undefined;
   const cursor = parameters.get('cursor') ?? undefined;
-  const resource = useRemoteResource(`search:${parameters}`, () => query.length >= 2 ? client.search({ cursor, query, type }) : Promise.resolve({ items: [] }));
+  const places = useRemoteResource(`search-places:${session.status}`, () => session.status === 'authenticated' ? client.mine() : Promise.resolve({ items: [] }));
+  const resource = useRemoteResource(`search:${parameters}`, () => query.length >= 2 ? client.search({ cursor, placeId, query, type }) : Promise.resolve({ items: [] }));
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    navigate(withQuery('/search', { q: String(form.get('q') ?? ''), type: String(form.get('type') ?? '') }));
+    navigate(withQuery('/search', { placeId: String(form.get('placeId') ?? ''), q: String(form.get('q') ?? ''), type: String(form.get('type') ?? '') }));
   }
 
   return <div className="community-view search-view">
     <header className="compact-page-heading"><span className="eyebrow">Across Displace</span><h2>Search the conversation.</h2><p>Find public communities, topics, and replies without leaving the keyboard.</p></header>
-    <form className="command-bar" onSubmit={submit} role="search"><Search aria-hidden="true" size={19} /><input autoFocus defaultValue={query} minLength={2} name="q" placeholder="Try a topic, place, or phrase" required type="search" /><Select aria-label="Result type" defaultValue={type ?? ''} name="type" options={[{ label: 'Everything', value: '' }, { label: 'Places', value: 'place' }, { label: 'Topics', value: 'topic' }, { label: 'Replies', value: 'post' }]} /><button className="button primary">Search</button></form>
+    <form className="command-bar search-command-bar" onSubmit={submit} role="search"><Search aria-hidden="true" size={19} /><input autoFocus defaultValue={query} minLength={2} name="q" placeholder="Try a topic, place, or phrase" required type="search" /><Select aria-label="Result type" defaultValue={type ?? ''} name="type" options={[{ label: 'Everything', value: '' }, { label: 'Places', value: 'place' }, { label: 'Topics', value: 'topic' }, { label: 'Replies', value: 'post' }]} /><Select aria-label="Search scope" defaultValue={placeId ?? ''} name="placeId" options={[{ label: 'Everywhere', value: '' }, ...(places.state.status === 'ready' ? places.state.data.items.map((place) => ({ label: place.name, value: place.id })) : [])]} /><button className="button primary">Search</button></form>
     {query.length < 2 ? <EmptyContent icon={<Search />} title="Start with a phrase" message="Enter at least two characters to search public content." /> : resource.state.status !== 'ready' ? <ResourceState resource={resource} title="Searching" /> : resource.state.data.items.length ? <div className="search-results">{resource.state.data.items.map((result) => <article className="search-result" key={`${result.type}:${result.postId ?? result.topicId ?? result.placeId}`}><span className="result-icon">{result.type === 'place' ? <MapPin /> : result.type === 'topic' ? <MessageSquareText /> : <FileText />}</span><div><span className="eyebrow">{result.type} · {result.placeSlug}</span><h3><Link to={result.type === 'place' ? `/places/${result.placeSlug}` : `/places/${result.placeSlug}/topics/${result.topicId}`}>{highlight(result.highlights?.title ?? result.title)}</Link></h3><p>{highlight(result.highlights?.text ?? result.text)}</p><time dateTime={result.createdAt}>{formatDate(result.createdAt)}</time></div></article>)}</div> : <EmptyContent icon={<Search />} title="No matches" message="Try a broader phrase or another result type." />}
-    {resource.state.status === 'ready' ? <CursorButton cursor={resource.state.data.nextCursor} path="/search" parameters={{ q: query, type }} /> : null}
+    {resource.state.status === 'ready' ? <CursorButton cursor={resource.state.data.nextCursor} path="/search" parameters={{ placeId, q: query, type }} /> : null}
   </div>;
 }
 

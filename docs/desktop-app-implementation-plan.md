@@ -87,7 +87,7 @@ This plan follows the near-complete server and web implementations. The server's
 
 ### Phase 5: Realtime Chat, Presence, Notifications, and Search Convergence
 
-**Status:** Planned.
+**Status:** Complete.
 
 **Server alignment:** Integrate with completed Socket.IO, durable chat, notification, and search APIs.
 
