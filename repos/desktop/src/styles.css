@@ -49,17 +49,10 @@ button:focus-visible, a:focus-visible { outline: 3px solid #df7b44; outline-offs
 .sidebar-places-note a, .sidebar-places-note button { padding: 0; color: #eff8f5; background: transparent; border: 0; cursor: pointer; font-weight: 700; text-decoration: underline; }
 .sidebar-footer { margin-top: auto; }
 .workspace { min-width: 0; overflow: auto; background-color: var(--paper); background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(29, 41, 40, .025) 32px); }
-.topbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 12px 28px; background: rgba(251, 250, 246, .94); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
-.topbar h1 { margin: 2px 0 0; font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 600; }
 .eyebrow { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
-.topbar-actions { display: flex; align-items: center; gap: 14px; }
-.account-chip { max-width: 180px; overflow: hidden; color: var(--teal); font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.connection-state { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
-.status-dot { width: 7px; height: 7px; background: var(--teal); border-radius: 50%; }
-.status-dot.offline { background: var(--coral); }
 .icon-button { display: grid; width: 34px; height: 34px; padding: 0; place-items: center; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
 .icon-button:hover { background: var(--teal-soft); border-color: var(--line); }
-.route-content { max-width: 980px; margin: 0 auto; padding: 28px; }
+.route-content { width: 100%; padding: 28px; }
 .welcome-band { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 28px 0 32px; border-bottom: 1px solid var(--line); }
 .welcome-band h2 { max-width: 620px; margin: 5px 0 8px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(30px, 4vw, 46px); font-weight: 500; line-height: 1.05; }
 .welcome-band p { margin: 0; color: var(--muted); }
@@ -325,7 +318,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #df7b44; outline-offs
 .profile-view p, .profile-view time { color: var(--muted); font-size: 12px; }
 .profile-view p { margin: 0 0 8px; }
 .place-workspace-page { gap: 20px; }
-.place-toolbar { display: flex; min-height: 66px; align-items: stretch; justify-content: space-between; gap: 24px; padding: 0 4px; border-bottom: 1px solid var(--line); }
+.place-toolbar { position: sticky; z-index: 2; top: 0; display: flex; min-height: 66px; margin: -28px -28px 0; align-items: stretch; justify-content: space-between; gap: 24px; padding: 0 28px; background: rgba(251, 250, 246, .94); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
 .place-toolbar-identity { display: flex; min-width: 0; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
 .place-toolbar-identity > span:last-child { display: grid; min-width: 0; gap: 2px; }
 .place-toolbar-identity strong, .place-toolbar-identity small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

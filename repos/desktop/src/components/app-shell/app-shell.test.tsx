@@ -37,6 +37,8 @@ describe('AppShell sidebar', () => {
 
     expect(screen.getByRole('link', { name: 'Create a place' })).toHaveAttribute('href', '/places/new');
     expect(await screen.findByRole('link', { name: /Studio/ })).toHaveClass('active');
+    expect(screen.queryByRole('button', { name: 'Notifications' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Connected')).not.toBeInTheDocument();
     expect(mocks.mine).toHaveBeenCalledOnce();
   });
 });

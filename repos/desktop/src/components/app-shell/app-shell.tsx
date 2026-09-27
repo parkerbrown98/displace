@@ -60,7 +60,6 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const session = useSession();
-  const title = routeTitle(location.pathname);
 
   useEffect(() => {
     if (session.sessionExpired && location.pathname !== '/session-expired') {
@@ -101,20 +100,6 @@ export function AppShell() {
         </div>
       </aside>
       <main className="workspace" id="main-content">
-        <header className="topbar">
-          <div>
-            <span className="eyebrow">Desktop</span>
-            <h1>{title}</h1>
-          </div>
-          <div className="topbar-actions">
-            <span className="connection-state">
-              <span className={`status-dot ${connectivity}`} />
-              {connectivity === 'connected' ? 'Connected' : 'Offline'}
-            </span>
-            <button className="icon-button" aria-label="Notifications"><Bell aria-hidden="true" size={18} /></button>
-            {session.user ? <span className="account-chip" title={session.user.email}>{session.user.displayName}</span> : null}
-          </div>
-        </header>
         <div className="route-content">
           <Outlet />
         </div>
@@ -132,21 +117,4 @@ export function AppShell() {
       </div>
     </div>
   );
-}
-
-function routeTitle(pathname: string): string {
-  if (pathname === '/settings') return 'Settings';
-  if (pathname === '/discover') return 'Discover';
-  if (pathname === '/search') return 'Search';
-  if (pathname === '/places/new') return 'New place';
-  if (/^\/members\//.test(pathname)) return 'Member profile';
-  if (/\/settings$/.test(pathname)) return 'Place settings';
-  if (/\/topics\//.test(pathname)) return 'Discussion';
-  if (/\/forums\//.test(pathname)) return 'Forum';
-  if (/^\/places\//.test(pathname)) return 'Place';
-  if (pathname.includes('password')) return 'Password recovery';
-  if (pathname === '/register') return 'Registration';
-  if (pathname === '/verify-email') return 'Verification';
-  if (pathname === '/sign-in') return 'Sign in';
-  return 'Home';
 }
