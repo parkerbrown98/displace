@@ -204,6 +204,11 @@ const environmentSchema = z
     REDIS_URL: serviceUrl(['redis:', 'rediss:']).default(
       'redis://localhost:6379',
     ),
+    RATE_LIMIT_IP_PER_MINUTE: z.coerce.number().int().min(10).max(10_000).default(600),
+    RATE_LIMIT_USER_PER_MINUTE: z.coerce.number().int().min(10).max(20_000).default(1_200),
+    RATE_LIMIT_TOKEN_PER_MINUTE: z.coerce.number().int().min(10).max(10_000).default(600),
+    RATE_LIMIT_PLACE_PER_MINUTE: z.coerce.number().int().min(10).max(50_000).default(3_000),
+    RATE_LIMIT_EXPENSIVE_PER_MINUTE: z.coerce.number().int().min(1).max(1_000).default(60),
     S3_ENDPOINT: serviceUrl(['http:', 'https:']).default(
       'http://localhost:9000',
     ),

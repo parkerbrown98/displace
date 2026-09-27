@@ -19,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/authentication.guard.js';
@@ -30,36 +31,37 @@ import type {
 import { CurrentPlace } from '../platform/authorization/current-place.decorator.js';
 import { CurrentUser } from '../platform/authorization/current-user.decorator.js';
 import { PlaceContextGuard } from '../places/place-context.guard.js';
-import { CreateVoiceRoomDto, UpdateVoiceRoomDto } from './voice.dto.js';
+import { CreateVoiceRoomDto, UpdateVoiceRoomDto, VoiceJoinDto, VoiceRoomDto } from './voice.dto.js';
 import { VoiceService } from './voice.service.js';
 
 @ApiTags('Voice')
 @ApiBearerAuth()
+@ApiParam({ name: 'placeId', format: 'uuid' })
 @Controller({ path: 'places/:placeId/voice', version: '1' })
 @UseGuards(AuthenticatedGuard, PlaceContextGuard)
 export class VoiceController {
   constructor(private readonly voice: VoiceService) {}
 
   @Get('rooms')
-  @ApiOkResponse()
+  @ApiOkResponse({ isArray: true, type: VoiceRoomDto })
   listRooms(@CurrentPlace() place: AuthorizedPlace, @CurrentUser() user: AuthenticatedUser) {
     return this.voice.listRooms(place.id, user.id);
   }
 
   @Get('rooms/:roomId')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: VoiceRoomDto })
   getRoom(@CurrentPlace() place: AuthorizedPlace, @CurrentUser() user: AuthenticatedUser, @Param('roomId') roomId: string) {
     return this.voice.getRoom(place.id, roomId, user.id);
   }
 
   @Post('rooms')
-  @ApiCreatedResponse()
+  @ApiCreatedResponse({ type: VoiceRoomDto })
   createRoom(@CurrentPlace() place: AuthorizedPlace, @CurrentUser() user: AuthenticatedUser, @Body() input: CreateVoiceRoomDto) {
     return this.voice.createRoom(place.id, user.id, input);
   }
 
   @Patch('rooms/:roomId')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: VoiceRoomDto })
   updateRoom(@CurrentPlace() place: AuthorizedPlace, @CurrentUser() user: AuthenticatedUser, @Param('roomId') roomId: string, @Body() input: UpdateVoiceRoomDto) {
     return this.voice.updateRoom(place.id, roomId, user.id, input);
   }
@@ -73,7 +75,7 @@ export class VoiceController {
 
   @Post('rooms/:roomId/join-token')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse()
+  @ApiOkResponse({ type: VoiceJoinDto })
   createJoinToken(@CurrentPlace() place: AuthorizedPlace, @CurrentUser() user: AuthenticatedUser, @Param('roomId') roomId: string) {
     return this.voice.createJoinToken(place.id, roomId, user.id);
   }

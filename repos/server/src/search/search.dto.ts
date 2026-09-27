@@ -8,7 +8,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum SearchTypeDto {
   Place = 'place',
@@ -43,4 +43,41 @@ export class SearchQueryDto {
   @Max(50)
   @IsOptional()
   limit = 25;
+}
+
+export class SearchHighlightsDto {
+  @ApiPropertyOptional()
+  text?: string;
+  @ApiPropertyOptional()
+  title?: string;
+}
+
+export class SearchResultDto {
+  @ApiProperty({ format: 'date-time' })
+  createdAt: string;
+  @ApiPropertyOptional({ format: 'uuid' })
+  forumId?: string;
+  @ApiPropertyOptional({ type: SearchHighlightsDto })
+  highlights?: SearchHighlightsDto;
+  @ApiProperty({ format: 'uuid' })
+  placeId: string;
+  @ApiProperty()
+  placeSlug: string;
+  @ApiPropertyOptional({ format: 'uuid' })
+  postId?: string;
+  @ApiProperty()
+  text: string;
+  @ApiProperty()
+  title: string;
+  @ApiPropertyOptional({ format: 'uuid' })
+  topicId?: string;
+  @ApiProperty({ enum: SearchTypeDto })
+  type: SearchTypeDto;
+}
+
+export class SearchPageDto {
+  @ApiProperty({ isArray: true, type: SearchResultDto })
+  items: SearchResultDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
 }

@@ -107,7 +107,7 @@ export class CreateReportDto {
   @IsIn(REPORT_REASON_CODES)
   reasonCode: (typeof REPORT_REASON_CODES)[number];
 
-  @ApiPropertyOptional({ maxLength: 4_000 })
+  @ApiPropertyOptional({ maxLength: 4_000, type: String })
   @IsString()
   @MaxLength(4_000)
   @IsOptional()
@@ -224,4 +224,131 @@ export class AccountStatusActionDto {
   @Length(1, 4_000)
   @Matches(/\S/)
   reason: string;
+}
+
+export class ModeratorNoteDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty({ format: 'uuid' })
+  reportId: string;
+  @ApiProperty({ format: 'uuid' })
+  placeId: string;
+  @ApiProperty({ format: 'uuid' })
+  authorUserId: string;
+  @ApiProperty()
+  body: string;
+  @ApiProperty({ format: 'date-time' })
+  createdAt: Date;
+}
+
+export class ModerationActionRecordDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  placeId: string | null;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  reportId: string | null;
+  @ApiProperty({ format: 'uuid' })
+  actorUserId: string;
+  @ApiProperty()
+  targetType: string;
+  @ApiProperty({ format: 'uuid' })
+  targetId: string;
+  @ApiProperty({ enum: ModerationActionDto })
+  action: ModerationActionDto;
+  @ApiProperty({ enum: ACTION_REASON_CODES })
+  reasonCode: (typeof ACTION_REASON_CODES)[number];
+  @ApiProperty()
+  reason: string;
+  @ApiProperty({ additionalProperties: true, type: 'object' })
+  before: Record<string, unknown>;
+  @ApiProperty({ additionalProperties: true, type: 'object' })
+  after: Record<string, unknown>;
+  @ApiProperty({ format: 'date-time' })
+  createdAt: Date;
+}
+
+export class ModerationReportDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty({ format: 'uuid' })
+  placeId: string;
+  @ApiProperty({ format: 'uuid' })
+  reporterUserId: string;
+  @ApiProperty({ enum: ReportTargetTypeDto })
+  targetType: ReportTargetTypeDto;
+  @ApiProperty({ format: 'uuid' })
+  targetId: string;
+  @ApiProperty({ enum: REPORT_REASON_CODES })
+  reasonCode: (typeof REPORT_REASON_CODES)[number];
+  @ApiProperty()
+  details: string;
+  @ApiProperty({ additionalProperties: true, type: 'object' })
+  evidence: Record<string, unknown>;
+  @ApiProperty({ enum: ReportStatusDto })
+  status: ReportStatusDto;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  assignedToUserId: string | null;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  resolvedByUserId: string | null;
+  @ApiProperty({ nullable: true, type: String })
+  resolution: string | null;
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
+  resolvedAt: Date | null;
+  @ApiProperty({ format: 'date-time' })
+  createdAt: Date;
+  @ApiProperty({ format: 'date-time' })
+  updatedAt: Date;
+}
+
+export class ModerationReportDetailDto extends ModerationReportDto {
+  @ApiProperty({ isArray: true, type: ModerationActionRecordDto })
+  actions: ModerationActionRecordDto[];
+  @ApiProperty({ isArray: true, type: ModeratorNoteDto })
+  notes: ModeratorNoteDto[];
+}
+
+export class ModerationReportPageDto {
+  @ApiProperty({ isArray: true, type: ModerationReportDto })
+  items: ModerationReportDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
+}
+
+export class ModerationActionResultDto {
+  @ApiProperty({ format: 'uuid' })
+  actionId: string;
+  @ApiPropertyOptional({ format: 'uuid' })
+  targetUserId?: string;
+}
+
+export class BulkModerationActionResultDto {
+  @ApiProperty({ isArray: true, type: ModerationActionResultDto })
+  items: ModerationActionResultDto[];
+}
+
+export class InstanceSettingsDto {
+  @ApiProperty()
+  id: number;
+  @ApiProperty({ enum: RegistrationModeDto })
+  registrationMode: RegistrationModeDto;
+  @ApiProperty()
+  singlePlaceMode: boolean;
+  @ApiProperty({ additionalProperties: true, type: 'object' })
+  settings: Record<string, unknown>;
+  @ApiProperty({ format: 'date-time' })
+  createdAt: Date;
+  @ApiProperty({ format: 'date-time' })
+  updatedAt: Date;
+  @ApiPropertyOptional()
+  bootstrapAdminConfigured?: boolean;
+  @ApiPropertyOptional()
+  secretsManagedExternally?: boolean;
+}
+
+export class AccountStatusDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty({ enum: ['active', 'suspended'] })
+  status: 'active' | 'suspended';
 }

@@ -1,41 +1,8 @@
-export interface UserProfile {
-  id: string;
-  handle: string;
-  displayName: string;
-  email: string;
-  emailVerified: boolean;
-  isInstanceAdmin: boolean;
-}
+import type { components } from '@displace/api-client';
 
-export interface Authentication {
-  accessToken: string;
-  csrfToken?: string;
-  expiresInSeconds: number;
-  user: UserProfile;
-}
-
-export interface AccountSession {
-  id: string;
-  createdAt: string;
-  expiresAt: string;
-  lastSeenAt: string;
-  ipAddress: string | null;
-  userAgent: string | null;
-  current: boolean;
-}
-
-export interface RegisterInput {
-  displayName: string;
-  email: string;
-  handle: string;
-  password: string;
-}
-
-export interface SignInInput {
-  identifier: string;
-  password: string;
-}
-
-export interface MessageResponse {
-  message: string;
-}
+export type UserProfile = components['schemas']['UserProfileDto'];
+export type Authentication = components['schemas']['AuthenticationDto'];
+export type AccountSession = components['schemas']['SessionDto'];
+export type RegisterInput = components['schemas']['RegisterDto'];
+export type SignInInput = Pick<components['schemas']['LoginDto'], 'identifier' | 'password'>;
+export type MessageResponse = components['schemas']['MessageDto'];

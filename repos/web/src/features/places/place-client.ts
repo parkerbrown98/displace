@@ -107,7 +107,11 @@ export async function listPlaceInvites(placeId: string): Promise<PlaceInvitePage
 }
 
 export async function createPlaceInvite(placeId: string, input: { email?: string; roleId?: string }): Promise<PlaceInviteContract> {
-  return authenticatedMutation<PlaceInviteContract>(`/places/${encodeURIComponent(placeId)}/invites`, { body: { ...input, expiresInHours: 168, maxUses: 1 }, method: "POST" });
+  const issued = await authenticatedMutation<import('@displace/api-client').components['schemas']['InviteDto']>(`/places/${encodeURIComponent(placeId)}/invites`, { body: { ...input, expiresInHours: 168, maxUses: 1 }, method: "POST" });
+  const summaries = await listPlaceInvites(placeId);
+  const summary = summaries.items.find((invite) => invite.id === issued.id);
+  if (!summary) throw new Error("The created invitation was not returned by the server.");
+  return { ...summary, token: issued.token };
 }
 
 export async function revokePlaceInvite(placeId: string, inviteId: string): Promise<void> {

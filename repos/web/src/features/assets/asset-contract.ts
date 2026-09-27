@@ -1,36 +1,11 @@
-export type AssetStatus = "quarantined" | "processing" | "ready" | "rejected";
+import type { components } from '@displace/api-client';
 
-export interface AssetContract {
-  createdAt: string;
-  declaredMimeType: string;
-  detectedMimeType: string | null;
-  id: string;
-  originalFileName: string;
-  sizeBytes: number;
-  status: AssetStatus;
-}
-
-export interface UploadIntentContract {
-  expiresAt: string;
-  id: string;
-  requiredHeaders: Record<string, string>;
-  uploadUrl: string;
-}
-
-export interface AssetDownloadContract {
-  expiresInSeconds: number;
-  url: string;
-}
-
-export interface AssetReferenceContract {
-  assetId: string;
-  kind: string;
-}
-
-export interface CurrentAssetReferenceContract {
-  assetId: string | null;
-  kind: string;
-}
+export type AssetContract = components['schemas']['AssetDto'];
+export type AssetStatus = AssetContract['status'];
+export type UploadIntentContract = components['schemas']['UploadIntentDto'];
+export type AssetDownloadContract = components['schemas']['AssetDownloadDto'];
+export type AssetReferenceContract = components['schemas']['AssetReferenceDto'];
+export type CurrentAssetReferenceContract = components['schemas']['CurrentAssetReferenceDto'];
 
 export type UploadStage = "requesting" | "uploading" | "processing" | "ready";
 

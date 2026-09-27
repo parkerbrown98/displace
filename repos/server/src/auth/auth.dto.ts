@@ -181,10 +181,10 @@ export class SessionDto {
   @ApiProperty({ format: 'date-time' })
   lastSeenAt: Date;
 
-  @ApiPropertyOptional()
+  @ApiProperty({ nullable: true, type: String })
   ipAddress: string | null;
 
-  @ApiPropertyOptional()
+  @ApiProperty({ nullable: true, type: String })
   userAgent: string | null;
 
   @ApiProperty()

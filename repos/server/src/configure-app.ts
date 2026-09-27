@@ -9,13 +9,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { AppEnvironment } from './config/environment.js';
 import { ProblemDetailsDto } from './platform/http/problem-details.dto.js';
 import { ProblemDetailsFilter } from './platform/http/problem-details.filter.js';
 
-export async function configureApp(app: NestFastifyApplication): Promise<void> {
+export async function configureApp(app: NestFastifyApplication): Promise<OpenAPIObject> {
   const config = app.get(ConfigService<AppEnvironment, true>);
   const logger = app.get(Logger);
 
@@ -111,12 +111,19 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
     .setDescription('The public API for Displace communities and clients.')
     .setVersion('1.0')
     .addServer(config.get('PUBLIC_URL', { infer: true }).toString())
+    .addTag('Authentication', 'Public identity and session operations.')
+    .addTag('Places', 'Public discovery and member place operations.')
+    .addTag('Forums', 'Public and member discussion operations.')
+    .addTag('Search', 'Authorization-filtered public and member search.')
+    .addTag('Developer API', 'Personal access token management.')
+    .addTag('Moderation', 'Place moderator operations.')
+    .addTag('Instance administration', 'Instance administrator operations.')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Short-lived access token.',
+        bearerFormat: 'JWT or PAT',
+        description: 'Short-lived session JWT or a scoped personal access token beginning with dsp_.',
       },
       'bearer',
     )
@@ -163,6 +170,30 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
   const openApiDocument = SwaggerModule.createDocument(app, openApiConfig, {
     extraModels: [ProblemDetailsDto],
   });
+  openApiDocument.security = [];
+  declarePathParameters(openApiDocument);
 
   SwaggerModule.setup('api/docs', app, openApiDocument);
+  return openApiDocument;
+}
+
+function declarePathParameters(document: OpenAPIObject): void {
+  for (const [path, pathItem] of Object.entries(document.paths)) {
+    const names = [...path.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]!);
+    for (const name of names) {
+      const declared = pathItem.parameters?.some(
+        (parameter) => 'name' in parameter && parameter.name === name,
+      );
+      if (declared) continue;
+      pathItem.parameters = [
+        ...(pathItem.parameters ?? []),
+        {
+          in: 'path',
+          name,
+          required: true,
+          schema: { type: 'string' },
+        },
+      ];
+    }
+  }
 }

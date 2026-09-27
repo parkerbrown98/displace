@@ -136,6 +136,8 @@ This plan is intentionally coordinated with the [server API implementation plan]
 
 ### Phase 11: Generated Client, Developer Surface, and Release Quality
 
+**Status:** Complete as of 2026-09-27.
+
 **Server alignment:** Integrate with API phase 11 and prepare jointly for phase 12.
 
 1. Replace interim API DTOs and mocks with the versioned generated TypeScript package from `repos/shared`. Keep adapters so generated transport types do not become the UI component contract.

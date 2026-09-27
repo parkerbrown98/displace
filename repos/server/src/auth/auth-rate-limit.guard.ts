@@ -32,6 +32,7 @@ export const AuthRateLimit = (action: string, identifierField?: string) =>
 
 @Injectable()
 export class AuthRateLimitGuard implements CanActivate, OnApplicationShutdown {
+  private connection?: Promise<void>;
   private readonly redis: Redis;
 
   constructor(
@@ -79,9 +80,7 @@ export class AuthRateLimitGuard implements CanActivate, OnApplicationShutdown {
     }
 
     try {
-      if (this.redis.status === 'wait') {
-        await this.redis.connect();
-      }
+      await this.ensureConnected();
       const transaction = this.redis.multi();
       for (const key of keys) {
         transaction.incr(key).expire(key, WINDOW_SECONDS);
@@ -115,5 +114,29 @@ export class AuthRateLimitGuard implements CanActivate, OnApplicationShutdown {
     if (this.redis.status !== 'end') {
       this.redis.disconnect();
     }
+  }
+
+  private async ensureConnected(): Promise<void> {
+    if (this.redis.status === 'ready') return;
+    if (!this.connection) {
+      const pending = this.redis.status === 'wait' || this.redis.status === 'end'
+        ? this.redis.connect()
+        : new Promise<void>((resolve, reject) => {
+            const ready = () => {
+              this.redis.off('error', failed);
+              resolve();
+            };
+            const failed = (error: Error) => {
+              this.redis.off('ready', ready);
+              reject(error);
+            };
+            this.redis.once('ready', ready);
+            this.redis.once('error', failed);
+          });
+      this.connection = pending.finally(() => {
+        this.connection = undefined;
+      });
+    }
+    await this.connection;
   }
 }

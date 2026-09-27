@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   SetMetadata,
   UnauthorizedException,
@@ -9,6 +10,10 @@ import { Reflector } from '@nestjs/core';
 import type { AuthorizedRequest } from '../platform/authorization/authorized-request.js';
 import { AccessTokenService } from './access-token.service.js';
 import { AuthService } from './auth.service.js';
+import { DeveloperApiService } from '../developer-api/developer-api.service.js';
+import { ApiTokenScope } from '../developer-api/developer-api.dto.js';
+import { REQUIRED_PERMISSIONS } from '../platform/authorization/require-permissions.decorator.js';
+import { REQUIRED_API_TOKEN_SCOPES } from './require-api-token-scopes.decorator.js';
 
 const EXTERNAL_AUTHORIZATION = Symbol('external-authorization');
 
@@ -19,6 +24,7 @@ export class AccessAuthenticationGuard implements CanActivate {
   constructor(
     private readonly accessTokens: AccessTokenService,
     private readonly authService: AuthService,
+    private readonly developerApi: DeveloperApiService,
     private readonly reflector: Reflector,
   ) {}
 
@@ -45,6 +51,20 @@ export class AccessAuthenticationGuard implements CanActivate {
       throw new UnauthorizedException('The authorization header is invalid.');
     }
 
+    if (token.startsWith('dsp_')) {
+      const authentication = await this.developerApi.authenticate(token);
+      this.requireApiTokenScope(request.method, authentication.scopes, context);
+      request.authorization = {
+        permissions: new Set(),
+        user: {
+          apiTokenId: authentication.id,
+          apiTokenScopes: authentication.scopes,
+          id: authentication.userId,
+        },
+      };
+      return true;
+    }
+
     const claims = await this.accessTokens.verify(token);
     if (
       !(await this.authService.isSessionActive(claims.sessionId, claims.userId))
@@ -58,6 +78,34 @@ export class AccessAuthenticationGuard implements CanActivate {
       user: { id: claims.userId, sessionId: claims.sessionId },
     };
     return true;
+  }
+
+  private requireApiTokenScope(
+    method: string,
+    scopes: ReadonlySet<string>,
+    context: ExecutionContext,
+  ): void {
+    const required = new Set<ApiTokenScope>([
+      ['GET', 'HEAD', 'OPTIONS'].includes(method)
+        ? ApiTokenScope.Read
+        : ApiTokenScope.Write,
+      ...(this.reflector.getAllAndOverride<ApiTokenScope[]>(
+        REQUIRED_API_TOKEN_SCOPES,
+        [context.getHandler(), context.getClass()],
+      ) ?? []),
+    ]);
+    const permissions = this.reflector.getAllAndOverride<string[]>(
+      REQUIRED_PERMISSIONS,
+      [context.getHandler(), context.getClass()],
+    );
+    if (permissions?.some((permission) => permission.startsWith('moderation.'))) {
+      required.add(ApiTokenScope.Moderation);
+    }
+    for (const scope of required) {
+      if (!scopes.has(scope)) {
+        throw new ForbiddenException(`The API token requires the ${scope} scope.`);
+      }
+    }
   }
 }
 

@@ -1,0 +1,36 @@
+name: API contract
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: |
+            repos/server/pnpm-lock.yaml
+            repos/shared/pnpm-lock.yaml
+            repos/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: repos/server
+      - run: pnpm install --frozen-lockfile
+        working-directory: repos/shared
+      - run: pnpm install --frozen-lockfile
+        working-directory: repos/web
+      - run: pnpm openapi:generate
+        working-directory: repos/server
+      - run: pnpm openapi:validate
+        working-directory: repos/server
+      - run: git diff --exit-code -- repos/shared
+      - run: pnpm typecheck
+        working-directory: repos/web

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AccountSettingsSectionContent } from "@/features/auth/account-settings";
 import type { AccountSettingsSection } from "@/lib/routes";
 
-const sections: AccountSettingsSection[] = ["email", "password", "profile", "profile-image", "sessions"];
+const sections: AccountSettingsSection[] = ["email", "password", "profile", "profile-image", "sessions", "tokens"];
 
 export default async function AccountSettingsSectionPage({ params }: PageProps<"/settings/[section]">) {
   const { section } = await params;

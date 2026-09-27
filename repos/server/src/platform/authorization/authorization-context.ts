@@ -1,4 +1,6 @@
 export interface AuthenticatedUser {
+  apiTokenId?: string;
+  apiTokenScopes?: ReadonlySet<string>;
   id: string;
   sessionId?: string;
 }

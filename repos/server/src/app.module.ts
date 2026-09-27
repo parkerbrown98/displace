@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { ConfigurationModule } from './config/configuration.module.js';
 import { DatabaseModule } from './database/database.module.js';
+import { DeveloperApiModule } from './developer-api/developer-api.module.js';
 import { ForumsModule } from './forums/forums.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
@@ -21,6 +22,7 @@ import { VoiceModule } from './voice/voice.module.js';
     DatabaseModule,
     PlatformModule,
     AuthModule,
+    DeveloperApiModule,
     PlacesModule,
     ChatModule,
     AssetsModule,

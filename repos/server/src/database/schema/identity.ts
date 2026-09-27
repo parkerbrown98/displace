@@ -195,3 +195,51 @@ export const authTokens = pgTable(
     ),
   ],
 );
+
+export const personalAccessTokens = pgTable(
+  'personal_access_tokens',
+  {
+    id: uuid('id').primaryKey().default(uuidV7Default),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    tokenPrefix: text('token_prefix').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    scopes: text('scopes').array().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('personal_access_tokens_token_hash_unique').on(table.tokenHash),
+    index('personal_access_tokens_user_id_created_at_id_idx').on(
+      table.userId,
+      table.createdAt,
+      table.id,
+    ),
+    check(
+      'personal_access_tokens_name_length_check',
+      sql`char_length(btrim(${table.name})) between 1 and 100`,
+    ),
+    check(
+      'personal_access_tokens_prefix_length_check',
+      sql`char_length(${table.tokenPrefix}) between 8 and 24`,
+    ),
+    check(
+      'personal_access_tokens_scopes_check',
+      sql`cardinality(${table.scopes}) between 1 and 4 and ${table.scopes} <@ array['read', 'write', 'moderation', 'administration']::text[]`,
+    ),
+    check(
+      'personal_access_tokens_expiry_check',
+      sql`${table.expiresAt} > ${table.createdAt}`,
+    ),
+    check(
+      'personal_access_tokens_revoked_at_check',
+      sql`${table.revokedAt} is null or ${table.revokedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);

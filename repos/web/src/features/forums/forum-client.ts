@@ -7,7 +7,7 @@ import type {
   PostContract,
   TopicContract,
 } from "@/features/public-content/public-contracts";
-import type { PostRevisionContract, RichTextDocumentContract, SavedPageContract, SavedPostContract, SavedTopicContract, TopicViewerStateContract } from "./forum-contract";
+import type { PostRevisionContract, RichTextDocumentContract, SavedPostPageContract, SavedTopicPageContract, TopicViewerStateContract } from "./forum-contract";
 
 const placePath = (placeId: string) => `/places/${encodeURIComponent(placeId)}`;
 const idempotencyHeaders = () => ({ "Idempotency-Key": crypto.randomUUID() });
@@ -149,10 +149,10 @@ export function setTopicPin(placeId: string, topicId: string, enabled: boolean):
   return authenticatedMutation(`${placePath(placeId)}/topics/${encodeURIComponent(topicId)}/pin`, { method: enabled ? "POST" : "DELETE" });
 }
 
-export function listSavedTopics(cursor?: string): Promise<SavedPageContract<SavedTopicContract>> {
+export function listSavedTopics(cursor?: string): Promise<SavedTopicPageContract> {
   return authenticatedRead(`/saved/topics${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`);
 }
 
-export function listSavedPosts(cursor?: string): Promise<SavedPageContract<SavedPostContract>> {
+export function listSavedPosts(cursor?: string): Promise<SavedPostPageContract> {
   return authenticatedRead(`/saved/posts${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`);
 }

@@ -5,10 +5,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ProblemDetailsDto } from '../platform/http/problem-details.dto.js';
+import { SkipRateLimit } from '../platform/http/rate-limit.guard.js';
 import { LivenessDto, ReadinessDto } from './health.dto.js';
 import { HealthService } from './health.service.js';
 
 @ApiTags('Health')
+@SkipRateLimit()
 @Controller({ path: 'health', version: '1' })
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}

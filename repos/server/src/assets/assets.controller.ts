@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/authentication.guard.js';
@@ -55,6 +56,7 @@ enum PlaceImageKind {
 }
 
 @ApiTags('Public assets')
+@ApiParam({ name: 'placeId', format: 'uuid' })
 @Controller({ path: 'public/places/:placeId/images', version: '1' })
 export class PublicPlaceImagesController {
   constructor(
@@ -118,6 +120,7 @@ export class PublicPlaceImagesController {
 
 @ApiTags('Assets')
 @ApiBearerAuth()
+@ApiParam({ name: 'placeId', format: 'uuid' })
 @Controller({ path: 'places/:placeId/assets', version: '1' })
 @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
 export class AssetsController {
@@ -189,7 +192,7 @@ export class AssetsController {
     return this.assets.setPlaceImage(place.id, kind, input.assetId);
   }
 
-  @Get(':assetId/download')
+  @Get('downloads/:assetId')
   @RequirePermissions('upload.read')
   @ApiOkResponse({ type: AssetDownloadDto })
   createDownloadUrl(

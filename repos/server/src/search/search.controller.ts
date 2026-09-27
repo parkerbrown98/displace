@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { SearchQueryDto } from './search.dto.js';
+import { ExpensiveOperation } from '../platform/http/rate-limit.guard.js';
+import { SearchPageDto, SearchQueryDto } from './search.dto.js';
 import { SearchService } from './search.service.js';
 
 @ApiTags('Search')
@@ -9,7 +10,8 @@ export class SearchController {
   constructor(private readonly search: SearchService) {}
 
   @Get()
-  @ApiOkResponse()
+  @ExpensiveOperation()
+  @ApiOkResponse({ type: SearchPageDto })
   searchContent(@Query() query: SearchQueryDto) {
     return this.search.search(query);
   }

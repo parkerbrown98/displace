@@ -15,6 +15,7 @@ import { routes, type AccountSettingsSection } from "@/lib/routes";
 import type { AccountSession, UserProfile } from "./auth-contracts";
 import { changeEmail, changePassword, listSessions, revokeSession, updateProfile } from "./auth-client";
 import { authErrorMessage } from "./auth-error-message";
+import { ApiTokenSettings } from "./api-token-settings";
 import { useSession } from "./session-provider";
 
 interface AccountSettingsWorkspace {
@@ -30,6 +31,7 @@ const accountSettingsSections: Array<{ label: string; section: AccountSettingsSe
   { label: "Email", section: "email" },
   { label: "Password", section: "password" },
   { label: "Sessions", section: "sessions" },
+  { label: "API tokens", section: "tokens" },
 ];
 
 export function AccountSettingsLayout({ children }: { children: ReactNode }) {
@@ -80,6 +82,7 @@ export function AccountSettingsSectionContent({ section }: { section: AccountSet
     case "email": return <EmailSettings email={workspace.user.email} verified={workspace.user.emailVerified} />;
     case "password": return <PasswordSettings />;
     case "sessions": return <SessionSettings />;
+    case "tokens": return <ApiTokenSettings />;
   }
 }
 

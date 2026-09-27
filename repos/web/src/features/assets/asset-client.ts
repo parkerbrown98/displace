@@ -40,7 +40,7 @@ export function getAssetDownload(
   assetId: string,
 ): Promise<AssetDownloadContract> {
   return authenticatedRead(
-    `${assetPath(placeId)}/${encodeURIComponent(assetId)}/download`,
+    `${assetPath(placeId)}/downloads/${encodeURIComponent(assetId)}`,
   );
 }
 

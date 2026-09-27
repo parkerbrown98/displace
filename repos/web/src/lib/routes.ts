@@ -1,5 +1,5 @@
 export type PlaceSettingsSection = "archive" | "chat" | "forums" | "identity" | "preferences" | "roles" | "voice";
-export type AccountSettingsSection = "email" | "password" | "profile" | "profile-image" | "sessions";
+export type AccountSettingsSection = "email" | "password" | "profile" | "profile-image" | "sessions" | "tokens";
 
 export const routes = {
   home: "/",

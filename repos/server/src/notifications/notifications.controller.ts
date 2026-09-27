@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@ne
 import { AuthenticatedGuard } from '../auth/authentication.guard.js';
 import type { AuthenticatedUser } from '../platform/authorization/authorization-context.js';
 import { CurrentUser } from '../platform/authorization/current-user.decorator.js';
-import { NotificationCursorQueryDto } from './notifications.dto.js';
+import { NotificationCursorQueryDto, NotificationDto, NotificationPageDto } from './notifications.dto.js';
 import { NotificationsService } from './notifications.service.js';
 
 @ApiTags('Notifications')
@@ -14,13 +14,13 @@ export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
 
   @Get()
-  @ApiOkResponse()
+  @ApiOkResponse({ type: NotificationPageDto })
   list(@CurrentUser() user: AuthenticatedUser, @Query() query: NotificationCursorQueryDto) {
     return this.notifications.list(user.id, query.cursor, query.limit);
   }
 
   @Patch(':notificationId/read')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: NotificationDto })
   markRead(@CurrentUser() user: AuthenticatedUser, @Param('notificationId') notificationId: string) {
     return this.notifications.markRead(user.id, notificationId);
   }

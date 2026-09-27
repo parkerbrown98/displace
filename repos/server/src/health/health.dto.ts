@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiExtraModels, ApiProperty, getSchemaPath } from '@nestjs/swagger';
 
 export class LivenessDto {
   @ApiProperty({ example: 'ok' })
@@ -16,6 +16,7 @@ export class DependencyStatusDto {
   latencyMs!: number;
 }
 
+@ApiExtraModels(DependencyStatusDto)
 export class ReadinessDto {
   @ApiProperty({ example: 'ready' })
   status!: 'ready';
@@ -24,7 +25,8 @@ export class ReadinessDto {
   timestamp!: string;
 
   @ApiProperty({
-    additionalProperties: { $ref: '#/components/schemas/DependencyStatusDto' },
+    type: 'object',
+    additionalProperties: { $ref: getSchemaPath(DependencyStatusDto) },
   })
   dependencies!: Record<string, DependencyStatusDto>;
 }

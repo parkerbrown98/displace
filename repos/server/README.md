@@ -42,6 +42,8 @@ The `/api/v1/auth` API provides registration and email verification, login, refr
 
 Browser clients use the signed HttpOnly `displace_session` cookie and must echo the `displace_csrf` cookie in `X-CSRF-Token` for cookie-based refresh and logout. Native clients set `refreshTokenDelivery` to `response_body`, store the returned refresh token in secure OS storage, and submit it in the refresh request body.
 
+Authenticated sessions manage personal access tokens at `/api/v1/developer/tokens`. Tokens are stored only as hashes, expire within 366 days, and expose their secret only when created or rotated. The `read` and `write` scopes gate HTTP methods; `moderation` and `administration` additionally gate privileged operations without replacing the account's normal permission checks. PATs cannot create, rotate, list, or revoke other PATs.
+
 Run the worker alongside the API to deliver verification and password-reset mail:
 
 ```bash
@@ -80,7 +82,7 @@ pnpm search:reindex
 
 ## Uploads And Media
 
-Members with `upload.create` request a short-lived URL from `POST /api/v1/places/:placeId/assets/upload-intents`, upload directly to private S3-compatible storage with the returned required headers, then call `POST /api/v1/places/:placeId/assets/upload-intents/:intentId/complete`. Completion verifies object size, MIME declaration, and intent metadata before creating a quarantined asset and enqueueing processing. Members with `upload.read` can poll `GET /api/v1/places/:placeId/assets/:assetId` for processing status and obtain a short-lived download URL from `GET /api/v1/places/:placeId/assets/:assetId/download` once it is ready.
+Members with `upload.create` request a short-lived URL from `POST /api/v1/places/:placeId/assets/upload-intents`, upload directly to private S3-compatible storage with the returned required headers, then call `POST /api/v1/places/:placeId/assets/upload-intents/:intentId/complete`. Completion verifies object size, MIME declaration, and intent metadata before creating a quarantined asset and enqueueing processing. Members with `upload.read` can poll `GET /api/v1/places/:placeId/assets/:assetId` for processing status and obtain a short-lived download URL from `GET /api/v1/places/:placeId/assets/downloads/:assetId` once it is ready.
 
 The worker sniffs file contents, optionally scans them through `MALWARE_SCANNER_URL`, rejects MIME mismatches, re-encodes JPEG/PNG/WebP originals without metadata, and creates bounded 320px and 1280px WebP variants. The scanner receives the object as `application/octet-stream` and returns JSON shaped as `{ "clean": boolean }`; set `MALWARE_SCANNER_REQUIRED=true` to fail startup unless it is configured. Expired upload intents and orphan objects are cleaned hourly. `S3_ENDPOINT` is the internal API/worker endpoint while `S3_PUBLIC_ENDPOINT` is embedded in client-facing signed URLs. The root `.env.example` documents MIME, file-size, per-user, per-place, URL lifetime, image pixel, scanner, and storage settings.
 
@@ -143,9 +145,15 @@ pnpm test
 pnpm test:integration
 pnpm test:e2e
 pnpm test:cov
+pnpm openapi:generate
+pnpm openapi:validate
 ```
 
 Format source and test files with `pnpm format`.
+
+`openapi:generate` writes the checked-in contract and generated TypeScript types to `repos/shared`. `openapi:validate` lints the document, verifies its compatibility-report checksum, and type-checks the shared package. The web build runs the shared contract checks before compiling.
+
+The contract CI job regenerates these artifacts and fails on stale output or changes that remove operations, responses, schemas, properties, enum values, or add required fields. After intentionally versioning or coordinating such a change, run `pnpm openapi:accept` to update the compatibility baseline.
 
 The integration suite starts disposable PostgreSQL 18 and Redis 8 containers. The worker process entrypoints are `pnpm worker:start`, `pnpm worker:dev`, and `pnpm worker:prod`; it processes authentication mail, media, search-index events, expired upload intents, and buffered forum view counters.
 

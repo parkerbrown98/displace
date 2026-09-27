@@ -45,7 +45,7 @@ export class CreateChatChannelDto {
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   slug: string;
 
-  @ApiPropertyOptional({ minimum: 0 })
+  @ApiPropertyOptional({ minimum: 0, type: Number })
   @IsInt()
   @Min(0)
   @IsOptional()
@@ -121,4 +121,80 @@ export class MarkChatReadDto {
   @ApiProperty({ format: 'uuid' })
   @IsUUID('7')
   messageId: string;
+}
+
+export class ChatChannelDto {
+  @ApiProperty()
+  archived: boolean;
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty()
+  name: string;
+  @ApiProperty()
+  position: number;
+  @ApiProperty({ nullable: true, type: String })
+  readPermission: string | null;
+  @ApiProperty({ nullable: true, type: String })
+  sendPermission: string | null;
+  @ApiProperty()
+  slug: string;
+  @ApiProperty({ enum: ChatChannelVisibilityDto })
+  visibility: ChatChannelVisibilityDto;
+}
+
+export class ChatMessageAuthorDto {
+  @ApiProperty()
+  displayName: string;
+  @ApiProperty()
+  handle: string;
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+}
+
+export class ChatMessageDto {
+  @ApiProperty({ type: ChatMessageAuthorDto })
+  author: ChatMessageAuthorDto;
+  @ApiProperty({ nullable: true, type: String })
+  body: string | null;
+  @ApiProperty({ format: 'uuid' })
+  channelId: string;
+  @ApiProperty({ format: 'date-time' })
+  createdAt: Date;
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty()
+  isDeleted: boolean;
+  @ApiProperty({ format: 'date-time' })
+  updatedAt: Date;
+}
+
+export class ChatPermissionsDto {
+  @ApiProperty()
+  canManage: boolean;
+  @ApiProperty()
+  canSend: boolean;
+}
+
+export class ChatMessagePageDto {
+  @ApiProperty({ type: ChatChannelDto })
+  channel: ChatChannelDto;
+  @ApiProperty({ isArray: true, type: ChatMessageDto })
+  items: ChatMessageDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
+  @ApiProperty({ type: ChatPermissionsDto })
+  permissions: ChatPermissionsDto;
+}
+
+export class ChatReadStateDto {
+  @ApiProperty({ format: 'uuid' })
+  placeId: string;
+  @ApiProperty({ format: 'uuid' })
+  channelId: string;
+  @ApiProperty({ format: 'uuid' })
+  userId: string;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  lastReadMessageId: string | null;
+  @ApiProperty({ format: 'date-time' })
+  updatedAt: Date;
 }

@@ -1,19 +1,8 @@
 import { authenticatedMutation, authenticatedRead } from "@/features/auth/auth-client";
+import type { components } from '@displace/api-client';
 
-export interface NotificationContract {
-  createdAt: string;
-  id: string;
-  payload: Record<string, unknown>;
-  placeId: string | null;
-  readAt: string | null;
-  type: string;
-}
-
-export interface NotificationPageContract {
-  items: NotificationContract[];
-  nextCursor?: string;
-  unreadCount: number;
-}
+export type NotificationContract = components['schemas']['NotificationDto'];
+export type NotificationPageContract = components['schemas']['NotificationPageDto'];
 
 export function listNotifications(cursor?: string): Promise<NotificationPageContract> {
   return authenticatedRead(`/notifications${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`);

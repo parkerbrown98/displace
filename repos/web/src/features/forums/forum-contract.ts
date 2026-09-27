@@ -1,3 +1,6 @@
+import type { components } from '@displace/api-client';
+import type { PostContract, TopicContract } from '@/features/public-content/public-contracts';
+
 export interface RichTextMarkContract {
   type: "bold" | "italic" | "strike" | "code" | "link";
   attrs?: { href?: string };
@@ -17,64 +20,20 @@ export interface RichTextDocumentContract {
   content: RichTextNodeContract[];
 }
 
-export interface ForumContract {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-}
-
-export interface ForumGroupContract {
-  id: string;
-  name: string;
-  forums: ForumContract[];
-}
-
-export interface ForumGroupPageContract {
-  items: ForumGroupContract[];
-}
-
-export interface PostRevisionContract {
-  id: string;
-  postId: string;
-  editorUserId: string;
+export type PostRevisionContract = Omit<components['schemas']['PostRevisionDto'], 'document'> & {
   document: RichTextDocumentContract;
-  sanitizedHtml: string;
-  plainText: string;
-  version: number;
-  createdAt: string;
-}
+};
 
-export interface PostViewerStateContract {
-  postId: string;
-  isSaved: boolean;
-  reactions: string[];
-}
+export type PostViewerStateContract = components['schemas']['PostViewerStateDto'];
+export type TopicViewerStateContract = components['schemas']['TopicViewerStateDto'];
 
-export interface TopicViewerStateContract {
-  isFollowing: boolean;
-  isSaved: boolean;
-  posts: PostViewerStateContract[];
-}
+export type SavedTopicContract = Omit<components['schemas']['SavedTopicDto'], 'topic'> & {
+  topic: TopicContract;
+};
 
-export interface SavedTopicContract {
-  placeId: string;
-  placeSlug: string;
-  placeName: string;
-  topic: import("@/features/public-content/public-contracts").TopicContract;
-  savedAt: string;
-}
+export type SavedPostContract = Omit<components['schemas']['SavedPostDto'], 'post'> & {
+  post: PostContract;
+};
 
-export interface SavedPostContract {
-  placeId: string;
-  placeSlug: string;
-  placeName: string;
-  topicTitle: string;
-  post: import("@/features/public-content/public-contracts").PostContract;
-  savedAt: string;
-}
-
-export interface SavedPageContract<T> {
-  items: T[];
-  nextCursor?: string;
-}
+export type SavedTopicPageContract = Omit<components['schemas']['SavedTopicPageDto'], 'items'> & { items: SavedTopicContract[] };
+export type SavedPostPageContract = Omit<components['schemas']['SavedPostPageDto'], 'items'> & { items: SavedPostContract[] };

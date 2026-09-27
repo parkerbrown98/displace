@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class NotificationCursorQueryDto {
   @ApiPropertyOptional()
@@ -15,4 +15,28 @@ export class NotificationCursorQueryDto {
   @Max(100)
   @IsOptional()
   limit = 25;
+}
+
+export class NotificationDto {
+  @ApiProperty({ format: 'date-time' })
+  createdAt: Date;
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+  @ApiProperty({ additionalProperties: true, type: 'object' })
+  payload: Record<string, unknown>;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  placeId: string | null;
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
+  readAt: Date | null;
+  @ApiProperty()
+  type: string;
+}
+
+export class NotificationPageDto {
+  @ApiProperty({ isArray: true, type: NotificationDto })
+  items: NotificationDto[];
+  @ApiPropertyOptional()
+  nextCursor?: string;
+  @ApiProperty()
+  unreadCount: number;
 }

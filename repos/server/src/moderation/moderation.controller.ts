@@ -17,6 +17,7 @@ import {
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/authentication.guard.js';
@@ -32,10 +33,16 @@ import { PlaceContextGuard } from '../places/place-context.guard.js';
 import {
   AddModeratorNoteDto,
   AssignReportDto,
+  BulkModerationActionResultDto,
   BulkModerationActionDto,
   CreateModerationActionDto,
   CreateReportDto,
+  ModerationActionResultDto,
   ModerationCursorQueryDto,
+  ModerationReportDetailDto,
+  ModerationReportDto,
+  ModerationReportPageDto,
+  ModeratorNoteDto,
   ResolveReportDto,
 } from './moderation.dto.js';
 import { ModerationService } from './moderation.service.js';
@@ -44,13 +51,14 @@ const UUID_V7_PIPE = new ParseUUIDPipe({ version: '7' });
 
 @ApiTags('Moderation')
 @ApiBearerAuth()
+@ApiParam({ name: 'placeId', format: 'uuid' })
 @Controller({ path: 'places/:placeId', version: '1' })
 export class ModerationController {
   constructor(private readonly moderation: ModerationService) {}
 
   @Post('reports')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard)
-  @ApiCreatedResponse()
+  @ApiCreatedResponse({ type: ModerationReportDto })
   createReport(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -62,7 +70,7 @@ export class ModerationController {
   @Get('moderation/reports')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: ModerationReportPageDto })
   listReports(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -74,7 +82,7 @@ export class ModerationController {
   @Get('moderation/reports/:reportId')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: ModerationReportDetailDto })
   getReport(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -86,7 +94,7 @@ export class ModerationController {
   @Patch('moderation/reports/:reportId/assignment')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: ModerationReportDto })
   assignReport(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -99,7 +107,7 @@ export class ModerationController {
   @Patch('moderation/reports/:reportId/resolution')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiOkResponse()
+  @ApiOkResponse({ type: ModerationReportDto })
   resolveReport(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -112,7 +120,7 @@ export class ModerationController {
   @Post('moderation/reports/:reportId/notes')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiCreatedResponse()
+  @ApiCreatedResponse({ type: ModeratorNoteDto })
   addNote(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -125,7 +133,7 @@ export class ModerationController {
   @Post('moderation/actions')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiCreatedResponse()
+  @ApiCreatedResponse({ type: ModerationActionResultDto })
   executeAction(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,
@@ -137,7 +145,7 @@ export class ModerationController {
   @Post('moderation/actions/bulk')
   @UseGuards(AuthenticatedGuard, PlaceContextGuard, AuthorizationGuard)
   @RequirePermissions('moderation.manage')
-  @ApiCreatedResponse()
+  @ApiCreatedResponse({ type: BulkModerationActionResultDto })
   executeBulk(
     @CurrentPlace() place: AuthorizedPlace,
     @CurrentUser() user: AuthenticatedUser,

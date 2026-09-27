@@ -105,6 +105,8 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 
 ### Phase 11: Developer API, Rate Limits, and Generated Clients
 
+**Status:** Complete as of 2026-09-27.
+
 11. Finish the public developer surface and shared client contract. *Depends on stable endpoint contracts from steps 3-10.*
     - Add personal access tokens/API keys stored as hashes, named scopes, expiry/rotation/revocation, last-used metadata, and the same authorization policies as user sessions.
     - Implement Redis token-bucket limits by IP, user, API token, place, and expensive operation; return standard `RateLimit-*` and `Retry-After` headers. Make defaults configurable but bounded so self-hosters can tune fair-use policy.

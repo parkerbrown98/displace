@@ -80,7 +80,7 @@ export class CreatePlaceDto {
   @Matches(/\S/)
   name: string;
 
-  @ApiPropertyOptional({ maxLength: 4_000 })
+  @ApiPropertyOptional({ maxLength: 4_000, type: String })
   @IsString()
   @MaxLength(4_000)
   @IsOptional()
@@ -149,7 +149,7 @@ export class PlaceDto {
   settings: Record<string, unknown>;
   @ApiPropertyOptional()
   hasBanner?: boolean;
-  @ApiPropertyOptional({ format: 'date-time' })
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
   archivedAt: Date | null;
   @ApiProperty({ format: 'date-time' })
   createdAt: Date;
@@ -223,14 +223,14 @@ export class CreateInviteDto {
   @IsOptional()
   roleId?: string;
 
-  @ApiPropertyOptional({ default: 1, maximum: 100, minimum: 1 })
+  @ApiPropertyOptional({ default: 1, maximum: 100, minimum: 1, type: Number })
   @IsInt()
   @Min(1)
   @Max(100)
   @IsOptional()
   maxUses = 1;
 
-  @ApiPropertyOptional({ default: 168, maximum: 720, minimum: 1 })
+  @ApiPropertyOptional({ default: 168, maximum: 720, minimum: 1, type: Number })
   @IsInt()
   @Min(1)
   @Max(720)
@@ -257,9 +257,9 @@ export class InviteDto {
 export class InviteSummaryDto {
   @ApiProperty()
   id: string;
-  @ApiPropertyOptional({ format: 'email' })
+  @ApiProperty({ format: 'email', nullable: true, type: String })
   email: string | null;
-  @ApiPropertyOptional({ format: 'uuid' })
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
   roleId: string | null;
   @ApiProperty()
   maxUses: number;
@@ -373,7 +373,7 @@ export class BanDto {
   userId: string;
   @ApiProperty()
   reason: string;
-  @ApiPropertyOptional({ format: 'date-time' })
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
   expiresAt: Date | null;
   @ApiProperty({ format: 'date-time' })
   createdAt: Date;
@@ -397,9 +397,9 @@ export class MemberDto {
   displayName: string;
   @ApiProperty({ enum: ['pending', 'active', 'left'] })
   status: 'pending' | 'active' | 'left';
-  @ApiPropertyOptional({ format: 'date-time' })
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
   joinedAt: Date | null;
-  @ApiPropertyOptional({ format: 'date-time' })
+  @ApiPropertyOptional({ format: 'date-time', nullable: true, type: String })
   lastSeenAt?: Date | null;
   @ApiProperty({ type: RoleDto, isArray: true })
   roles: RoleDto[];

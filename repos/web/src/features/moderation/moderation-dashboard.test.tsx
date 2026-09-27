@@ -48,6 +48,7 @@ const report: ModerationReportContract = {
   reporterUserId: "01990000-7000-8000-8000-000000000081",
   resolution: null,
   resolvedAt: null,
+  resolvedByUserId: null,
   status: "open",
   targetId: "01990000-7000-8000-8000-000000000020",
   targetType: "member",

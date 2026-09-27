@@ -90,7 +90,7 @@ Run the controlled real-stack voice journey while API, PostgreSQL, Redis, LiveKi
 pnpm exec playwright test e2e/voice.spec.ts --project=desktop-chromium --workers=1
 ```
 
-Provisional contracts stay behind view-model adapters and are replaced by generated `repos/shared` types when the corresponding OpenAPI operations are published. Fixtures are test-only and are never a runtime fallback.
+Published operations use generated types from the linked `@displace/api-client` package in `repos/shared`, while feature adapters keep transport DTOs out of presentational components. Run `pnpm openapi:generate` from `repos/server` after API contract changes; every web build verifies the checked-in contract checksum and shared package types. Fixtures are test-only and are never a runtime fallback.
 
 ## Production
 

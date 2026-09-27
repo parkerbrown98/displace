@@ -67,13 +67,13 @@ export class CreateForumGroupDto {
   @Matches(/\S/)
   name: string;
 
-  @ApiPropertyOptional({ maxLength: 2_000 })
+  @ApiPropertyOptional({ maxLength: 2_000, type: String })
   @IsString()
   @MaxLength(2_000)
   @IsOptional()
   description = '';
 
-  @ApiPropertyOptional({ default: 0, minimum: 0 })
+  @ApiPropertyOptional({ default: 0, minimum: 0, type: Number })
   @IsInt()
   @Min(0)
   @IsOptional()
@@ -254,7 +254,7 @@ export class ForumTagDto {
   slug: string;
   @ApiProperty()
   name: string;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, type: String })
   color: string | null;
 }
 
@@ -271,9 +271,9 @@ export class ForumDto {
   position: number;
   @ApiProperty({ enum: ForumVisibilityDto })
   visibility: ForumVisibilityDto;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, type: String })
   readPermission: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, type: String })
   writePermission: string | null;
 }
 
@@ -328,9 +328,9 @@ export class PostDto {
   author: PostAuthorDto;
   @ApiProperty({ type: 'object', additionalProperties: true, nullable: true })
   document: RichTextDocument | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, type: String })
   sanitizedHtml: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, type: String })
   plainText: string | null;
   @ApiProperty()
   version: number;
@@ -363,6 +363,14 @@ export class PostRevisionDto {
   createdAt: Date;
 }
 
+export class TopicPreviewImageDto {
+  @ApiProperty()
+  alt: string;
+
+  @ApiProperty({ format: 'uuid' })
+  assetId: string;
+}
+
 export class TopicDto {
   @ApiProperty()
   id: string;
@@ -382,15 +390,11 @@ export class TopicDto {
   replyCount: number;
   @ApiProperty()
   viewCount: number;
-  @ApiPropertyOptional({
+  @ApiProperty({
     nullable: true,
-    type: 'object',
-    properties: {
-      alt: { type: 'string' },
-      assetId: { type: 'string', format: 'uuid' },
-    },
+    type: TopicPreviewImageDto,
   })
-  previewImage: { alt: string; assetId: string } | null;
+  previewImage: TopicPreviewImageDto | null;
   @ApiProperty({ type: ForumTagDto, isArray: true })
   tags: ForumTagDto[];
   @ApiProperty({ format: 'date-time' })

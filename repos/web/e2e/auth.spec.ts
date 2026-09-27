@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { e2ePassword, login, registerVerifiedUser, requestPasswordReset, uniqueValue } from "./support/api";
 
 async function openHydrated(page: Page, path: string) {
@@ -64,4 +65,58 @@ test("returns from an expired session and manages signed-in devices", async ({ p
   await openHydrated(page, "/settings");
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole("heading", { name: "Sign in required" })).toBeVisible();
+});
+
+test("creates, rotates, and revokes a personal API token", async ({ page, request }, testInfo) => {
+  const user = await registerVerifiedUser(request, testInfo, "api_token");
+  await openHydrated(page, "/sign-in?returnTo=%2Fsettings%2Ftokens");
+  await page.getByLabel("Email or handle").fill(user.handle);
+  await page.getByLabel("Password").fill(user.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page).toHaveURL(/\/settings\/tokens$/);
+  await expect(page.locator("#tokens")).toHaveScreenshot("api-token-settings.png", { animations: "disabled" });
+  const accessibility = await new AxeBuilder({ page }).include("#tokens").analyze();
+  expect(accessibility.violations).toEqual([]);
+  await page.getByRole("button", { name: "Create token" }).click();
+  const createDialog = page.getByRole("dialog", { name: "Create API token" });
+  await createDialog.getByLabel("Token name").fill("Browser automation");
+  await createDialog.getByLabel("Write").check();
+  await createDialog.getByRole("button", { name: "Create token" }).click();
+
+  const revealDialog = page.getByRole("dialog", { name: "Save your API token" });
+  const originalToken = await revealDialog.locator(".token-secret code").textContent();
+  expect(originalToken).toMatch(/^dsp_/);
+  await revealDialog.getByRole("button", { name: "Close" }).click();
+  const tokenRow = page.locator(".token-row").filter({ hasText: "Browser automation" }).last();
+  await expect(tokenRow).toContainText("read / write");
+
+  const apiUrl = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:3001/api/v1";
+  const profile = await request.get(`${apiUrl}/auth/me`, {
+    headers: { Authorization: `Bearer ${originalToken}` },
+  });
+  expect(profile.status(), await profile.text()).toBe(200);
+
+  await tokenRow.getByRole("button", { name: "Rotate Browser automation" }).click();
+  await page.getByRole("dialog", { name: "Rotate API token" }).getByRole("button", { name: "Rotate token" }).click();
+  const rotatedDialog = page.getByRole("dialog", { name: "Save your API token" });
+  const rotatedToken = await rotatedDialog.locator(".token-secret code").textContent();
+  expect(rotatedToken).toMatch(/^dsp_/);
+  expect(rotatedToken).not.toBe(originalToken);
+  await rotatedDialog.getByRole("button", { name: "Close" }).click();
+
+  const oldTokenResponse = await request.get(`${apiUrl}/auth/me`, {
+    headers: { Authorization: `Bearer ${originalToken}` },
+  });
+  expect(oldTokenResponse.status()).toBe(401);
+
+  const activeRow = page.locator(".token-row").filter({ hasText: "Browser automation" }).filter({ hasText: "Active" });
+  await activeRow.getByRole("button", { name: "Revoke Browser automation" }).click();
+  await page.getByRole("dialog", { name: "Revoke API token" }).getByRole("button", { name: "Revoke token" }).click();
+  await expect(page.locator(".token-row").filter({ hasText: "Active" })).toHaveCount(0);
+
+  const revokedTokenResponse = await request.get(`${apiUrl}/auth/me`, {
+    headers: { Authorization: `Bearer ${rotatedToken}` },
+  });
+  expect(revokedTokenResponse.status()).toBe(401);
 });

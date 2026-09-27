@@ -19,6 +19,7 @@ import {
   ApiHeader,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/authentication.guard.js';
@@ -78,6 +79,7 @@ export class FeedController {
 }
 
 @ApiTags('Forums')
+@ApiParam({ name: 'placeId', format: 'uuid' })
 @Controller({ path: 'places/:placeId', version: '1' })
 export class ForumsController {
   constructor(private readonly service: ForumsService) {}

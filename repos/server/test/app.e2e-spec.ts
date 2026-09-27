@@ -84,7 +84,7 @@ describe('application foundation (e2e)', () => {
       },
       paths: {
         '/api/v1/places/{placeId}/assets/{assetId}': {},
-        '/api/v1/places/{placeId}/assets/{assetId}/download': {},
+          '/api/v1/places/{placeId}/assets/downloads/{assetId}': {},
         '/api/v1/places/{placeId}/assets/place-images/{kind}': {},
         '/api/v1/places/{placeId}/assets/profile-images/{kind}': {},
         '/api/v1/places/{placeId}/assets/upload-intents': {},

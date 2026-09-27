@@ -1,0 +1,19 @@
+{
+  "name": "@displace/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "accept": "node scripts/accept-contract.mjs",
+    "check": "tsc --noEmit",
+    "generate": "openapi-typescript openapi.json -o src/schema.ts",
+    "verify": "node scripts/verify-contract.mjs"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.10.1",
+    "typescript": "^6.0.2"
+  }
+}

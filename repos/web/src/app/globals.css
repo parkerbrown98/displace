@@ -3157,6 +3157,75 @@ textarea:focus-visible {
 	margin: 0 0 20px;
 }
 
+.token-load-error {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.token-list {
+	display: grid;
+	border-top: 1px solid var(--line);
+}
+
+.token-row {
+	display: grid;
+	grid-template-columns: 28px minmax(0, 1fr) auto 76px;
+	align-items: center;
+	gap: 12px;
+	min-height: 92px;
+	padding: 14px 2px;
+	border-bottom: 1px solid var(--line);
+}
+
+.token-row > svg { color: var(--teal); }
+.token-row-copy { display: grid; min-width: 0; gap: 3px; }
+.token-row-copy strong { font-size: 14px; }
+.token-row-copy code { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; }
+.token-row-copy span, .token-row-copy small { color: var(--muted); font-size: 11px; }
+
+.token-state {
+	padding: 4px 7px;
+	color: #28573c;
+	background: #dceadf;
+	border-radius: 4px;
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+}
+
+.token-state.inactive { color: #6e6561; background: #e7e3de; }
+.token-actions { display: flex; justify-content: flex-end; gap: 5px; }
+
+.token-scope-picker {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.token-scope-picker legend { margin-bottom: 8px; font-size: 13px; font-weight: 800; }
+.token-scope-picker label { display: flex; align-items: flex-start; gap: 9px; padding: 10px; background: #f5f4ed; border: 1px solid var(--line); border-radius: 5px; }
+.token-scope-picker input { width: 17px; height: 17px; margin-top: 1px; accent-color: var(--teal); }
+.token-scope-picker span { display: grid; gap: 2px; }
+.token-scope-picker strong { font-size: 13px; }
+.token-scope-picker small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+.token-reveal { gap: 14px; }
+.token-secret { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: center; gap: 8px; padding: 10px 12px; background: #f5f4ed; border: 1px solid var(--ink); border-radius: 5px; }
+.token-secret code { overflow-wrap: anywhere; font-size: 12px; }
+
+@media (max-width: 680px) {
+	.token-scope-picker { grid-template-columns: 1fr; }
+	.token-row { grid-template-columns: 24px minmax(0, 1fr) auto; }
+	.token-row-copy { grid-column: 2 / -1; }
+	.token-state { grid-column: 2; justify-self: start; }
+	.token-actions { grid-column: 3; }
+}
+
 .modal-backdrop {
 	position: fixed;
 	inset: 0;

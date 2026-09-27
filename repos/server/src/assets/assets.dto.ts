@@ -48,7 +48,7 @@ export class AssetDto {
   @ApiProperty({ example: 'image/png' })
   declaredMimeType!: string;
 
-  @ApiProperty({ example: null, nullable: true })
+  @ApiProperty({ example: null, nullable: true, type: String })
   detectedMimeType!: string | null;
 
   @ApiProperty({ format: 'uuid' })
@@ -87,7 +87,7 @@ export class AssetReferenceDto {
 }
 
 export class CurrentAssetReferenceDto {
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
   assetId!: string | null;
 
   @ApiProperty()

@@ -1,59 +1,11 @@
-export interface ForumContract {
-  id: string;
-  groupId: string;
-  name: string;
-  description: string;
-  position: number;
-  visibility: "members" | "public";
-  readPermission: string | null;
-  writePermission: string | null;
-}
+import type { components } from '@displace/api-client';
 
-export interface ForumGroupContract {
-  id: string;
-  name: string;
-  description: string;
-  position: number;
-  forums: ForumContract[];
-}
-
-export interface ForumTagContract {
-  id: string;
-  slug: string;
-  name: string;
-  color: string | null;
-}
-
-export interface ForumNavigationContract {
-  groups: ForumGroupContract[];
-  tags: ForumTagContract[];
-}
-
-export interface TopicContract {
-  id: string;
-  forumId: string;
-  authorUserId: string;
-  author: {
-    displayName: string;
-    handle: string;
-    id: string;
-    joinedAt: string;
-  };
-  title: string;
-  status: "locked" | "open";
-  isPinned: boolean;
-  replyCount: number;
-  viewCount: number;
-  previewImage: { alt: string; assetId: string } | null;
-  tags: ForumTagContract[];
-  latestPostAt: string;
-  createdAt: string;
-}
-
-export interface TopicPageContract {
-  items: TopicContract[];
-  nextCursor?: string;
-}
+export type ForumContract = components['schemas']['ForumDto'];
+export type ForumGroupContract = components['schemas']['ForumGroupDto'];
+export type ForumTagContract = components['schemas']['ForumTagDto'];
+export type ForumNavigationContract = components['schemas']['ForumNavigationDto'];
+export type TopicContract = components['schemas']['TopicDto'];
+export type TopicPageContract = components['schemas']['TopicPageDto'];
 
 export interface RichTextMarkContract {
   attrs?: { alt?: string; assetId?: string; handle?: string; level?: number } & Record<string, unknown>;
@@ -74,51 +26,13 @@ export interface RichTextDocumentContract {
   version: 1;
 }
 
-export interface PostContract {
-  id: string;
-  topicId: string;
-  authorUserId: string;
-  author: {
-    displayName: string;
-    handle: string;
-    id: string;
-    joinedAt: string;
-  };
+export type PostContract = Omit<components['schemas']['PostDto'], 'document'> & {
   document: RichTextDocumentContract | null;
-  sanitizedHtml: string | null;
-  plainText: string | null;
-  version: number;
-  isDeleted: boolean;
-  reactions: Array<{ count: number; reacted: boolean; reaction: string }>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PostPageContract {
+};
+export type PostPageContract = Omit<components['schemas']['PostPageDto'], 'items'> & {
   items: PostContract[];
-  nextCursor?: string;
-}
+};
+export type PublicProfileContract = components['schemas']['PublicProfileDto'];
 
-export interface PublicProfileContract {
-  displayName: string;
-  handle: string;
-  joinedAt: string;
-}
-
-export interface SearchResultContract {
-  createdAt: string;
-  forumId?: string;
-  highlights?: Partial<Record<"text" | "title", string>>;
-  placeId: string;
-  placeSlug: string;
-  postId?: string;
-  text: string;
-  title: string;
-  topicId?: string;
-  type: "place" | "post" | "topic";
-}
-
-export interface SearchPageContract {
-  items: SearchResultContract[];
-  nextCursor?: string;
-}
+export type SearchResultContract = components['schemas']['SearchResultDto'];
+export type SearchPageContract = components['schemas']['SearchPageDto'];

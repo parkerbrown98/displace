@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm contract:check && next build",
+    "contract:check": "pnpm --dir ../shared verify && pnpm --dir ../shared check",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -33,6 +34,8 @@
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@displace/api-client": "link:../shared",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",

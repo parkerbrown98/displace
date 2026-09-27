@@ -1,28 +1,8 @@
+import type { components } from '@displace/api-client';
 import type { PlacePermission } from "@/features/places/place-contract";
 
-export interface VoiceParticipantContract {
-  canPublish: boolean;
-  displayName: string;
-  identity: string;
-  joinedAt: string;
-  microphoneMuted: boolean;
-}
-
-export interface VoiceRoomContract {
-  archived: boolean;
-  canJoin: boolean;
-  canManage: boolean;
-  canSpeak: boolean;
-  capacity: number;
-  id: string;
-  listenPermission: PlacePermission;
-  name: string;
-  participants: VoiceParticipantContract[];
-  placeId: string;
-  position: number;
-  slug: string;
-  speakPermission: PlacePermission;
-}
+export type VoiceParticipantContract = components['schemas']['VoiceParticipantDto'];
+export type VoiceRoomContract = components['schemas']['VoiceRoomDto'];
 
 export interface VoiceRoomInput {
   capacity: number;
@@ -32,14 +12,6 @@ export interface VoiceRoomInput {
   speakPermission: PlacePermission;
 }
 
-export interface CreateVoiceRoomInput extends VoiceRoomInput {
-  slug: string;
-}
+export type CreateVoiceRoomInput = components['schemas']['CreateVoiceRoomDto'];
 
-export interface VoiceJoinContract {
-  canPublish: boolean;
-  expiresAt: string;
-  roomName: string;
-  serverUrl: string;
-  token: string;
-}
+export type VoiceJoinContract = components['schemas']['VoiceJoinDto'];
