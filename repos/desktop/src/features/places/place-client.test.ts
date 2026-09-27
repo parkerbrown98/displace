@@ -68,6 +68,47 @@ describe('PlaceClient', () => {
     expect(authenticatedRequest).toHaveBeenCalledTimes(2);
     expect(authenticatedRequest).toHaveBeenCalledWith('/api/v1/places/private-place');
   });
+
+  it('creates topics and replies with a fresh idempotency key', async () => {
+    const authenticatedRequest = vi.fn().mockResolvedValue({ id: 'created' });
+    const client = new PlaceClient(createAuth(stubApi(), authenticatedRequest, true), new ReadCache());
+    const document = { content: [{ content: [{ text: 'Hello', type: 'text' }], type: 'paragraph' }], type: 'doc', version: 1 };
+
+    await client.createTopic('place/id', 'forum/id', { document, tagIds: [], title: 'A topic' });
+    await client.createReply('place/id', 'topic/id', document);
+
+    expect(authenticatedRequest).toHaveBeenNthCalledWith(1, '/api/v1/places/place%2Fid/forums/forum%2Fid/topics', {
+      body: { document, tagIds: [], title: 'A topic' },
+      headers: { 'Idempotency-Key': 'idempotency' },
+      method: 'POST',
+    });
+    expect(authenticatedRequest).toHaveBeenNthCalledWith(2, '/api/v1/places/place%2Fid/topics/topic%2Fid/posts', {
+      body: { document },
+      headers: { 'Idempotency-Key': 'idempotency' },
+      method: 'POST',
+    });
+  });
+
+  it('maps durable topic and post toggles to their server endpoints', async () => {
+    const authenticatedRequest = vi.fn().mockResolvedValue({ id: 'topic' });
+    const client = new PlaceClient(createAuth(stubApi(), authenticatedRequest, true), new ReadCache());
+
+    await client.setTopicFollow('place', 'topic', true);
+    await client.setTopicSave('place', 'topic', false);
+    await client.setPostSave('place', 'post', true);
+    await client.setReaction('place', 'post', 'helpful', false);
+    await client.markTopicRead('place', 'topic', 'last-post');
+    await client.setTopicPin('place', 'topic', true);
+
+    expect(authenticatedRequest.mock.calls).toEqual([
+      ['/api/v1/places/place/topics/topic/follow', { method: 'POST' }],
+      ['/api/v1/places/place/topics/topic/save', { method: 'DELETE' }],
+      ['/api/v1/places/place/posts/post/save', { method: 'POST' }],
+      ['/api/v1/places/place/posts/post/reactions/helpful', { body: undefined, method: 'DELETE' }],
+      ['/api/v1/places/place/topics/topic/read', { body: { lastReadPostId: 'last-post' }, method: 'PUT' }],
+      ['/api/v1/places/place/topics/topic/pin', { method: 'POST' }],
+    ]);
+  });
 });
 
 function createAuth(api: DesktopApi, authenticatedRequest = vi.fn(), authenticated = false) {

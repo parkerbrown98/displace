@@ -2,6 +2,7 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import type { components } from '@displace/api-client';
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { open } from '@tauri-apps/plugin-dialog';
+import { readFile } from '@tauri-apps/plugin-fs';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
   isPermissionGranted,
@@ -60,7 +61,7 @@ export interface NativePlatform {
   listenForDeepLinks(listener: (urls: string[]) => void): Promise<Unlisten>;
   completeOidcAuthentication(callbackUrl: string, callbackScheme: string, apiOrigin: string): Promise<NativeAuthentication>;
   notify(title: string, body: string): Promise<boolean>;
-  selectUploadFiles(): Promise<string[]>;
+  selectUploadFiles(): Promise<File[]>;
   openExternalUrl(url: string): Promise<void>;
   storeRefreshToken(refreshToken: string): Promise<void>;
   checkForUpdate(): Promise<AvailableUpdate | null>;
@@ -118,7 +119,10 @@ export function createNativePlatform(): NativePlatform {
     async selectUploadFiles() {
       const selection = await open({ directory: false, multiple: true });
       if (!selection) return [];
-      return Array.isArray(selection) ? selection : [selection];
+      return Promise.all((Array.isArray(selection) ? selection : [selection]).map(async (path) => {
+        const name = path.split(/[\\/]/).at(-1) ?? 'upload';
+        return new File([await readFile(path)], name, { type: mimeTypeFor(name) });
+      }));
     },
     openExternalUrl: openUrl,
     storeRefreshToken: (refreshToken) => invoke('store_refresh_token', { refreshToken }),
@@ -217,8 +221,8 @@ export class MemoryNativePlatform implements NativePlatform {
     void url;
   }
 
-  async selectUploadFiles(): Promise<string[]> {
-    return [];
+  async selectUploadFiles(): Promise<File[]> {
+    return selectBrowserFiles();
   }
 
   async storeRefreshToken(refreshToken: string): Promise<void> {
@@ -230,4 +234,20 @@ function withoutRefreshToken(authentication: components['schemas']['Authenticati
   const session = { ...authentication };
   delete session.refreshToken;
   return session;
+}
+
+function selectBrowserFiles(): Promise<File[]> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.type = 'file';
+    input.addEventListener('change', () => resolve(Array.from(input.files ?? [])), { once: true });
+    input.click();
+  });
+}
+
+function mimeTypeFor(fileName: string): string {
+  const extension = fileName.split('.').at(-1)?.toLowerCase();
+  return ({ gif: 'image/gif', jpeg: 'image/jpeg', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' } as Record<string, string>)[extension ?? ''] ?? 'application/octet-stream';
 }

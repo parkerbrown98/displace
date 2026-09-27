@@ -9,7 +9,11 @@ export type PlaceContext = components['schemas']['PlaceContextDto'];
 export type ForumNavigation = components['schemas']['ForumNavigationDto'];
 export type Topic = components['schemas']['TopicDto'];
 export type TopicPage = components['schemas']['TopicPageDto'];
+export type Post = components['schemas']['PostDto'];
 export type PostPage = components['schemas']['PostPageDto'];
+export type PostRevision = components['schemas']['PostRevisionDto'];
+export type TopicViewerState = components['schemas']['TopicViewerStateDto'];
+export type RichTextDocument = components['schemas']['RichTextDocumentDto']['document'];
 export type PublicProfile = components['schemas']['PublicProfileDto'];
 export type SearchPage = components['schemas']['SearchPageDto'];
 export type MemberPage = components['schemas']['MemberPageDto'];
@@ -74,6 +78,102 @@ export class PlaceClient {
     return this.publicRead(path, () => this.auth.api.request<PostPage>(path));
   }
 
+  async createTopic(placeId: string, forumId: string, input: { document: RichTextDocument; tagIds: string[]; title: string }): Promise<Topic> {
+    const topic = await this.auth.authenticatedRequest<Topic>(`${this.placePath(placeId)}/forums/${encodeURIComponent(forumId)}/topics`, {
+      body: input,
+      headers: { 'Idempotency-Key': this.auth.api.createIdempotencyKey() },
+      method: 'POST',
+    });
+    this.invalidateForums();
+    return topic;
+  }
+
+  async createReply(placeId: string, topicId: string, document: RichTextDocument): Promise<Post> {
+    const post = await this.auth.authenticatedRequest<Post>(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}/posts`, {
+      body: { document },
+      headers: { 'Idempotency-Key': this.auth.api.createIdempotencyKey() },
+      method: 'POST',
+    });
+    this.invalidateForums();
+    return post;
+  }
+
+  viewerState(placeId: string, topicId: string): Promise<TopicViewerState> {
+    return this.protectedRead(`place:${placeId}:topic:${topicId}:viewer`, `${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}/viewer-state`);
+  }
+
+  async updateTopic(placeId: string, topicId: string, input: { tagIds?: string[]; title?: string }): Promise<Topic> {
+    const topic = await this.auth.authenticatedRequest<Topic>(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}`, { body: input, method: 'PATCH' });
+    this.invalidateForums();
+    return topic;
+  }
+
+  async deleteTopic(placeId: string, topicId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}`, { method: 'DELETE' });
+    this.invalidateForums();
+  }
+
+  async editPost(placeId: string, postId: string, document: RichTextDocument, expectedVersion: number): Promise<Post> {
+    const post = await this.auth.authenticatedRequest<Post>(`${this.placePath(placeId)}/posts/${encodeURIComponent(postId)}`, {
+      body: { document, expectedVersion },
+      method: 'PATCH',
+    });
+    this.invalidateForums();
+    return post;
+  }
+
+  async deletePost(placeId: string, postId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`${this.placePath(placeId)}/posts/${encodeURIComponent(postId)}`, { method: 'DELETE' });
+    this.invalidateForums();
+  }
+
+  revisions(placeId: string, postId: string): Promise<PostRevision[]> {
+    return this.protectedRead(`place:${placeId}:post:${postId}:revisions`, `${this.placePath(placeId)}/posts/${encodeURIComponent(postId)}/revisions`);
+  }
+
+  async setReaction(placeId: string, postId: string, reaction: string, enabled: boolean): Promise<void> {
+    const basePath = `${this.placePath(placeId)}/posts/${encodeURIComponent(postId)}/reactions`;
+    await this.auth.authenticatedRequest(enabled ? basePath : `${basePath}/${encodeURIComponent(reaction)}`, {
+      body: enabled ? { reaction } : undefined,
+      method: enabled ? 'POST' : 'DELETE',
+    });
+    this.invalidateForums();
+  }
+
+  setTopicFollow(placeId: string, topicId: string, enabled: boolean): Promise<void> {
+    return this.setTopicFlag(placeId, topicId, 'follow', enabled);
+  }
+
+  setTopicSave(placeId: string, topicId: string, enabled: boolean): Promise<void> {
+    return this.setTopicFlag(placeId, topicId, 'save', enabled);
+  }
+
+  async setPostSave(placeId: string, postId: string, enabled: boolean): Promise<void> {
+    await this.auth.authenticatedRequest(`${this.placePath(placeId)}/posts/${encodeURIComponent(postId)}/save`, { method: enabled ? 'POST' : 'DELETE' });
+    this.invalidateForums();
+  }
+
+  async markTopicRead(placeId: string, topicId: string, lastReadPostId?: string): Promise<void> {
+    await this.auth.authenticatedRequest(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}/read`, {
+      body: lastReadPostId ? { lastReadPostId } : {},
+      method: 'PUT',
+    });
+    this.invalidateForums();
+  }
+
+  async markTopicUnread(placeId: string, topicId: string): Promise<void> {
+    await this.auth.authenticatedRequest(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}/read`, { method: 'DELETE' });
+    this.invalidateForums();
+  }
+
+  async setTopicLock(placeId: string, topicId: string, enabled: boolean): Promise<Topic> {
+    return this.setTopicState(placeId, topicId, 'lock', enabled);
+  }
+
+  async setTopicPin(placeId: string, topicId: string, enabled: boolean): Promise<Topic> {
+    return this.setTopicState(placeId, topicId, 'pin', enabled);
+  }
+
   profile(handle: string): Promise<PublicProfile> {
     const path = `/api/v1/profiles/${encodeURIComponent(handle)}`;
     return this.publicRead(path, () => this.auth.api.request<PublicProfile>(path));
@@ -92,8 +192,9 @@ export class PlaceClient {
     return this.protectedRead(`place:${placeId}:context`, `/api/v1/places/${encodeURIComponent(placeId)}/context`);
   }
 
-  members(placeId: string): Promise<MemberPage> {
-    return this.protectedRead(`place:${placeId}:members`, `/api/v1/places/${encodeURIComponent(placeId)}/members?status=active&limit=24&sort=last_seen`);
+  members(placeId: string, query?: string): Promise<MemberPage> {
+    const path = `/api/v1/places/${encodeURIComponent(placeId)}/members?status=active&limit=24&sort=last_seen${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+    return this.protectedRead(`place:${placeId}:members:${query ?? ''}`, path);
   }
 
   roles(placeId: string): Promise<RolePage> {
@@ -169,6 +270,24 @@ export class PlaceClient {
   private invalidatePlace(placeId: string): void {
     this.cache.deletePrefix(`place:${placeId}:`);
     this.cache.deletePrefix('public:/api/v1/places');
+    this.cache.deletePrefix('authorized:/api/v1/places');
+  }
+
+  private async setTopicFlag(placeId: string, topicId: string, flag: 'follow' | 'save', enabled: boolean): Promise<void> {
+    await this.auth.authenticatedRequest(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}/${flag}`, { method: enabled ? 'POST' : 'DELETE' });
+    this.invalidateForums();
+  }
+
+  private async setTopicState(placeId: string, topicId: string, state: 'lock' | 'pin', enabled: boolean): Promise<Topic> {
+    const topic = await this.auth.authenticatedRequest<Topic>(`${this.placePath(placeId)}/topics/${encodeURIComponent(topicId)}/${state}`, { method: enabled ? 'POST' : 'DELETE' });
+    this.invalidateForums();
+    return topic;
+  }
+
+  private invalidateForums(): void {
+    this.cache.deletePrefix('public:/api/v1/places');
+    this.cache.deletePrefix('authorized:/api/v1/places');
+    this.cache.deletePrefix('place:');
   }
 
   private placePath(placeSlug: string): string {

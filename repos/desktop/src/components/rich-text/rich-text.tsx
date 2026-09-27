@@ -1,21 +1,21 @@
 import { Fragment, type ReactNode } from 'react';
-import { ImageOff } from 'lucide-react';
 import type { RichTextDocument, RichTextMark, RichTextNode } from '@displace/api-client';
 import { isRichTextDocument } from '@displace/api-client/rich-text';
+import { AuthorizedAssetImage } from '../../features/assets/authorized-asset-image';
 
-export function RichText({ value }: { value: unknown }) {
+export function RichText({ placeId, value }: { placeId?: string; value: unknown }) {
   if (!isRichTextDocument(value)) return null;
-  return <div className="rich-text">{renderNodes(value.content)}</div>;
+  return <div className="rich-text">{renderNodes(value.content, placeId)}</div>;
 }
 
-function renderNodes(nodes: RichTextNode[] | undefined): ReactNode {
-  return nodes?.map((node, index) => <Fragment key={`${node.type}-${index}`}>{renderNode(node)}</Fragment>);
+function renderNodes(nodes: RichTextNode[] | undefined, placeId?: string): ReactNode {
+  return nodes?.map((node, index) => <Fragment key={`${node.type}-${index}`}>{renderNode(node, placeId)}</Fragment>);
 }
 
-function renderNode(node: RichTextNode): ReactNode {
-  const content = renderNodes(node.content);
+function renderNode(node: RichTextNode, placeId?: string): ReactNode {
+  const content = renderNodes(node.content, placeId);
   switch (node.type) {
-    case 'doc': return renderNodes((node as RichTextDocument).content);
+    case 'doc': return renderNodes((node as RichTextDocument).content, placeId);
     case 'paragraph': return <p>{content}</p>;
     case 'blockquote': return <blockquote>{content}</blockquote>;
     case 'bulletList': return <ul>{content}</ul>;
@@ -29,7 +29,11 @@ function renderNode(node: RichTextNode): ReactNode {
     }
     case 'codeBlock': return <pre><code>{content}</code></pre>;
     case 'mention': return <span className="mention">@{node.attrs?.handle ?? 'member'}</span>;
-    case 'image': return <span className="rich-asset"><ImageOff aria-hidden="true" size={16} />{node.attrs?.alt || 'Attached image'}</span>;
+    case 'image': {
+      const assetId = typeof node.attrs?.assetId === 'string' ? node.attrs.assetId : undefined;
+      const alt = typeof node.attrs?.alt === 'string' ? node.attrs.alt : '';
+      return assetId ? <AuthorizedAssetImage alt={alt} assetId={assetId} placeId={placeId} /> : null;
+    }
     case 'text': return applyMarks(node.text ?? '', node.marks);
   }
 }

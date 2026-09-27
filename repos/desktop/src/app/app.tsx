@@ -9,9 +9,12 @@ import { AccountSettingsRoute } from '../features/auth/account-settings';
 import { NativeAuthClient } from '../features/auth/auth-client';
 import { ForgotPasswordRoute, RegisterRoute, ResetPasswordRoute, SessionExpiredRoute, SignInRoute, VerifyEmailRoute } from '../features/auth/identity-routes';
 import { SessionProvider } from '../features/auth/session-provider';
-import { DiscoverRoute, PlaceRoute, ProfileRoute, SearchRoute, TopicRoute } from '../features/places/browse-routes';
+import { DiscoverRoute, PlaceRoute, ProfileRoute, SearchRoute } from '../features/places/browse-routes';
+import { CreateTopicRoute } from '../features/forums/create-topic-route';
+import { TopicDiscussionRoute } from '../features/forums/topic-discussion-route';
 import { CreatePlaceRoute, PlaceSettingsRoute } from '../features/places/management-routes';
 import { createNativePlatform, type NativePlatform } from '../lib/platform/native-platform';
+import { PlatformContext } from '../lib/platform/platform-context';
 
 const router = createHashRouter([
   {
@@ -25,7 +28,8 @@ const router = createHashRouter([
       { path: 'places/new', element: <CreatePlaceRoute /> },
       { path: 'places/:placeSlug', element: <PlaceRoute /> },
       { path: 'places/:placeSlug/forums/:forumId', element: <PlaceRoute /> },
-      { path: 'places/:placeSlug/topics/:topicId', element: <TopicRoute /> },
+      { path: 'places/:placeSlug/topics/new', element: <CreateTopicRoute /> },
+      { path: 'places/:placeSlug/topics/:topicId', element: <TopicDiscussionRoute /> },
       { path: 'places/:placeSlug/settings', element: <PlaceSettingsRoute /> },
       { path: 'members/:handle', element: <ProfileRoute /> },
       { path: 'sign-in', element: <SignInRoute /> },
@@ -43,12 +47,14 @@ const router = createHashRouter([
 export function App({ config, platform = createNativePlatform(), fetchImplementation }: { config: AppConfig; platform?: NativePlatform; fetchImplementation?: typeof fetch }) {
   const [client] = useState(() => new NativeAuthClient(config, platform, fetchImplementation));
   return (
-    <FeedbackProvider>
-      <SessionProvider client={client}>
-        <a className="skip-link" href="#main-content">Skip to content</a>
-        <RouterProvider router={router} />
-      </SessionProvider>
-    </FeedbackProvider>
+    <PlatformContext value={platform}>
+      <FeedbackProvider>
+        <SessionProvider client={client}>
+          <a className="skip-link" href="#main-content">Skip to content</a>
+          <RouterProvider router={router} />
+        </SessionProvider>
+      </FeedbackProvider>
+    </PlatformContext>
   );
 }
 
