@@ -11,6 +11,8 @@ This plan follows the near-complete server and web implementations. The server's
 - Keep the long-lived native refresh token exclusively in an OS credential store through the Rust host. Keep access tokens short-lived and in renderer memory only; never write either token to local storage, Tauri store files, logs, analytics, crash reports, URLs, or IPC payloads unrelated to authentication.
 - Isolate platform behavior behind adapters: API transport/authentication, keychain access, deep links, file selection, direct uploads, notifications, application lifecycle, auto-update, and diagnostics. Feature views receive view models and capability data rather than native or wire-level APIs.
 - Reuse contracts, domain adapters, and explicitly portable UI primitives from web only after they are extracted into a tested package. Do not couple the desktop build to Next.js routes, server components, browser-cookie assumptions, or undocumented web internals.
+- Treat the web app as the source of truth for the Displace visual family: use its warm paper surfaces, ink, teal, teal-soft, coral, mustard, typography, restrained borders, compact radii, icon conventions, and product language. Give desktop its own identity through denser workbench layouts, persistent dark teal application chrome, desktop-native hierarchy, keyboard-first interaction, and contextual side panels rather than a separate palette or a pixel-for-pixel web replica.
+- Keep shared brand tokens named and valued consistently across web and desktop. Desktop-only tokens may describe native chrome, window states, density, or platform affordances, but must derive from the shared palette and maintain the same accessibility intent.
 - Design for Windows, macOS, and Linux from the start, while treating Windows as the first supported release target. Every feature must have a clear unsupported-platform or permission-denied state.
 - Keep public browsing, authenticated content, offline state, and stale permissions explicit. The local cache is an optional convenience cache, never an authority for content, capability, presence, or moderation state.
 
@@ -36,7 +38,7 @@ This plan follows the near-complete server and web implementations. The server's
 
 ### Phase 1: Tauri Foundation and Contract Boundary
 
-**Status:** Planned.
+**Status:** Complete.
 
 **Server alignment:** Use the completed API v1 and shared generated package from server phase 11. No desktop endpoint or server-only schema is required.
 
