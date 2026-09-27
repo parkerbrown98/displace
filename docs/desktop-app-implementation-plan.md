@@ -51,7 +51,7 @@ This plan follows the near-complete server and web implementations. The server's
 
 ### Phase 2: Native Identity, Sessions, and Account Recovery
 
-**Status:** Planned.
+**Status:** Complete.
 
 **Server alignment:** Integrate with the completed identity/session API and its native refresh-token behavior.
 
@@ -179,7 +179,7 @@ The structure intentionally mirrors the web separation between presentation, fea
 - [`docs/server-api-implementation-plan.md`](server-api-implementation-plan.md) - API, authentication, upload, realtime, voice, moderation, and developer-token contracts.
 - [`docs/web-app-implementation-plan.md`](web-app-implementation-plan.md) - completed web workflows and transport boundary patterns to mirror without coupling to Next.js.
 - [`repos/shared/README.md`](../repos/shared/README.md) - generated API contract and platform-adapter responsibilities.
-- `repos/desktop/` - planned Tauri application root; currently empty.
+- [`repos/desktop/`](../repos/desktop/) - implemented Tauri application root.
 
 ## Explicit Non-Goals for the First Desktop Release
 

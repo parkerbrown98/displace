@@ -1,9 +1,16 @@
 import { ArrowRight, Clock3, MessageSquareText, Users } from 'lucide-react';
+import { useState } from 'react';
 import { createHashRouter, RouterProvider } from 'react-router-dom';
 import { AppShell } from '../components/app-shell/app-shell';
 import { FeedbackProvider } from '../components/ui/feedback';
 import { useToast } from '../components/ui/feedback-context';
 import { RouteState } from '../components/route-state/route-state';
+import type { AppConfig } from '../config/app-config';
+import { AccountSettingsRoute } from '../features/auth/account-settings';
+import { NativeAuthClient } from '../features/auth/auth-client';
+import { ForgotPasswordRoute, RegisterRoute, ResetPasswordRoute, SessionExpiredRoute, SignInRoute, VerifyEmailRoute } from '../features/auth/identity-routes';
+import { SessionProvider } from '../features/auth/session-provider';
+import { createNativePlatform, type NativePlatform } from '../lib/platform/native-platform';
 
 const router = createHashRouter([
   {
@@ -14,17 +21,26 @@ const router = createHashRouter([
       { index: true, element: <HomeRoute /> },
       { path: 'discover', element: <EmptyRoute title="Discover places" /> },
       { path: 'search', element: <EmptyRoute title="Search Displace" /> },
-      { path: 'settings', element: <EmptyRoute title="Settings" /> },
+      { path: 'sign-in', element: <SignInRoute /> },
+      { path: 'register', element: <RegisterRoute /> },
+      { path: 'verify-email', element: <VerifyEmailRoute /> },
+      { path: 'forgot-password', element: <ForgotPasswordRoute /> },
+      { path: 'reset-password', element: <ResetPasswordRoute /> },
+      { path: 'session-expired', element: <SessionExpiredRoute /> },
+      { path: 'settings', element: <AccountSettingsRoute /> },
       { path: '*', element: <RouteState state="not-found" /> },
     ],
   },
 ]);
 
-export function App() {
+export function App({ config, platform = createNativePlatform(), fetchImplementation }: { config: AppConfig; platform?: NativePlatform; fetchImplementation?: typeof fetch }) {
+  const [client] = useState(() => new NativeAuthClient(config, platform, fetchImplementation));
   return (
     <FeedbackProvider>
-      <a className="skip-link" href="#main-content">Skip to content</a>
-      <RouterProvider router={router} />
+      <SessionProvider client={client}>
+        <a className="skip-link" href="#main-content">Skip to content</a>
+        <RouterProvider router={router} />
+      </SessionProvider>
     </FeedbackProvider>
   );
 }

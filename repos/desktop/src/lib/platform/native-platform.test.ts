@@ -7,7 +7,9 @@ describe('MemoryNativePlatform', () => {
     expect(await platform.hasRefreshToken()).toBe(false);
     await platform.storeRefreshToken('secret');
     expect(await platform.hasRefreshToken()).toBe(true);
+    expect(await platform.inspectRefreshToken()).toBe('secret');
     await platform.clearRefreshToken();
     expect(await platform.hasRefreshToken()).toBe(false);
+    expect(await platform.inspectRefreshToken()).toBeNull();
   });
 });

@@ -26,6 +26,7 @@ export class OidcService {
   private readonly clientId?: string;
   private readonly clientSecret?: string;
   private readonly issuerUrl?: URL;
+  private readonly nativeRedirectUrl?: string;
   private readonly redirectUrl?: string;
   private readonly stateKey: Uint8Array;
   private configuration?: Promise<oidc.Configuration>;
@@ -41,6 +42,9 @@ export class OidcService {
     this.issuerUrl = issuer ? new URL(issuer) : undefined;
     this.redirectUrl = config
       .get('OIDC_REDIRECT_URL', { infer: true })
+      ?.toString();
+    this.nativeRedirectUrl = config
+      .get('OIDC_NATIVE_REDIRECT_URL', { infer: true })
       ?.toString();
     this.stateKey = createHash('sha256')
       .update(config.get('ACCESS_TOKEN_SECRET', { infer: true }))
@@ -143,6 +147,83 @@ export class OidcService {
         'The OIDC response is invalid or expired.',
       );
     }
+  }
+
+  async beginNative(input: {
+    codeChallenge: string;
+    nonce: string;
+    state: string;
+  }): Promise<URL> {
+    const configuration = await this.getConfiguration();
+    if (!this.nativeRedirectUrl) {
+      throw new ServiceUnavailableException('Native OIDC is not configured.');
+    }
+    return oidc.buildAuthorizationUrl(configuration, {
+      code_challenge: input.codeChallenge,
+      code_challenge_method: 'S256',
+      nonce: input.nonce,
+      redirect_uri: this.nativeRedirectUrl,
+      scope: 'openid email profile',
+      state: input.state,
+    });
+  }
+
+  async completeNative(
+    currentUrl: string,
+    expectedState: string,
+    nonce: string,
+    codeVerifier: string,
+  ): Promise<OidcIdentity> {
+    if (!this.nativeRedirectUrl) {
+      throw new ServiceUnavailableException('Native OIDC is not configured.');
+    }
+    try {
+      const callbackUrl = this.validatedNativeCallback(new URL(currentUrl));
+      const configuration = await this.getConfiguration();
+      const tokens = await oidc.authorizationCodeGrant(
+        configuration,
+        callbackUrl,
+        {
+          expectedNonce: nonce,
+          expectedState,
+          pkceCodeVerifier: codeVerifier,
+        },
+      );
+      const claims = tokens.claims();
+      if (!claims?.sub || !claims.iss) {
+        throw new Error('OIDC identity claims are incomplete.');
+      }
+      return {
+        claims: { ...claims },
+        email: typeof claims.email === 'string' ? claims.email : undefined,
+        emailVerified: claims.email_verified === true,
+        issuer: claims.iss,
+        name: typeof claims.name === 'string' ? claims.name : undefined,
+        subject: claims.sub,
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      throw new UnauthorizedException(
+        'The OIDC response is invalid or expired.',
+      );
+    }
+  }
+
+  private validatedNativeCallback(currentUrl: URL): URL {
+    const expected = new URL(this.nativeRedirectUrl!);
+    if (
+      currentUrl.protocol !== expected.protocol ||
+      currentUrl.hostname !== expected.hostname ||
+      currentUrl.port !== expected.port ||
+      currentUrl.pathname !== expected.pathname ||
+      currentUrl.username ||
+      currentUrl.password ||
+      currentUrl.hash
+    ) {
+      throw new Error('The native callback URL is not allowlisted.');
+    }
+    expected.search = currentUrl.search;
+    return expected;
   }
 
   private getConfiguration(): Promise<oidc.Configuration> {

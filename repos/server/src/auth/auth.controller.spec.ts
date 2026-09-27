@@ -77,4 +77,63 @@ describe('AuthController OIDC callback', () => {
       'http://localhost:3000/auth/callback',
     );
   });
+
+  it('returns native authentication in the response body without setting cookies', async () => {
+    const authentication = {
+      accessToken: 'access-token',
+      expiresInSeconds: 900,
+      refreshToken: 'refresh-token',
+      user: {
+        displayName: 'Native User',
+        email: 'native@example.test',
+        emailVerified: true,
+        handle: 'native_user',
+        id: '01990000-7000-8000-8000-000000000502',
+      },
+    };
+    const authService = {
+      loginWithOidc: vi.fn().mockResolvedValue(authentication),
+    } as unknown as AuthService;
+    const oidc = {
+      completeNative: vi.fn().mockResolvedValue({
+        claims: {},
+        emailVerified: true,
+        issuer: 'https://identity.example',
+        subject: 'native-user',
+      }),
+    } as unknown as OidcService;
+    const config = {
+      get: vi.fn((key: keyof AppEnvironment) => {
+        if (key === 'CORS_ORIGINS') return ['http://localhost:3000'];
+        if (key === 'NODE_ENV') return 'test';
+        return undefined;
+      }),
+    } as unknown as ConfigService<AppEnvironment, true>;
+    const controller = new AuthController(
+      authService,
+      new CsrfService({ generate: () => 'csrf-token' }),
+      oidc,
+      config,
+    );
+    const reply = { setCookie: vi.fn() } as unknown as FastifyReply;
+    const request = {
+      headers: { 'user-agent': 'Displace desktop' },
+      ip: '127.0.0.1',
+    } as unknown as FastifyRequest;
+    const input = {
+      callbackUrl: 'displace-test://auth/callback?code=provider-code&state=native-state',
+      codeVerifier: 'v'.repeat(43),
+      nonce: 'n'.repeat(32),
+      state: 'native-state'.padEnd(32, 's'),
+    };
+
+    await expect(controller.exchangeNativeOidc(input, request, reply)).resolves.toEqual(authentication);
+    expect(oidc.completeNative).toHaveBeenCalledWith(
+      input.callbackUrl,
+      input.state,
+      input.nonce,
+      input.codeVerifier,
+    );
+    expect(reply.setCookie).not.toHaveBeenCalled();
+  });
 });

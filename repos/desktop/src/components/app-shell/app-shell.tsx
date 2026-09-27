@@ -1,5 +1,7 @@
-import { Bell, Compass, Home, Search, Settings, WifiOff } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Bell, Compass, Home, LogIn, Search, Settings, WifiOff } from 'lucide-react';
+import { useEffect } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useSession } from '../../features/auth/session-provider';
 import { useConnectivity } from '../../lib/realtime/connectivity';
 
 const navigation = [
@@ -10,6 +12,16 @@ const navigation = [
 
 export function AppShell() {
   const connectivity = useConnectivity();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const session = useSession();
+  const title = routeTitle(location.pathname);
+
+  useEffect(() => {
+    if (session.sessionExpired && location.pathname !== '/session-expired') {
+      navigate(`/session-expired?returnTo=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
+    }
+  }, [location.pathname, location.search, navigate, session.sessionExpired]);
 
   return (
     <div className="app-shell">
@@ -27,17 +39,16 @@ export function AppShell() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <NavLink to="/settings" className="nav-item">
-            <Settings aria-hidden="true" size={18} />
-            <span>Settings</span>
-          </NavLink>
+          {session.status === 'authenticated' ? <NavLink to="/settings" className="nav-item">
+            <Settings aria-hidden="true" size={18} /><span>Settings</span>
+          </NavLink> : <NavLink to="/sign-in" className="nav-item"><LogIn aria-hidden="true" size={18} /><span>Sign in</span></NavLink>}
         </div>
       </aside>
       <main className="workspace" id="main-content">
         <header className="topbar">
           <div>
             <span className="eyebrow">Desktop</span>
-            <h1>Home</h1>
+            <h1>{title}</h1>
           </div>
           <div className="topbar-actions">
             <span className="connection-state">
@@ -45,6 +56,7 @@ export function AppShell() {
               {connectivity === 'connected' ? 'Connected' : 'Offline'}
             </span>
             <button className="icon-button" aria-label="Notifications"><Bell aria-hidden="true" size={18} /></button>
+            {session.user ? <span className="account-chip" title={session.user.email}>{session.user.displayName}</span> : null}
           </div>
         </header>
         <div className="route-content">
@@ -64,4 +76,15 @@ export function AppShell() {
       </div>
     </div>
   );
+}
+
+function routeTitle(pathname: string): string {
+  if (pathname === '/settings') return 'Settings';
+  if (pathname === '/discover') return 'Discover';
+  if (pathname === '/search') return 'Search';
+  if (pathname.includes('password')) return 'Password recovery';
+  if (pathname === '/register') return 'Registration';
+  if (pathname === '/verify-email') return 'Verification';
+  if (pathname === '/sign-in') return 'Sign in';
+  return 'Home';
 }

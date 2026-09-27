@@ -202,3 +202,40 @@ export class OidcAuthorizeQueryDto {
   @IsOptional()
   mode: 'login' | 'link' = 'login';
 }
+
+export class OidcNativeAuthorizeQueryDto {
+  @ApiProperty({ minLength: 43 })
+  @Matches(/^[A-Za-z0-9_-]{43}$/)
+  codeChallenge: string;
+
+  @ApiProperty({ minLength: 32 })
+  @IsString()
+  @MinLength(32)
+  nonce: string;
+
+  @ApiProperty({ minLength: 32 })
+  @IsString()
+  @MinLength(32)
+  state: string;
+}
+
+export class OidcNativeExchangeDto {
+  @ApiProperty({ description: 'The exact allowlisted native callback URL.' })
+  @IsString()
+  @MaxLength(2048)
+  callbackUrl: string;
+
+  @ApiProperty({ minLength: 43 })
+  @Matches(/^[A-Za-z0-9._~-]{43,128}$/)
+  codeVerifier: string;
+
+  @ApiProperty({ minLength: 32 })
+  @IsString()
+  @MinLength(32)
+  nonce: string;
+
+  @ApiProperty({ minLength: 32 })
+  @IsString()
+  @MinLength(32)
+  state: string;
+}

@@ -34,6 +34,8 @@ import {
   LoginDto,
   MessageDto,
   OidcAuthorizeQueryDto,
+  OidcNativeAuthorizeQueryDto,
+  OidcNativeExchangeDto,
   RefreshDto,
   RefreshTokenDelivery,
   RegisterDto,
@@ -319,6 +321,44 @@ export class AuthController {
       reply,
     );
     await reply.redirect(new URL('/auth/callback', this.applicationUrl).toString());
+  }
+
+  @Get('oidc/native/authorize')
+  @UseGuards(AuthRateLimitGuard)
+  @AuthRateLimit('oidc-authorize')
+  async authorizeNativeOidc(
+    @Query() query: OidcNativeAuthorizeQueryDto,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const authorizationUrl = await this.oidc.beginNative(query);
+    await reply.redirect(authorizationUrl.toString());
+  }
+
+  @Post('oidc/native/exchange')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthRateLimitGuard)
+  @AuthRateLimit('oidc-callback')
+  @ApiOkResponse({ type: AuthenticationDto })
+  async exchangeNativeOidc(
+    @Body() input: OidcNativeExchangeDto,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<AuthenticationDto> {
+    const identity = await this.oidc.completeNative(
+      input.callbackUrl,
+      input.state,
+      input.nonce,
+      input.codeVerifier,
+    );
+    const authentication = await this.authService.loginWithOidc(
+      identity,
+      this.getRequestMetadata(request),
+    );
+    return this.deliverAuthentication(
+      authentication,
+      RefreshTokenDelivery.ResponseBody,
+      reply,
+    );
   }
 
   private deliverAuthentication(

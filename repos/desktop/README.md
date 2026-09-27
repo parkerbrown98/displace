@@ -60,7 +60,9 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-`pnpm build` verifies the checked-in OpenAPI contract before building. Access tokens remain in renderer memory. The Rust host can write, check, and clear a refresh token, but intentionally provides no command that reads its value back into JavaScript.
+`pnpm build` verifies the checked-in OpenAPI contract before building. Access tokens remain in renderer memory. Refresh tokens are read from OS credential storage only for native refresh requests and are immediately replaced after rotation; they are never written to web storage, URLs, logs, or diagnostics.
+
+OIDC opens in the system browser and returns only the provider authorization response through `<VITE_OIDC_CALLBACK_SCHEME>://auth/callback`. The Rust host owns the one-use PKCE, state, and nonce transaction. The server's `OIDC_NATIVE_REDIRECT_URL` must exactly match that callback URL; application access and refresh tokens are returned only by the subsequent API exchange.
 
 ## Boundaries
 

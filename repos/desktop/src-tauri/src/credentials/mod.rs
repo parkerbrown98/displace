@@ -18,6 +18,14 @@ pub fn has_refresh_token() -> Result<bool, CredentialError> {
     }
 }
 
+pub fn read_refresh_token() -> Result<Option<String>, CredentialError> {
+    match entry()?.get_password() {
+        Ok(refresh_token) => Ok(Some(refresh_token)),
+        Err(Error::NoEntry) => Ok(None),
+        Err(_) => Err(CredentialError::Unavailable),
+    }
+}
+
 pub fn store_refresh_token(refresh_token: &str) -> Result<(), CredentialError> {
     if refresh_token.is_empty() {
         return Err(CredentialError::EmptySecret);

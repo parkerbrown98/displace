@@ -1,7 +1,5 @@
 use serde::Serialize;
 
-use crate::credentials;
-
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppMetadata {
@@ -20,31 +18,20 @@ pub struct DiagnosticSnapshot {
 }
 
 #[tauri::command]
-pub fn clear_refresh_token() -> Result<(), String> {
-    credentials::clear_refresh_token().map_err(|error| error.to_string())
-}
-
-#[tauri::command]
-pub fn has_refresh_token() -> Result<bool, String> {
-    credentials::has_refresh_token().map_err(|error| error.to_string())
-}
-
-#[tauri::command]
-pub fn store_refresh_token(refresh_token: String) -> Result<(), String> {
-    credentials::store_refresh_token(&refresh_token).map_err(|error| error.to_string())
-}
-
-#[tauri::command]
 pub fn get_app_metadata(app: tauri::AppHandle) -> AppMetadata {
     app_metadata(&app)
 }
 
 #[tauri::command]
-pub fn collect_diagnostics(app: tauri::AppHandle) -> DiagnosticSnapshot {
-    DiagnosticSnapshot {
+pub async fn collect_diagnostics(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, crate::native_auth::NativeAuthState>,
+) -> Result<DiagnosticSnapshot, String> {
+    let _guard = state.lock().await;
+    Ok(DiagnosticSnapshot {
         app: app_metadata(&app),
-        secure_storage_available: credentials::has_refresh_token().is_ok(),
-    }
+        secure_storage_available: crate::credentials::has_refresh_token().is_ok(),
+    })
 }
 
 fn app_metadata(app: &tauri::AppHandle) -> AppMetadata {

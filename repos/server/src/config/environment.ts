@@ -253,6 +253,7 @@ const environmentSchema = z
     OIDC_ISSUER_URL: optionalUrl,
     OIDC_CLIENT_ID: optionalString,
     OIDC_CLIENT_SECRET: optionalString,
+    OIDC_NATIVE_REDIRECT_URL: optionalUrl,
     OIDC_REDIRECT_URL: optionalUrl,
     SINGLE_PLACE_MODE: booleanValue.default(false),
     SINGLE_PLACE_SLUG: z.preprocess(
@@ -293,6 +294,23 @@ const environmentSchema = z
         path: ['OIDC_ISSUER_URL'],
         message: 'All OIDC settings are required when OIDC is enabled.',
       });
+    }
+    if (environment.OIDC_NATIVE_REDIRECT_URL && configuredOidcValues < oidcValues.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['OIDC_NATIVE_REDIRECT_URL'],
+        message: 'Browser OIDC settings are required when native OIDC is enabled.',
+      });
+    }
+    if (environment.OIDC_NATIVE_REDIRECT_URL) {
+      const callback = new URL(environment.OIDC_NATIVE_REDIRECT_URL);
+      if (['http:', 'https:'].includes(callback.protocol) || callback.hostname !== 'auth' || callback.pathname !== '/callback') {
+        context.addIssue({
+          code: 'custom',
+          path: ['OIDC_NATIVE_REDIRECT_URL'],
+          message: 'OIDC_NATIVE_REDIRECT_URL must use a custom scheme and the auth/callback route.',
+        });
+      }
     }
 
     if (

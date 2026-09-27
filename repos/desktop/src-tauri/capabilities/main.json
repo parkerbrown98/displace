@@ -8,6 +8,7 @@
     "deep-link:default",
     "dialog:allow-open",
     "notification:default",
+    "opener:allow-open-url",
     "updater:default"
   ]
 }
