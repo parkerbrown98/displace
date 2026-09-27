@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { placeContractFixture } from "@/features/places/place-fixtures";
 import { forumNavigationFixture, postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
+import type { RichTextNodeContract } from "./public-contracts";
 import { RichText } from "./rich-text";
 import { PlaceView, TopicView } from "./public-views";
 
@@ -34,7 +35,7 @@ describe("public content rendering", () => {
             content: [
               { type: "text", text: "Safe", marks: [{ type: "bold" }] },
               { type: "text", text: " blocked", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] },
-              { type: "script", text: "never rendered" },
+              { type: "script", text: "never rendered" } as unknown as RichTextNodeContract,
             ],
           },
         ],

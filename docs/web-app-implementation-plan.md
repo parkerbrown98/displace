@@ -140,7 +140,7 @@ This plan is intentionally coordinated with the [server API implementation plan]
 
 **Server alignment:** Integrate with API phase 11 and prepare jointly for phase 12.
 
-1. Replace interim API DTOs and mocks with the versioned generated TypeScript package from `repos/shared`. Keep adapters so generated transport types do not become the UI component contract.
+1. Replace interim API DTOs and mocks with the versioned TypeScript package from `repos/shared`. Use its generated REST types and portable HTTP, realtime, rich-text, and runtime-value contracts. Keep platform adapters so transport types do not become the UI component contract.
 2. Generate a checked-in API compatibility report in CI and fail the web build when a consumed OpenAPI operation or schema changes incompatibly. Regenerate the package and update adapters intentionally.
 3. Surface standard `RateLimit-*`, `Retry-After`, validation, and RFC 9457 errors consistently across forms, background loads, chat, search, and uploads.
 4. Implement personal access token management screens with one-time secret reveal, scopes, expiry, rotation, revocation, and last-used information. Never render a token again after its initial display.
@@ -159,7 +159,7 @@ This plan is intentionally coordinated with the [server API implementation plan]
 ## Shared Contract Workflow
 
 1. The API team publishes versioned OpenAPI output from `/api/docs` or its CI artifact whenever an endpoint moves from provisional to consumable.
-2. The web team updates generated artifacts in `repos/shared`, then changes only the relevant data-access adapter and its contract fixtures.
+2. The web team updates generated artifacts in `repos/shared`, then changes only the relevant data-access adapter and its contract fixtures. Handwritten shared modules must remain transport-neutral and derive wire types from the generated schema where possible.
 3. Both teams run the endpoint's API integration test plus the corresponding web route/component/e2e test before calling that slice integrated.
 4. API schema changes remain backward-compatible within a web release train. Breaking changes require a new API version or coordinated feature flag, generated-client update, and migration test.
 5. Deterministic API mocks remain available for visual and failure-state tests, but the application has no runtime fixture adapter or production fallback.
@@ -173,7 +173,7 @@ This plan is intentionally coordinated with the [server API implementation plan]
 - [`repos/web/README.md`](../repos/web/README.md) - local web setup and quality commands.
 - [`repos/server/src/configure-app.ts`](../repos/server/src/configure-app.ts) - API versioning, CORS, cookie, CSRF-header, request-ID, and OpenAPI conventions consumed by the web transport.
 - [`docs/server-api-implementation-plan.md`](server-api-implementation-plan.md) - coordinating API phase and contract dependency plan.
-- `repos/shared/` - generated, versioned TypeScript API client and DTO package once API phase 11 is available.
+- `repos/shared/` - versioned TypeScript API package containing generated DTOs and transport-neutral client contracts.
 
 ## Verification
 

@@ -1,8 +1,8 @@
-import type { components } from '@displace/api-client';
+import type { ApiTokenScope, components } from '@displace/api-client';
 import { authenticatedMutation, authenticatedRead } from './auth-client';
 
 export type ApiToken = components['schemas']['ApiTokenDto'];
-export type ApiTokenScope = ApiToken['scopes'][number];
+export type { ApiTokenScope };
 export type CreateApiTokenInput = components['schemas']['CreateApiTokenDto'];
 export type IssuedApiToken = components['schemas']['IssuedApiTokenDto'];
 

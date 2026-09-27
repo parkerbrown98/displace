@@ -111,7 +111,7 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
     - Add personal access tokens/API keys stored as hashes, named scopes, expiry/rotation/revocation, last-used metadata, and the same authorization policies as user sessions.
     - Implement Redis token-bucket limits by IP, user, API token, place, and expensive operation; return standard `RateLimit-*` and `Retry-After` headers. Make defaults configurable but bounded so self-hosters can tune fair-use policy.
     - Split OpenAPI into tagged public/admin operations, add examples and security/error schemas, validate the document in CI, and fail on undocumented endpoints.
-    - Generate TypeScript DTO/client artifacts from OpenAPI into `repos/shared` as a versioned pnpm package for web/desktop/mobile. Do not import Nest classes or Drizzle schema into clients.
+   - Generate TypeScript DTO artifacts from OpenAPI into `repos/shared` as a versioned pnpm package for web/desktop/mobile. Keep portable HTTP helpers, realtime event maps, rich-text contracts, and exhaustive runtime values beside the generated schema. Do not import Nest classes or Drizzle schema into clients.
 
 ### Phase 12: Production Hardening and Release Gate
 
@@ -148,7 +148,7 @@ Build the documented Displace backend as a phased, production-ready NestJS/Fasti
 - [`repos/server/README.md`](../repos/server/README.md) - local setup, migration, worker, test, and operational commands.
 - [`compose.dev.yaml`](../compose.dev.yaml) - worker/mail-capture additions and service health dependencies.
 - [`.env.example`](../.env.example) - documented non-secret configuration surface.
-- `repos/shared/` - generated OpenAPI TypeScript client/types package.
+- `repos/shared/` - generated OpenAPI types plus transport-neutral HTTP, realtime, rich-text, and runtime-value contracts.
 
 ## Verification
 

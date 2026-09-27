@@ -1,24 +1,14 @@
 import type { components } from '@displace/api-client';
+import type {
+  RichTextDocument,
+  RichTextMark,
+  RichTextNode,
+} from '@displace/api-client';
 import type { PostContract, TopicContract } from '@/features/public-content/public-contracts';
 
-export interface RichTextMarkContract {
-  type: "bold" | "italic" | "strike" | "code" | "link";
-  attrs?: { href?: string };
-}
-
-export interface RichTextNodeContract {
-  type: "paragraph" | "heading" | "blockquote" | "bulletList" | "orderedList" | "listItem" | "codeBlock" | "text" | "hardBreak" | "mention" | "image";
-  attrs?: { handle?: string; level?: number; assetId?: string; alt?: string };
-  content?: RichTextNodeContract[];
-  marks?: RichTextMarkContract[];
-  text?: string;
-}
-
-export interface RichTextDocumentContract {
-  type: "doc";
-  version: 1;
-  content: RichTextNodeContract[];
-}
+export type RichTextMarkContract = RichTextMark;
+export type RichTextNodeContract = RichTextNode;
+export type RichTextDocumentContract = RichTextDocument;
 
 export type PostRevisionContract = Omit<components['schemas']['PostRevisionDto'], 'document'> & {
   document: RichTextDocumentContract;

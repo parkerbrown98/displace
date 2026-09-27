@@ -1,4 +1,8 @@
 import type { components } from '@displace/api-client';
+import {
+  ACTION_REASON_CODES,
+  REPORT_REASON_CODES,
+} from '@displace/api-client/domain-values';
 
 export type ReportReasonCode = components['schemas']['CreateReportDto']['reasonCode'];
 export type ActionReasonCode = components['schemas']['CreateModerationActionDto']['reasonCode'];
@@ -6,26 +10,9 @@ export type ReportTargetType = components['schemas']['CreateReportDto']['targetT
 export type ReportStatus = components['schemas']['ModerationReportDto']['status'];
 export type ModerationActionName = components['schemas']['CreateModerationActionDto']['action'];
 
-export const reportReasonCodes = [
-  "spam",
-  "harassment",
-  "hate",
-  "dangerous",
-  "sexual",
-  "privacy",
-  "impersonation",
-  "other",
-] as const satisfies readonly ReportReasonCode[];
+export const reportReasonCodes = REPORT_REASON_CODES;
 
-export const actionReasonCodes = [
-  "policy_violation",
-  "spam",
-  "harassment",
-  "hate",
-  "safety",
-  "ban_evasion",
-  "other",
-] as const satisfies readonly ActionReasonCode[];
+export const actionReasonCodes = ACTION_REASON_CODES;
 
 export type ModerationNoteContract = components['schemas']['ModeratorNoteDto'];
 export type ModerationActionContract = components['schemas']['ModerationActionRecordDto'];

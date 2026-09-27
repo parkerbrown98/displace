@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@displace/api-client':
+        specifier: link:../shared
+        version: link:../shared
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -63,9 +66,6 @@ importers:
       '@axe-core/playwright':
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
-      '@displace/api-client':
-        specifier: link:../shared
-        version: link:../shared
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0

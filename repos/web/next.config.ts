@@ -1,8 +1,13 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
+  transpilePackages: ["@displace/api-client"],
+  turbopack: {
+    root: path.resolve(process.cwd(), ".."),
+  },
   async redirects() {
     return [
       {

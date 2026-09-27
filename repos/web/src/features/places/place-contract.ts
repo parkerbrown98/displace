@@ -1,4 +1,5 @@
 import type { components } from '@displace/api-client';
+import { PLACE_PERMISSIONS } from '@displace/api-client/domain-values';
 
 export type PlaceContract = components['schemas']['PlaceDto'];
 export type PlacePageContract = components['schemas']['PlacePageDto'];
@@ -10,21 +11,7 @@ export function placeDiscoveryTags(place: PlaceContract): string[] {
     : [];
 }
 
-export const placePermissions = [
-  "place.manage",
-  "role.manage",
-  "member.manage",
-  "forum.manage",
-  "topic.create",
-  "post.create",
-  "chat.manage",
-  "chat.send",
-  "voice.manage",
-  "voice.join",
-  "upload.read",
-  "upload.create",
-  "moderation.manage",
-] as const;
+export const placePermissions = PLACE_PERMISSIONS;
 
 export type PlacePermission = components['schemas']['PlaceViewerDto']['permissions'][number];
 export type PlaceContextContract = components['schemas']['PlaceContextDto'];

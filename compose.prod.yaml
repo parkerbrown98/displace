@@ -3,8 +3,8 @@ name: displace
 x-server: &server
   image: ${DISPLACE_API_IMAGE:-displace-api:local}
   build:
-    context: ./repos/server
-    dockerfile: Dockerfile
+    context: .
+    dockerfile: repos/server/Dockerfile
   init: true
   restart: unless-stopped
   read_only: true
@@ -74,8 +74,8 @@ services:
   web:
     image: ${DISPLACE_WEB_IMAGE:-displace-web:local}
     build:
-      context: ./repos/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: repos/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL to the public versioned API URL}
         NEXT_PUBLIC_SINGLE_PLACE_SLUG: ${SINGLE_PLACE_SLUG:-}

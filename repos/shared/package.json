@@ -4,16 +4,25 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./domain-values": "./src/domain-values.ts",
+    "./http": "./src/http.ts",
+    "./realtime": "./src/realtime.ts",
+    "./rich-text": "./src/rich-text.ts"
   },
   "scripts": {
     "accept": "node scripts/accept-contract.mjs",
     "check": "tsc --noEmit",
     "generate": "openapi-typescript openapi.json -o src/schema.ts",
+    "test": "vitest run",
     "verify": "node scripts/verify-contract.mjs"
   },
   "devDependencies": {
     "openapi-typescript": "^7.10.1",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^5.0.2"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
   }
 }

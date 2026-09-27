@@ -18,20 +18,11 @@ import {
 import { uuidV7Default } from './common.js';
 import { users } from './identity.js';
 import { places } from './places.js';
-
-export type RichTextDocument = {
-  content?: RichTextNode[];
-  type: 'doc';
-  version: 1;
-};
-
-export type RichTextNode = {
-  attrs?: Record<string, unknown>;
-  content?: RichTextNode[];
-  marks?: Array<{ attrs?: Record<string, unknown>; type: string }>;
-  text?: string;
-  type: string;
-};
+export type {
+  RichTextDocument,
+  RichTextNode,
+} from '@displace/api-client';
+import type { RichTextDocument } from '@displace/api-client';
 
 export const forumVisibility = pgEnum('forum_visibility', [
   'public',

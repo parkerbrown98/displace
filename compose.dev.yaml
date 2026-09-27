@@ -3,8 +3,8 @@ name: displace-dev
 services:
   web:
     build:
-      context: ./repos/web
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: repos/web/Dockerfile.dev
     command:
       ["sh", "-c", "CI=true pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"]
     environment:
@@ -17,8 +17,10 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
-      - ./repos/web:/workspace
-      - web_node_modules:/workspace/node_modules
+      - ./repos/web:/workspace/repos/web
+      - ./repos/shared:/workspace/repos/shared
+      - web_node_modules:/workspace/repos/web/node_modules
+      - web_shared_node_modules:/workspace/repos/shared/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -38,8 +40,8 @@ services:
 
   api:
     build:
-      context: ./repos/server
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: repos/server/Dockerfile.dev
     environment:
       NODE_ENV: development
       HOST: 0.0.0.0
@@ -93,8 +95,10 @@ services:
     ports:
       - "${API_PORT:-3001}:3000"
     volumes:
-      - ./repos/server:/workspace
-      - api_node_modules:/workspace/node_modules
+      - ./repos/server:/workspace/repos/server
+      - ./repos/shared:/workspace/repos/shared
+      - api_node_modules:/workspace/repos/server/node_modules
+      - api_shared_node_modules:/workspace/repos/shared/node_modules
     depends_on:
       database-migrate:
         condition: service_completed_successfully
@@ -124,8 +128,8 @@ services:
 
   worker:
     build:
-      context: ./repos/server
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: repos/server/Dockerfile.dev
     command: ["sh", "-c", "CI=true pnpm install --frozen-lockfile && pnpm worker:dev"]
     env_file:
       - .env.example
@@ -149,8 +153,10 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@localhost.invalid}
       MAIL_CAPTURE_URL: http://mailpit:8025
     volumes:
-      - ./repos/server:/workspace
-      - worker_node_modules:/workspace/node_modules
+      - ./repos/server:/workspace/repos/server
+      - ./repos/shared:/workspace/repos/shared
+      - worker_node_modules:/workspace/repos/server/node_modules
+      - worker_shared_node_modules:/workspace/repos/shared/node_modules
     depends_on:
       database-migrate:
         condition: service_completed_successfully
@@ -162,8 +168,8 @@ services:
 
   database-migrate:
     build:
-      context: ./repos/server
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: repos/server/Dockerfile.dev
     command: ["sh", "-c", "CI=true pnpm install --frozen-lockfile && pnpm db:setup && pnpm db:seed"]
     environment:
       NODE_ENV: development
@@ -173,8 +179,10 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./repos/server:/workspace
-      - migration_node_modules:/workspace/node_modules
+      - ./repos/server:/workspace/repos/server
+      - ./repos/shared:/workspace/repos/shared
+      - migration_node_modules:/workspace/repos/server/node_modules
+      - migration_shared_node_modules:/workspace/repos/shared/node_modules
     restart: "no"
 
   postgres:
@@ -285,9 +293,13 @@ services:
 
 volumes:
   web_node_modules:
+  web_shared_node_modules:
   api_node_modules:
+  api_shared_node_modules:
   worker_node_modules:
+  worker_shared_node_modules:
   migration_node_modules:
+  migration_shared_node_modules:
   postgres_data:
   redis_data:
   minio_data:

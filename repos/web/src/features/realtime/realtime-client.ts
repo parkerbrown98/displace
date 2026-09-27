@@ -1,12 +1,16 @@
 "use client";
 
 import { io, type Socket } from "socket.io-client";
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from "@displace/api-client";
 import { currentAuthentication } from "@/features/auth/auth-client";
 import { resolveApiUrl } from "@/lib/api/request";
 
-let socket: Socket | null = null;
+let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
-export function realtimeSocket(): Socket | null {
+export function realtimeSocket(): Socket<ServerToClientEvents, ClientToServerEvents> | null {
   const authentication = currentAuthentication();
   if (!authentication) return null;
   if (!socket) {

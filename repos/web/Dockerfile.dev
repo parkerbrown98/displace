@@ -8,10 +8,16 @@ RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
 
 WORKDIR /workspace
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY repos/shared/package.json repos/shared/pnpm-lock.yaml ./repos/shared/
+RUN pnpm --dir repos/shared install --prod --frozen-lockfile
 
-COPY . .
+COPY repos/web/package.json repos/web/pnpm-lock.yaml repos/web/pnpm-workspace.yaml ./repos/web/
+RUN pnpm --dir repos/web install --frozen-lockfile
+
+COPY repos/shared ./repos/shared
+COPY repos/web ./repos/web
+
+WORKDIR /workspace/repos/web
 
 EXPOSE 3000
 

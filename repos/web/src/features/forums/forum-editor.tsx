@@ -201,7 +201,8 @@ function cleanNode(node: JSONContent): RichTextNodeContract | null {
   if (!supported.includes(node.type as (typeof supported)[number])) return null;
   const content = (node.content ?? []).map(cleanNode).filter((child): child is RichTextNodeContract => child !== null);
   if (node.type === "heading") {
-    const level = [1, 2, 3].includes(Number(node.attrs?.level)) ? Number(node.attrs?.level) : 2;
+    const candidateLevel = Number(node.attrs?.level);
+    const level: 1 | 2 | 3 = candidateLevel === 1 || candidateLevel === 2 || candidateLevel === 3 ? candidateLevel : 2;
     return { type: "heading", attrs: { level }, content };
   }
   return { type: node.type as RichTextNodeContract["type"], content };

@@ -1,23 +1,53 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from '@nestjs/websockets';
 import type { Namespace, Server, Socket } from 'socket.io';
+import type {
+  ClientToServerEvents,
+  DeleteChatMessageCommand,
+  EditChatMessageCommand,
+  JoinChatCommand,
+  JoinPlaceCommand,
+  MarkChatReadCommand,
+  RealtimeInterServerEvents,
+  RealtimeSocketData,
+  SendChatMessageCommand,
+  ServerToClientEvents,
+  SetChatTypingCommand,
+  WatchVoiceRoomCommand,
+} from '@displace/api-client';
 import { AccessTokenService } from '../auth/access-token.service.js';
 import { AuthService } from '../auth/auth.service.js';
 import { ChatService } from '../chat/chat.service.js';
-import type { CreateChatMessageDto, MarkChatReadDto, UpdateChatMessageDto } from '../chat/chat.dto.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PlacesRepository } from '../places/places.repository.js';
 import { PresenceService } from './presence.service.js';
 import { RealtimePublisher } from './realtime.publisher.js';
 import { VoiceService } from '../voice/voice.service.js';
 
-type RealtimeSocket = Socket<Record<string, (...args: never[]) => void>, Record<string, (...args: unknown[]) => void>, Record<string, (...args: unknown[]) => void>, { sessionId: string; userId: string; places: Set<string> }>;
+type RealtimeSocket = Socket<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  RealtimeInterServerEvents,
+  RealtimeSocketData
+>;
+
+type RealtimeServer = Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  RealtimeInterServerEvents,
+  RealtimeSocketData
+> | Namespace<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  RealtimeInterServerEvents,
+  RealtimeSocketData
+>;
 
 @Injectable()
 @WebSocketGateway({ namespace: '/realtime', transports: ['websocket'] })
 export class RealtimeGateway implements OnGatewayInit {
   @WebSocketServer()
-  private server!: Server | Namespace;
+  private server!: RealtimeServer;
 
   constructor(
     private readonly accessTokens: AccessTokenService,
@@ -30,8 +60,8 @@ export class RealtimeGateway implements OnGatewayInit {
     private readonly voice: VoiceService,
   ) {}
 
-  afterInit(server: Server | Namespace): void {
-    this.publisher.attach(server as Server);
+  afterInit(server: RealtimeServer): void {
+    this.publisher.attach(server);
     server.use((socket, next) => {
       void this.authenticate(socket as RealtimeSocket).then(() => next()).catch(() => next(new Error('Authentication is required.')));
     });
@@ -42,7 +72,7 @@ export class RealtimeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('place.join')
-  async joinPlace(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { placeId?: string }) {
+  async joinPlace(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: JoinPlaceCommand) {
     const place = await this.requireMembership(client, body.placeId);
     await client.join(`place:${place.id}`);
     client.data.places.add(place.id);
@@ -52,7 +82,7 @@ export class RealtimeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('chat.join')
-  async joinChannel(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { channelId?: string; placeId?: string }) {
+  async joinChannel(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: JoinChatCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.channelId) throw new WsException('Chat channel is required.');
     const channel = await this.chat.getChannel(place.id, body.channelId, client.data.userId);
@@ -62,21 +92,21 @@ export class RealtimeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('chat.send')
-  async sendMessage(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { channelId?: string; message?: CreateChatMessageDto; placeId?: string }) {
+  async sendMessage(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: SendChatMessageCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.channelId || !body.message) throw new WsException('Chat channel and message are required.');
     return this.chat.sendMessage(place.id, body.channelId, client.data.userId, body.message);
   }
 
   @SubscribeMessage('chat.edit')
-  async editMessage(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { message?: UpdateChatMessageDto; messageId?: string; placeId?: string }) {
+  async editMessage(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: EditChatMessageCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.messageId || !body.message) throw new WsException('Chat message is required.');
     return this.chat.editMessage(place.id, body.messageId, client.data.userId, body.message);
   }
 
   @SubscribeMessage('chat.delete')
-  async deleteMessage(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { messageId?: string; placeId?: string }) {
+  async deleteMessage(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: DeleteChatMessageCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.messageId) throw new WsException('Chat message is required.');
     await this.chat.deleteMessage(place.id, body.messageId, client.data.userId);
@@ -84,21 +114,21 @@ export class RealtimeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('chat.read')
-  async markRead(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { channelId?: string; placeId?: string; read?: MarkChatReadDto }) {
+  async markRead(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: MarkChatReadCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.channelId || !body.read) throw new WsException('Chat channel and read state are required.');
     return this.chat.markRead(place.id, body.channelId, client.data.userId, body.read.messageId);
   }
 
   @SubscribeMessage('presence.heartbeat')
-  async heartbeat(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { placeId?: string }) {
+  async heartbeat(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: JoinPlaceCommand) {
     const place = await this.requireMembership(client, body.placeId);
     await this.presence.heartbeat(place.id, client.data.userId);
     return { placeId: place.id };
   }
 
   @SubscribeMessage('voice.watch')
-  async watchVoiceRoom(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { placeId?: string; roomId?: string }) {
+  async watchVoiceRoom(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: WatchVoiceRoomCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.roomId) throw new WsException('Voice room is required.');
     const room = await this.voice.getRoom(place.id, body.roomId, client.data.userId);
@@ -108,7 +138,7 @@ export class RealtimeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('chat.typing')
-  async typing(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: { active?: boolean; channelId?: string; placeId?: string }) {
+  async typing(@ConnectedSocket() client: RealtimeSocket, @MessageBody() body: SetChatTypingCommand) {
     const place = await this.requireMembership(client, body.placeId);
     if (!body.channelId) throw new WsException('Chat channel is required.');
     const channel = await this.chat.getChannel(place.id, body.channelId, client.data.userId);

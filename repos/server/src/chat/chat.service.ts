@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import type { RealtimeChatChannel } from '@displace/api-client';
 import { CLOCK, type Clock } from '../platform/clock/clock.js';
 import { CursorCodecService } from '../platform/pagination/cursor-codec.service.js';
 import { PlacesRepository } from '../places/places.repository.js';
@@ -160,7 +161,7 @@ export class ChatService {
     return { createdAt, id: value.id };
   }
 
-  private channelResponse(channel: { archivedAt: Date | null; id: string; name: string; position: number; readPermission: string | null; sendPermission: string | null; slug: string; visibility: string }) {
+  private channelResponse(channel: { archivedAt: Date | null; id: string; name: string; position: number; readPermission: string | null; sendPermission: string | null; slug: string; visibility: RealtimeChatChannel['visibility'] }): RealtimeChatChannel {
     return { archived: Boolean(channel.archivedAt), id: channel.id, name: channel.name, position: channel.position, readPermission: channel.readPermission, sendPermission: channel.sendPermission, slug: channel.slug, visibility: channel.visibility };
   }
 

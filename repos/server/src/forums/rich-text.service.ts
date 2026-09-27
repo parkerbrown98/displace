@@ -44,7 +44,7 @@ export class RichTextService {
     if (!this.isRecord(value) || value.type !== 'doc' || value.version !== 1) {
       throw this.invalid();
     }
-    const document = value as RichTextDocument;
+    const document = value as unknown as RichTextDocument;
     if (!Array.isArray(document.content) || document.content.length === 0) {
       throw this.invalid();
     }

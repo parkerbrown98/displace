@@ -2,6 +2,7 @@
 
 import { Copy, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
+import { API_TOKEN_SCOPES } from '@displace/api-client/domain-values';
 import { FormField } from '@/components/ui/form-field';
 import { SettingsDialog } from '@/components/ui/settings-dialog';
 import { LoadingPanel } from '@/components/ui/status-panel';
@@ -17,12 +18,14 @@ import {
   type IssuedApiToken,
 } from './api-token-client';
 
-const scopeOptions: Array<{ description: string; label: string; value: ApiTokenScope }> = [
-  { description: 'Read resources visible to your account.', label: 'Read', value: 'read' },
-  { description: 'Create and change resources as your account.', label: 'Write', value: 'write' },
-  { description: 'Use operations requiring your moderation permissions.', label: 'Moderation', value: 'moderation' },
-  { description: 'Use operations requiring instance administrator access.', label: 'Administration', value: 'administration' },
-];
+const scopeDetails: Record<ApiTokenScope, { description: string; label: string }> = {
+  administration: { description: 'Use operations requiring instance administrator access.', label: 'Administration' },
+  moderation: { description: 'Use operations requiring your moderation permissions.', label: 'Moderation' },
+  read: { description: 'Read resources visible to your account.', label: 'Read' },
+  write: { description: 'Create and change resources as your account.', label: 'Write' },
+};
+
+const scopeOptions = API_TOKEN_SCOPES.map((value) => ({ ...scopeDetails[value], value }));
 
 type TokenDialog =
   | { kind: 'create' }
