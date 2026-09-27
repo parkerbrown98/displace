@@ -1,6 +1,7 @@
 import { ArrowLeft, KeyRound, LogIn, UserPlus } from 'lucide-react';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Checkbox } from '../../components/ui/checkbox';
 import { useToast } from '../../components/ui/feedback-context';
 import { authErrorMessage } from './auth-client';
 import { useSession } from './session-provider';
@@ -35,7 +36,7 @@ export function SignInRoute() {
       <form className="auth-form" onSubmit={submit}>
         <FormField autoComplete="username" label="Email or handle" name="identifier" required />
         <FormField autoComplete="current-password" label="Password" name="password" required type="password" />
-        <label className="check-field"><input defaultChecked name="persist" type="checkbox" /> Keep me signed in on this device</label>
+        <Checkbox defaultChecked name="persist" value="on">Keep me signed in on this device</Checkbox>
         <button className="button primary" disabled={pending} type="submit">{pending ? 'Signing in...' : 'Sign in'}</button>
         <div className="auth-divider"><span>or</span></div>
         <button className="button secondary" onClick={() => void beginOidcSignIn().catch(() => undefined)} type="button">Continue with identity provider</button>

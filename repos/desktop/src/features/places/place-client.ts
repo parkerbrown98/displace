@@ -27,6 +27,9 @@ export type ForumGroup = components['schemas']['ForumGroupDto'];
 export type ForumTag = components['schemas']['ForumTagDto'];
 export type ChatChannel = components['schemas']['ChatChannelDto'];
 export type VoiceRoom = components['schemas']['VoiceRoomDto'];
+export type CurrentAssetReference = components['schemas']['CurrentAssetReferenceDto'];
+export type AssetDownload = components['schemas']['AssetDownloadDto'];
+export type AssetReference = components['schemas']['AssetReferenceDto'];
 export type PlacePermission = PlaceContext['viewer']['permissions'][number];
 export type PlaceWriteInput = components['schemas']['CreatePlaceDto'];
 
@@ -243,6 +246,20 @@ export class PlaceClient {
     const place = await this.auth.authenticatedRequest<Place>(`/api/v1/places/${encodeURIComponent(placeId)}/settings`, { body: { settings }, method: 'PATCH' });
     this.invalidatePlace(placeId);
     return place;
+  }
+
+  placeImage(placeId: string, kind: 'banner' | 'icon'): Promise<CurrentAssetReference> {
+    return this.auth.authenticatedRequest<CurrentAssetReference>(`/api/v1/places/${encodeURIComponent(placeId)}/assets/place-images/${kind}`);
+  }
+
+  assetDownload(placeId: string, assetId: string): Promise<AssetDownload> {
+    return this.auth.authenticatedRequest<AssetDownload>(`/api/v1/places/${encodeURIComponent(placeId)}/assets/downloads/${encodeURIComponent(assetId)}`);
+  }
+
+  async setPlaceImage(placeId: string, kind: 'banner' | 'icon', assetId: string): Promise<AssetReference> {
+    const reference = await this.auth.authenticatedRequest<AssetReference>(`/api/v1/places/${encodeURIComponent(placeId)}/assets/place-images/${kind}`, { body: { assetId }, method: 'PUT' });
+    this.invalidatePlace(placeId);
+    return reference;
   }
 
   async archive(placeId: string): Promise<void> {

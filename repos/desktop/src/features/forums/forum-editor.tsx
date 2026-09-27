@@ -1,6 +1,7 @@
 import { Node, type JSONContent } from '@tiptap/core';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { AtSign, Bold, Code, Heading2, ImagePlus, Italic, List, ListOrdered, Quote, Redo2, Strikethrough, Undo2, X } from 'lucide-react';
 import { useDeferredValue, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNativePlatform } from '../../lib/platform/platform-context';
@@ -72,14 +73,18 @@ export function ForumEditor({ canUpload = false, initialDocument, label, onChang
       <EditorButton active={editor?.isActive('bulletList')} label="Bulleted list" onClick={() => editor?.chain().focus().toggleBulletList().run()}><List /></EditorButton>
       <EditorButton active={editor?.isActive('orderedList')} label="Numbered list" onClick={() => editor?.chain().focus().toggleOrderedList().run()}><ListOrdered /></EditorButton>
       <EditorButton active={editor?.isActive('blockquote')} label="Quote" onClick={() => editor?.chain().focus().toggleBlockquote().run()}><Quote /></EditorButton>
-      <EditorButton active={mentionOpen} label="Mention member" onClick={() => setMentionOpen((value) => !value)}><AtSign /></EditorButton>
-      {canUpload ? <EditorButton active={imageOpen} label="Add image" onClick={() => setImageOpen((value) => !value)}><ImagePlus /></EditorButton> : null}
+      <PopoverPrimitive.Root onOpenChange={(open) => { setMentionOpen(open); if (!open) setMentionQuery(''); }} open={mentionOpen}>
+        <PopoverPrimitive.Trigger asChild><button aria-label="Mention member" aria-pressed={mentionOpen} title="Mention member" type="button"><AtSign /></button></PopoverPrimitive.Trigger>
+        <PopoverPrimitive.Portal><PopoverPrimitive.Content align="start" className="editor-popover" sideOffset={6}><input autoFocus aria-label="Find a member to mention" onChange={(event) => setMentionQuery(event.target.value)} placeholder="Search members" type="search" value={mentionQuery} />{deferredQuery.length >= 2 ? <ul>{members.map((member) => <li key={member.id}><button onClick={() => insertMention(member.handle)} type="button"><strong>@{member.handle}</strong><span>{member.displayName}</span></button></li>)}</ul> : <small>Type at least two characters.</small>}<PopoverPrimitive.Arrow className="editor-popover-arrow" /></PopoverPrimitive.Content></PopoverPrimitive.Portal>
+      </PopoverPrimitive.Root>
+      {canUpload ? <PopoverPrimitive.Root onOpenChange={setImageOpen} open={imageOpen}>
+        <PopoverPrimitive.Trigger asChild><button aria-label="Add image" aria-pressed={imageOpen} title="Add image" type="button"><ImagePlus /></button></PopoverPrimitive.Trigger>
+        <PopoverPrimitive.Portal><PopoverPrimitive.Content align="start" className="editor-popover" sideOffset={6}><ImageUploadTool onClose={() => setImageOpen(false)} onUploaded={insertImage} placeId={placeId} /><PopoverPrimitive.Arrow className="editor-popover-arrow" /></PopoverPrimitive.Content></PopoverPrimitive.Portal>
+      </PopoverPrimitive.Root> : null}
       <span className="toolbar-spacer" />
       <EditorButton label="Undo" onClick={() => editor?.chain().focus().undo().run()}><Undo2 /></EditorButton>
       <EditorButton label="Redo" onClick={() => editor?.chain().focus().redo().run()}><Redo2 /></EditorButton>
     </div>
-    {mentionOpen ? <div className="editor-popover"><input autoFocus aria-label="Find a member to mention" onChange={(event) => setMentionQuery(event.target.value)} placeholder="Search members" type="search" value={mentionQuery} />{deferredQuery.length >= 2 ? <ul>{members.map((member) => <li key={member.id}><button onClick={() => insertMention(member.handle)} type="button"><strong>@{member.handle}</strong><span>{member.displayName}</span></button></li>)}</ul> : <small>Type at least two characters.</small>}</div> : null}
-    {imageOpen ? <ImageUploadTool onClose={() => setImageOpen(false)} onUploaded={insertImage} placeId={placeId} /> : null}
     <EditorContent editor={editor} />
   </div></label>;
 }
@@ -112,7 +117,7 @@ function ImageUploadTool({ onClose, onUploaded, placeId }: { onClose: () => void
 
   function remove() { abortRef.current?.abort(); setAsset(undefined); setError(undefined); setFile(undefined); setProgress(undefined); }
 
-  return <div className="editor-popover upload-tool"><header><strong>Add an image</strong><button aria-label="Close image upload" onClick={onClose} type="button"><X /></button></header>
+  return <div className="upload-tool"><header><strong>Add an image</strong><button aria-label="Close image upload" onClick={onClose} type="button"><X /></button></header>
     {file ? <div className="upload-file"><span>{file.name}</span><small>{formatBytes(file.size)}</small></div> : <p>JPEG, PNG, or WebP. Up to 25 MB.</p>}
     {progress ? <div className="upload-progress"><progress max="100" value={progress.percent} /><span>{progress.stage}</span></div> : null}
     {error ? <p className="form-message error">{error}</p> : null}

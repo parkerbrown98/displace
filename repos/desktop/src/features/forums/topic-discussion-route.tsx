@@ -1,4 +1,5 @@
-import { Bell, BellOff, Bookmark, BookmarkCheck, Clock3, History, Lock, LockOpen, MessageSquareReply, Pencil, Pin, PinOff, Send, Trash2 } from 'lucide-react';
+import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import { Bell, BellOff, Bookmark, BookmarkCheck, ChevronDown, Clock3, History, Lock, LockOpen, MessageSquareReply, Pencil, Pin, PinOff, Send, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { RichText } from '../../components/rich-text/rich-text';
@@ -242,7 +243,7 @@ function PostEditor({ canUpload, onCancel, onSaved, placeId, post }: { canUpload
 }
 
 function RevisionHistory({ placeId, revisions }: { placeId: string; revisions: PostRevision[] }) {
-  return <section className="revision-history"><h4>Revision history</h4>{revisions.length ? revisions.map((revision) => <details key={revision.id}><summary>Version {revision.version} · {formatDate(revision.createdAt)}</summary><RichText placeId={placeId} value={revision.document} /></details>) : <p>No earlier revisions are available.</p>}</section>;
+  return <section className="revision-history"><h4>Revision history</h4>{revisions.length ? <AccordionPrimitive.Root collapsible type="single">{revisions.map((revision) => <AccordionPrimitive.Item className="revision-item" key={revision.id} value={revision.id}><AccordionPrimitive.Header><AccordionPrimitive.Trigger className="revision-trigger">Version {revision.version} · {formatDate(revision.createdAt)}<ChevronDown aria-hidden="true" size={14} /></AccordionPrimitive.Trigger></AccordionPrimitive.Header><AccordionPrimitive.Content className="revision-content"><RichText placeId={placeId} value={revision.document} /></AccordionPrimitive.Content></AccordionPrimitive.Item>)}</AccordionPrimitive.Root> : <p>No earlier revisions are available.</p>}</section>;
 }
 
 function findForum(navigation: ForumNavigation, forumId: string) { return navigation.groups.flatMap((group) => group.forums).find((forum) => forum.id === forumId); }

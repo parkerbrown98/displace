@@ -3,6 +3,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { RouteState } from '../../components/route-state/route-state';
 import { useConfirmation, useToast } from '../../components/ui/feedback-context';
+import { Select } from '../../components/ui/select';
 import { DesktopApiError } from '../../lib/api/desktop-api';
 import { useRemoteResource } from '../../lib/remote-resource';
 import { useSession } from '../auth/session-provider';
@@ -134,7 +135,7 @@ function PermissionNote({ title }: { title: string }) { return <section classNam
 function LockIcon() { return <KeyRound aria-hidden="true" size={18} />; }
 function SignInGate({ message, returnTo }: { message: string; returnTo: string }) { return <section className="settings-gate"><UserPlus size={28} /><h2>Sign in required</h2><p>{message}</p><Link className="button primary" to={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</Link></section>; }
 function TextField(props: { defaultValue?: string; hint?: string; label: string; maxLength?: number; name: string; pattern?: string; required?: boolean; type?: string }) { return <label>{props.label}<input defaultValue={props.defaultValue} maxLength={props.maxLength} name={props.name} pattern={props.pattern} required={props.required} type={props.type ?? 'text'} />{props.hint ? <small>{props.hint}</small> : null}</label>; }
-function SelectField({ defaultValue, label, name, optional, options }: { defaultValue?: string; label: string; name: string; optional?: boolean; options: [string, string][] }) { return <label>{label}<select defaultValue={defaultValue ?? ''} name={name}>{optional ? <option value="">No added role</option> : null}{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>; }
+function SelectField({ defaultValue, label, name, optional, options }: { defaultValue?: string; label: string; name: string; optional?: boolean; options: [string, string][] }) { return <label>{label}<Select defaultValue={defaultValue ?? ''} name={name} options={[...(optional ? [{ label: 'No added role', value: '' }] : []), ...options.map(([value, text]) => ({ label: text, value }))]} /></label>; }
 function errorMessage(error: unknown, fallback: string): string { return error instanceof DesktopApiError ? error.problem?.detail ?? error.message : fallback; }
 function isAuthorizationChange(error: unknown): boolean { return error instanceof DesktopApiError && ['forbidden', 'gone', 'not-found', 'unauthenticated'].includes(error.kind); }
 function initials(value: string): string { return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase(); }

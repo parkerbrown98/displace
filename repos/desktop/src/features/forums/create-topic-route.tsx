@@ -2,7 +2,9 @@ import { Send } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { RouteState } from '../../components/route-state/route-state';
+import { Checkbox } from '../../components/ui/checkbox';
 import { useToast } from '../../components/ui/feedback-context';
+import { Select } from '../../components/ui/select';
 import { useRemoteResource } from '../../lib/remote-resource';
 import { useSession } from '../auth/session-provider';
 import type { ForumNavigation, PlaceContext, RichTextDocument } from '../places/place-client';
@@ -72,8 +74,8 @@ function CreateTopicForm({ context, navigation, userId }: { context: PlaceContex
     <header className="compact-page-heading"><span className="eyebrow">Discussion</span><h2>Start a new topic.</h2><p>Set the context clearly, then let the conversation develop.</p></header>
     {draft ? <p className="draft-notice" role="status">Draft restored from {new Date(draft.updatedAt).toLocaleString()}.</p> : null}
     <form className="topic-compose-form" onSubmit={submit}>
-      <div className="topic-compose-fields"><label className="form-field">Board<select onChange={(event) => setForumId(event.target.value)} required value={forumId}>{forums.map((forum) => <option key={forum.id} value={forum.id}>{forum.name}</option>)}</select></label><label className="form-field">Title<input autoFocus maxLength={300} minLength={1} onChange={(event) => setTitle(event.target.value)} required value={title} /></label></div>
-      {navigation.tags.length ? <fieldset className="topic-tag-picker"><legend>Tags</legend>{navigation.tags.map((tag) => <label key={tag.id}><input checked={tagIds.includes(tag.id)} onChange={(event) => setTagIds((current) => event.target.checked ? [...current, tag.id] : current.filter((id) => id !== tag.id))} type="checkbox" /><span>{tag.name}</span></label>)}</fieldset> : null}
+      <div className="topic-compose-fields"><label className="form-field">Board<Select onValueChange={setForumId} options={forums.map((forum) => ({ label: forum.name, value: forum.id }))} required value={forumId} /></label><label className="form-field">Title<input autoFocus maxLength={300} minLength={1} onChange={(event) => setTitle(event.target.value)} required value={title} /></label></div>
+      {navigation.tags.length ? <fieldset className="topic-tag-picker"><legend>Tags</legend>{navigation.tags.map((tag) => <Checkbox checked={tagIds.includes(tag.id)} className="topic-tag-checkbox" key={tag.id} onCheckedChange={(checked) => setTagIds((current) => checked ? [...current, tag.id] : current.filter((id) => id !== tag.id))}>{tag.name}</Checkbox>)}</fieldset> : null}
       <ForumEditor canUpload={permissions.includes('upload.create')} initialDocument={draft?.document} label="Opening post" onChange={(value, isEmpty) => { setDocument(value); setEditorEmpty(isEmpty); }} placeId={place.id} />
       <footer className="topic-compose-actions"><span>{title.length}/300</span><button className="button primary" disabled={pending || editorEmpty || !title.trim()} type="submit"><Send size={16} />{pending ? 'Publishing...' : 'Publish topic'}</button></footer>
     </form>

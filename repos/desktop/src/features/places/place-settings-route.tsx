@@ -3,8 +3,10 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, useNavigate, useParams } from 'react-router-dom';
 import { RouteState } from '../../components/route-state/route-state';
 import { useConfirmation, useToast } from '../../components/ui/feedback-context';
+import { Select } from '../../components/ui/select';
 import { DesktopApiError } from '../../lib/api/desktop-api';
 import { useRemoteResource } from '../../lib/remote-resource';
+import { PlaceImageUploader } from '../assets/place-image-uploader';
 import { useSession } from '../auth/session-provider';
 import type { Place, PlaceContext, PlacePermission } from './place-client';
 import { ChatSettings, ForumSettings, RoleSettings, VoiceSettings } from './place-resource-settings';
@@ -64,6 +66,7 @@ function IdentitySettings({ context, reload }: SettingsProps) {
   const client = usePlaceClient();
   const notify = useToast();
   const [pending, setPending] = useState(false);
+  const canUpload = context.viewer.permissions.includes('upload.create');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
@@ -75,7 +78,13 @@ function IdentitySettings({ context, reload }: SettingsProps) {
     } catch (error) { notify(errorMessage(error, 'Place identity could not be saved.')); if (isAuthorizationChange(error)) reload(); }
     finally { setPending(false); }
   }
-  return <SettingsPanel eyebrow="Identity and access" title="Place identity" description="Control how this place appears and how people can join."><form className="management-form" onSubmit={submit}><TextField defaultValue={context.place.name} label="Name" maxLength={100} name="name" required /><label className="wide-field">Description<textarea defaultValue={context.place.description} maxLength={500} name="description" rows={4} /></label><SelectField defaultValue={context.place.visibility} label="Visibility" name="visibility" options={[['public', 'Public'], ['unlisted', 'Unlisted'], ['private', 'Private']]} /><SelectField defaultValue={context.place.joinPolicy} label="Joining" name="joinPolicy" options={[['open', 'Open to join'], ['approval', 'Requires approval'], ['invite_only', 'Invite only']]} /><button className="button primary" disabled={pending}>{pending ? 'Saving...' : 'Save identity'}</button></form></SettingsPanel>;
+  return <SettingsPanel eyebrow="Identity and access" title="Place identity" description="Control how this place appears and how people can join.">
+    {canUpload ? <div className="place-image-uploaders">
+      <PlaceImageUploader description="Square JPEG, PNG, or WebP for compact navigation." kind="icon" label="Place icon" onChanged={reload} placeId={context.place.id} />
+      <PlaceImageUploader description="Wide JPEG, PNG, or WebP for place headers." kind="banner" label="Place banner" onChanged={reload} placeId={context.place.id} shape="landscape" />
+    </div> : <p className="settings-muted">Your role can edit place details but cannot upload media.</p>}
+    <form className="management-form" onSubmit={submit}><TextField defaultValue={context.place.name} label="Name" maxLength={100} name="name" required /><label className="wide-field">Description<textarea defaultValue={context.place.description} maxLength={500} name="description" rows={4} /></label><SelectField defaultValue={context.place.visibility} label="Visibility" name="visibility" options={[['public', 'Public'], ['unlisted', 'Unlisted'], ['private', 'Private']]} /><SelectField defaultValue={context.place.joinPolicy} label="Joining" name="joinPolicy" options={[['open', 'Open to join'], ['approval', 'Requires approval'], ['invite_only', 'Invite only']]} /><button className="button primary" disabled={pending}>{pending ? 'Saving...' : 'Save identity'}</button></form>
+  </SettingsPanel>;
 }
 
 function PreferenceSettings({ context, reload }: SettingsProps) {
@@ -114,7 +123,7 @@ function ArchiveSettings({ context, reload }: SettingsProps) {
 function SettingsPanel({ children, description, eyebrow, title }: { children: ReactNode; description: string; eyebrow: string; title: string }) { return <section className="management-section settings-panel"><header><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{description}</p></div></header>{children}</section>; }
 function SignInGate({ returnTo }: { returnTo: string }) { return <section className="settings-gate"><UsersRound size={28} /><h2>Sign in required</h2><p>Sign in to manage this place.</p><Link className="button primary" to={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</Link></section>; }
 function TextField(props: { defaultValue?: string; hint?: string; label: string; maxLength?: number; name: string; required?: boolean }) { return <label>{props.label}<input defaultValue={props.defaultValue} maxLength={props.maxLength} name={props.name} required={props.required} />{props.hint ? <small>{props.hint}</small> : null}</label>; }
-function SelectField({ defaultValue, label, name, options }: { defaultValue?: string; label: string; name: string; options: [string, string][] }) { return <label>{label}<select defaultValue={defaultValue} name={name}>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>; }
+function SelectField({ defaultValue, label, name, options }: { defaultValue?: string; label: string; name: string; options: [string, string][] }) { return <label>{label}<Select defaultValue={defaultValue} name={name} options={options.map(([value, text]) => ({ label: text, value }))} /></label>; }
 function errorMessage(error: unknown, fallback: string): string { return error instanceof DesktopApiError ? error.problem?.detail ?? error.message : fallback; }
 function isAuthorizationChange(error: unknown): boolean { return error instanceof DesktopApiError && ['forbidden', 'gone', 'not-found', 'unauthenticated'].includes(error.kind); }
 

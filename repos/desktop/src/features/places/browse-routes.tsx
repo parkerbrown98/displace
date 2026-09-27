@@ -6,6 +6,7 @@ import { useDeferredValue, useState, type FormEvent, type ReactNode } from 'reac
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { RichText } from '../../components/rich-text/rich-text';
 import { RouteState } from '../../components/route-state/route-state';
+import { Select } from '../../components/ui/select';
 import { useRemoteResource } from '../../lib/remote-resource';
 import { DesktopApiError } from '../../lib/api/desktop-api';
 import { useSession } from '../auth/session-provider';
@@ -40,7 +41,7 @@ export function DiscoverRoute() {
       </section>
       <form className="command-bar" onSubmit={submit} role="search">
         <Search aria-hidden="true" size={19} /><input defaultValue={query} minLength={2} name="q" placeholder="Search places" type="search" />
-        <select aria-label="Access" defaultValue={joinPolicy ?? ''} name="join"><option value="">Any access</option><option value="open">Open</option><option value="approval">By approval</option><option value="invite_only">Invite only</option></select>
+        <Select aria-label="Access" defaultValue={joinPolicy ?? ''} name="join" options={[{ label: 'Any access', value: '' }, { label: 'Open', value: 'open' }, { label: 'By approval', value: 'approval' }, { label: 'Invite only', value: 'invite_only' }]} />
         <button className="button primary" type="submit">Explore</button>
       </form>
       {page.tags?.length ? <nav className="tag-strip" aria-label="Browse by interest">
@@ -71,7 +72,7 @@ export function SearchRoute() {
 
   return <div className="community-view search-view">
     <header className="compact-page-heading"><span className="eyebrow">Across Displace</span><h2>Search the conversation.</h2><p>Find public communities, topics, and replies without leaving the keyboard.</p></header>
-    <form className="command-bar" onSubmit={submit} role="search"><Search aria-hidden="true" size={19} /><input autoFocus defaultValue={query} minLength={2} name="q" placeholder="Try a topic, place, or phrase" required type="search" /><select aria-label="Result type" defaultValue={type ?? ''} name="type"><option value="">Everything</option><option value="place">Places</option><option value="topic">Topics</option><option value="post">Replies</option></select><button className="button primary">Search</button></form>
+    <form className="command-bar" onSubmit={submit} role="search"><Search aria-hidden="true" size={19} /><input autoFocus defaultValue={query} minLength={2} name="q" placeholder="Try a topic, place, or phrase" required type="search" /><Select aria-label="Result type" defaultValue={type ?? ''} name="type" options={[{ label: 'Everything', value: '' }, { label: 'Places', value: 'place' }, { label: 'Topics', value: 'topic' }, { label: 'Replies', value: 'post' }]} /><button className="button primary">Search</button></form>
     {query.length < 2 ? <EmptyContent icon={<Search />} title="Start with a phrase" message="Enter at least two characters to search public content." /> : resource.state.status !== 'ready' ? <ResourceState resource={resource} title="Searching" /> : resource.state.data.items.length ? <div className="search-results">{resource.state.data.items.map((result) => <article className="search-result" key={`${result.type}:${result.postId ?? result.topicId ?? result.placeId}`}><span className="result-icon">{result.type === 'place' ? <MapPin /> : result.type === 'topic' ? <MessageSquareText /> : <FileText />}</span><div><span className="eyebrow">{result.type} · {result.placeSlug}</span><h3><Link to={result.type === 'place' ? `/places/${result.placeSlug}` : `/places/${result.placeSlug}/topics/${result.topicId}`}>{highlight(result.highlights?.title ?? result.title)}</Link></h3><p>{highlight(result.highlights?.text ?? result.text)}</p><time dateTime={result.createdAt}>{formatDate(result.createdAt)}</time></div></article>)}</div> : <EmptyContent icon={<Search />} title="No matches" message="Try a broader phrase or another result type." />}
     {resource.state.status === 'ready' ? <CursorButton cursor={resource.state.data.nextCursor} path="/search" parameters={{ q: query, type }} /> : null}
   </div>;

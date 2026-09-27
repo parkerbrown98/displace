@@ -149,6 +149,21 @@ describe('PlaceClient', () => {
       ['/api/v1/places/place/voice/rooms', { body: { capacity: 25, listenPermission: 'voice.join', name: 'Standup', position: 0, slug: 'standup', speakPermission: 'voice.join' }, method: 'POST' }],
     ]);
   });
+
+  it('reads and assigns place images through the asset endpoints', async () => {
+    const authenticatedRequest = vi.fn().mockResolvedValue({ assetId: 'asset/id', url: 'https://assets.test/image' });
+    const client = new PlaceClient(createAuth(stubApi(), authenticatedRequest, true), new ReadCache());
+
+    await client.placeImage('place/id', 'icon');
+    await client.assetDownload('place/id', 'asset/id');
+    await client.setPlaceImage('place/id', 'banner', 'asset/id');
+
+    expect(authenticatedRequest.mock.calls).toEqual([
+      ['/api/v1/places/place%2Fid/assets/place-images/icon'],
+      ['/api/v1/places/place%2Fid/assets/downloads/asset%2Fid'],
+      ['/api/v1/places/place%2Fid/assets/place-images/banner', { body: { assetId: 'asset/id' }, method: 'PUT' }],
+    ]);
+  });
 });
 
 function createAuth(api: DesktopApi, authenticatedRequest = vi.fn(), authenticated = false) {
