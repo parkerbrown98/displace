@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, isTauri } from '@tauri-apps/api/core';
 import type { components } from '@displace/api-client';
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -67,6 +67,8 @@ export interface NativePlatform {
 }
 
 export function createNativePlatform(): NativePlatform {
+  if (!isTauri()) return new MemoryNativePlatform();
+
   let pendingUpdate: Update | null = null;
 
   return {

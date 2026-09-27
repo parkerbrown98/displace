@@ -1,6 +1,7 @@
 import type { components } from '@displace/api-client';
 import type { AppConfig } from '../../config/app-config';
 import { createDesktopApi, DesktopApiError, normalizeApiError, type DesktopApi } from '../../lib/api/desktop-api';
+import { desktopReadCache } from '../../lib/api/read-cache';
 import type { NativePlatform } from '../../lib/platform/native-platform';
 
 export type AccountSession = components['schemas']['SessionDto'];
@@ -224,6 +225,7 @@ export class NativeAuthClient {
   private async forget(notify = false): Promise<void> {
     this.#accessToken = null;
     this.#user = null;
+    desktopReadCache.clearSensitive();
     await this.platform.clearRefreshToken();
     if (notify) this.#invalidationListeners.forEach((listener) => listener());
   }
@@ -239,7 +241,7 @@ export function authErrorMessage(error: unknown, fallback: string): string {
 function normalizeNativeAuthError(error: unknown): DesktopApiError {
   if (typeof error === 'object' && error !== null && 'kind' in error) {
     const kind = String(error.kind);
-    if (['offline', 'unauthenticated', 'forbidden', 'not-found', 'rate-limited', 'server', 'unknown'].includes(kind)) {
+    if (['offline', 'unauthenticated', 'forbidden', 'not-found', 'gone', 'rate-limited', 'server', 'unknown'].includes(kind)) {
       return new DesktopApiError(kind as DesktopApiError['kind']);
     }
   }

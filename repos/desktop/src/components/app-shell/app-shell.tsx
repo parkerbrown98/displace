@@ -82,6 +82,12 @@ function routeTitle(pathname: string): string {
   if (pathname === '/settings') return 'Settings';
   if (pathname === '/discover') return 'Discover';
   if (pathname === '/search') return 'Search';
+  if (pathname === '/places/new') return 'New place';
+  if (/^\/members\//.test(pathname)) return 'Member profile';
+  if (/\/settings$/.test(pathname)) return 'Place settings';
+  if (/\/topics\//.test(pathname)) return 'Discussion';
+  if (/\/forums\//.test(pathname)) return 'Forum';
+  if (/^\/places\//.test(pathname)) return 'Place';
   if (pathname.includes('password')) return 'Password recovery';
   if (pathname === '/register') return 'Registration';
   if (pathname === '/verify-email') return 'Verification';

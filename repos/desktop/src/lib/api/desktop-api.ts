@@ -14,6 +14,7 @@ export type ApiFailureKind =
   | 'unauthenticated'
   | 'forbidden'
   | 'not-found'
+  | 'gone'
   | 'rate-limited'
   | 'server'
   | 'unknown';
@@ -106,6 +107,7 @@ function kindForStatus(status: number): ApiFailureKind {
   if (status === 401) return 'unauthenticated';
   if (status === 403) return 'forbidden';
   if (status === 404) return 'not-found';
+  if (status === 410) return 'gone';
   if (status === 429) return 'rate-limited';
   return status >= 500 ? 'server' : 'unknown';
 }
@@ -116,6 +118,7 @@ function messageFor(kind: ApiFailureKind): string {
     unauthenticated: 'Your session has expired.',
     forbidden: 'You no longer have access to this resource.',
     'not-found': 'This resource could not be found.',
+    gone: 'This resource is no longer available.',
     'rate-limited': 'Too many requests were sent.',
     server: 'The server could not complete the request.',
     unknown: 'The request could not be completed.',

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { MemoryNativePlatform } from './native-platform';
+import { createNativePlatform, MemoryNativePlatform } from './native-platform';
 
 describe('MemoryNativePlatform', () => {
+  it('backs browser previews with a non-persistent platform', () => {
+    expect(createNativePlatform()).toBeInstanceOf(MemoryNativePlatform);
+  });
+
   it('models credential presence without exposing the stored token', async () => {
     const platform = new MemoryNativePlatform();
     expect(await platform.hasRefreshToken()).toBe(false);

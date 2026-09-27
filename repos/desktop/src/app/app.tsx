@@ -1,15 +1,16 @@
 import { ArrowRight, Clock3, MessageSquareText, Users } from 'lucide-react';
 import { useState } from 'react';
-import { createHashRouter, RouterProvider } from 'react-router-dom';
+import { createHashRouter, Link, RouterProvider } from 'react-router-dom';
 import { AppShell } from '../components/app-shell/app-shell';
 import { FeedbackProvider } from '../components/ui/feedback';
-import { useToast } from '../components/ui/feedback-context';
 import { RouteState } from '../components/route-state/route-state';
 import type { AppConfig } from '../config/app-config';
 import { AccountSettingsRoute } from '../features/auth/account-settings';
 import { NativeAuthClient } from '../features/auth/auth-client';
 import { ForgotPasswordRoute, RegisterRoute, ResetPasswordRoute, SessionExpiredRoute, SignInRoute, VerifyEmailRoute } from '../features/auth/identity-routes';
 import { SessionProvider } from '../features/auth/session-provider';
+import { DiscoverRoute, PlaceRoute, ProfileRoute, SearchRoute, TopicRoute } from '../features/places/browse-routes';
+import { CreatePlaceRoute, PlaceSettingsRoute } from '../features/places/management-routes';
 import { createNativePlatform, type NativePlatform } from '../lib/platform/native-platform';
 
 const router = createHashRouter([
@@ -19,8 +20,14 @@ const router = createHashRouter([
     errorElement: <RouteState state="error" />,
     children: [
       { index: true, element: <HomeRoute /> },
-      { path: 'discover', element: <EmptyRoute title="Discover places" /> },
-      { path: 'search', element: <EmptyRoute title="Search Displace" /> },
+      { path: 'discover', element: <DiscoverRoute /> },
+      { path: 'search', element: <SearchRoute /> },
+      { path: 'places/new', element: <CreatePlaceRoute /> },
+      { path: 'places/:placeSlug', element: <PlaceRoute /> },
+      { path: 'places/:placeSlug/forums/:forumId', element: <PlaceRoute /> },
+      { path: 'places/:placeSlug/topics/:topicId', element: <TopicRoute /> },
+      { path: 'places/:placeSlug/settings', element: <PlaceSettingsRoute /> },
+      { path: 'members/:handle', element: <ProfileRoute /> },
       { path: 'sign-in', element: <SignInRoute /> },
       { path: 'register', element: <RegisterRoute /> },
       { path: 'verify-email', element: <VerifyEmailRoute /> },
@@ -46,7 +53,6 @@ export function App({ config, platform = createNativePlatform(), fetchImplementa
 }
 
 function HomeRoute() {
-  const notify = useToast();
   return (
     <div className="home-view">
       <section className="welcome-band">
@@ -55,7 +61,7 @@ function HomeRoute() {
           <h2>Pick up where you left off.</h2>
           <p>Recent conversations and saved places stay close at hand.</p>
         </div>
-        <button className="button primary" onClick={() => notify('Place discovery opens in Phase 3.')}>Browse places <ArrowRight aria-hidden="true" size={16} /></button>
+        <Link className="button primary" to="/discover">Browse places <ArrowRight aria-hidden="true" size={16} /></Link>
       </section>
       <section className="metric-row" aria-label="Overview">
         <div><Users aria-hidden="true" size={18} /><strong>0</strong><span>Places</span></div>
@@ -68,8 +74,4 @@ function HomeRoute() {
       </section>
     </div>
   );
-}
-
-function EmptyRoute({ title }: { title: string }) {
-  return <RouteState state="loading" title={`${title} is getting ready`} />;
 }
