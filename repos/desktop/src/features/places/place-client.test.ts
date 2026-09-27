@@ -44,6 +44,17 @@ describe('PlaceClient', () => {
     expect(reload).toHaveBeenCalledOnce();
   });
 
+  it('loads the current user place shortcuts as a protected read', async () => {
+    const authenticatedRequest = vi.fn().mockResolvedValue({ items: [] });
+    const client = new PlaceClient(createAuth(stubApi(), authenticatedRequest, true), new ReadCache());
+
+    await client.mine();
+    await client.mine();
+
+    expect(authenticatedRequest).toHaveBeenCalledOnce();
+    expect(authenticatedRequest).toHaveBeenCalledWith('/api/v1/places/mine');
+  });
+
   it('keeps authorization-shaped place reads in the sensitive cache', async () => {
     const cache = new ReadCache();
     const authenticatedRequest = vi.fn().mockResolvedValue({ id: 'private-place' });

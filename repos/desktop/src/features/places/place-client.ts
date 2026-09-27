@@ -40,6 +40,11 @@ export class PlaceClient {
     return this.publicRead(path, () => this.auth.api.request<PlacePage>(path));
   }
 
+  mine(cursor?: string): Promise<PlacePage> {
+    const path = this.auth.api.pagePath('/api/v1/places/mine', cursor);
+    return this.protectedRead(`places:mine:${cursor ?? 'first'}`, path);
+  }
+
   get(placeSlug: string): Promise<Place> {
     const path = this.placePath(placeSlug);
     return this.publicRead(path, () => this.auth.api.request<Place>(path));

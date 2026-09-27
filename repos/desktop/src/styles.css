@@ -31,6 +31,22 @@ button:focus-visible, a:focus-visible { outline: 3px solid #df7b44; outline-offs
 .nav-item { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; color: #dce8e4; border-radius: 5px; text-decoration: none; }
 .nav-item:hover { color: white; background: var(--desktop-chrome-hover); }
 .nav-item.active { color: var(--ink); background: var(--desktop-active); box-shadow: inset 3px 0 var(--coral); font-weight: 700; }
+.sidebar-places { display: flex; min-height: 0; margin-top: 17px; padding-top: 14px; flex: 1; flex-direction: column; border-top: 1px solid #35615d; }
+.sidebar-section-heading { display: flex; align-items: center; justify-content: space-between; min-height: 26px; padding: 0 5px 0 10px; color: #abc4bf; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.sidebar-add-place { display: grid; width: 26px; height: 26px; place-items: center; color: #dce8e4; border: 1px solid #4b726e; border-radius: 4px; }
+.sidebar-add-place:hover { color: white; background: var(--desktop-chrome-hover); border-color: #87a9a2; }
+.sidebar-place-list { display: grid; min-height: 0; margin-top: 6px; align-content: start; gap: 2px; overflow-y: auto; scrollbar-color: #5a7d78 transparent; scrollbar-width: thin; }
+.sidebar-place { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 42px; padding: 4px 7px; color: #dce8e4; border-radius: 5px; text-decoration: none; }
+.sidebar-place:hover { color: white; background: var(--desktop-chrome-hover); }
+.sidebar-place.active { color: white; background: #285651; box-shadow: inset 2px 0 var(--mustard); }
+.sidebar-place-mark { display: grid; width: 24px; height: 24px; place-items: center; color: #173f3c; background: #bdd4cf; border: 1px solid #d8e7e3; border-radius: 4px; font-size: 10px; font-weight: 900; }
+.sidebar-place.active .sidebar-place-mark { background: var(--mustard); border-color: #efd68d; }
+.sidebar-place-copy { display: grid; min-width: 0; gap: 1px; }
+.sidebar-place-copy strong, .sidebar-place-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-place-copy strong { font-size: 11px; }
+.sidebar-place-copy small { color: #9db9b3; font-size: 9px; }
+.sidebar-places-note { margin: 8px 10px; color: #9db9b3; font-size: 10px; line-height: 1.45; }
+.sidebar-places-note a, .sidebar-places-note button { padding: 0; color: #eff8f5; background: transparent; border: 0; cursor: pointer; font-weight: 700; text-decoration: underline; }
 .sidebar-footer { margin-top: auto; }
 .workspace { min-width: 0; overflow: auto; background-color: var(--paper); background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(29, 41, 40, .025) 32px); }
 .topbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 12px 28px; background: rgba(251, 250, 246, .94); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
