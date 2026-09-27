@@ -1,4 +1,5 @@
 import { Settings } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Place, PlaceContext } from './place-client';
 
@@ -13,18 +14,21 @@ const managementPermissions: PlaceContext['viewer']['permissions'][number][] = [
   'voice.manage',
 ];
 
-export function PlaceToolbar({ active, context, place }: { active: PlaceSection; context?: PlaceContext; place: Place }) {
+export function PlaceToolbar({ action, active, context, place }: { action?: ReactNode; active: PlaceSection; context?: PlaceContext; place: Place }) {
   const showSettings = context?.viewer.permissions.some((permission) => managementPermissions.includes(permission)) ?? false;
   return <header className="place-toolbar">
     <Link className="place-toolbar-identity" to={`/places/${place.slug}`}>
       <span className="place-toolbar-mark" aria-hidden="true">{initials(place.name)}</span>
       <span><strong>{place.name}</strong><small>{place.memberCount.toLocaleString()} {place.memberCount === 1 ? 'member' : 'members'}</small></span>
     </Link>
-    <nav aria-label={`${place.name} navigation`}>
-      <PlaceLink active={active === 'forums'} to={`/places/${place.slug}`}>Forums</PlaceLink>
-      {context ? <PlaceLink active={active === 'members'} to={`/places/${place.slug}/members`}>Members</PlaceLink> : null}
-      {showSettings ? <PlaceLink active={active === 'settings'} to={`/places/${place.slug}/settings`}><Settings size={14} />Settings</PlaceLink> : null}
-    </nav>
+    <div className="place-toolbar-end">
+      <nav aria-label={`${place.name} navigation`}>
+        <PlaceLink active={active === 'forums'} to={`/places/${place.slug}`}>Forums</PlaceLink>
+        {context ? <PlaceLink active={active === 'members'} to={`/places/${place.slug}/members`}>Members</PlaceLink> : null}
+        {showSettings ? <PlaceLink active={active === 'settings'} to={`/places/${place.slug}/settings`}><Settings size={14} />Settings</PlaceLink> : null}
+      </nav>
+      {action ? <div className="place-toolbar-action">{action}</div> : null}
+    </div>
   </header>;
 }
 

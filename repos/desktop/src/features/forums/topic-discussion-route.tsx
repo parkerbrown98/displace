@@ -7,6 +7,7 @@ import { useToast } from '../../components/ui/feedback-context';
 import { useRemoteResource } from '../../lib/remote-resource';
 import { useSession } from '../auth/session-provider';
 import type { ForumNavigation, PlaceContext, Post, PostRevision, RichTextDocument, Topic, TopicViewerState } from '../places/place-client';
+import { PlaceToolbar } from '../places/place-toolbar';
 import { usePlaceClient } from '../places/use-place-client';
 import { forumDraftKey, loadForumDraft, removeForumDraft, saveForumDraft } from './draft-store';
 import { ForumEditor } from './forum-editor';
@@ -157,7 +158,8 @@ function Discussion({ data, reload }: { data: DiscussionData; reload: () => void
 
   const canManageTopic = canModerate || topic.authorUserId === session.user?.id;
   return <div className="community-view discussion-view">
-    <nav className="breadcrumbs" aria-label="Breadcrumb"><Link to={`/places/${data.place.slug}`}>{data.place.name}</Link><span>/</span>{forum ? <Link to={`/places/${data.place.slug}/forums/${forum.id}`}>{forum.name}</Link> : null}</nav>
+    <PlaceToolbar active="forums" context={data.context} place={data.place} />
+    <nav className="breadcrumbs" aria-label="Breadcrumb"><Link to={`/places/${data.place.slug}`}>Forums</Link>{forum ? <><span aria-hidden="true">/</span><Link to={`/places/${data.place.slug}/forums/${forum.id}`}>{forum.name}</Link></> : null}</nav>
     <header className="discussion-heading">
       <div className="topic-flags">{topic.isPinned ? <span><Pin size={13} />Pinned</span> : null}{topic.status === 'locked' ? <span><Lock size={13} />Locked</span> : null}{topic.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div>
       {editingTitle ? <form className="inline-title-form" onSubmit={rename}><input autoFocus maxLength={300} onChange={(event) => setTitle(event.target.value)} value={title} /><button className="button primary compact" disabled={pendingAction === 'title'}>Save title</button><button className="button secondary compact" onClick={() => { setTitle(topic.title); setEditingTitle(false); }} type="button">Cancel</button></form> : <h2>{topic.title}</h2>}
