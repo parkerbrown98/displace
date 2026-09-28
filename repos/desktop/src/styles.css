@@ -406,7 +406,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #df7b44; outline-offs
 .place-toolbar nav a.active { color: var(--ink); border-bottom-color: var(--coral); }
 .place-toolbar-action { display: flex; align-items: center; }
 .route-content:has(> .chat-view) { height: 100%; overflow: hidden; padding-top: 0; padding-bottom: 0; }
-.chat-view { height: 100%; min-height: 560px; grid-template-rows: auto minmax(0, 1fr); padding-bottom: 0; gap: 20px; }
+.chat-view { height: 100%; min-height: 560px; grid-template-rows: auto minmax(0, 1fr); padding-bottom: 0; gap: 0; }
 .chat-view > .place-toolbar { margin-top: 0; }
 .chat-workbench { display: grid; min-height: 0; margin: 0 -28px; grid-template-columns: 176px minmax(0, 1fr); overflow: hidden; background: var(--paper-raised); border-top: 1px solid var(--line); }
 .chat-channel-rail { min-width: 0; padding: 14px 10px; color: var(--ink); background: #e7eae5; border-right: 1px solid #cfd4ce; }
