@@ -14,7 +14,7 @@ export function AccountSettingsRoute() {
   if (!session.user) return <section className="settings-gate"><h2>Sign in required</h2><p>Sign in to manage your account and active sessions.</p><Link className="button primary" to="/sign-in?returnTo=%2Fsettings">Sign in</Link></section>;
 
   return <div className="account-settings">
-    <header className="settings-heading"><span className="eyebrow">Account</span><h2>Settings</h2><p>Manage your identity, credentials, and signed-in devices.</p></header>
+    <header className="settings-heading"><h2>Settings</h2><p>Manage your identity, credentials, and signed-in devices.</p></header>
     <ProfileSettings />
     <EmailSettings />
     <PasswordSettings />
@@ -43,7 +43,7 @@ function ProfileSettings() {
     }
   }
 
-  return <SettingsSection eyebrow="Public identity" title="Profile"><form className="settings-form" onSubmit={submit}>
+  return <SettingsSection title="Profile"><form className="settings-form" onSubmit={submit}>
     <FormField defaultValue={user.displayName} label="Display name" maxLength={100} name="displayName" required />
     <FormField defaultValue={user.handle} hint="3-32 lowercase letters, numbers, or underscores." label="Handle" maxLength={32} minLength={3} name="handle" pattern="[a-z0-9_]{3,32}" required />
     <button className="button primary" disabled={pending} type="submit">{pending ? 'Saving...' : 'Save profile'}</button>
@@ -69,7 +69,7 @@ function EmailSettings() {
     }
   }
 
-  return <SettingsSection eyebrow="Contact" title="Email" action={<span className={`verification-state${user.emailVerified ? ' verified' : ''}`}><ShieldCheck aria-hidden="true" size={14} />{user.emailVerified ? 'Verified' : 'Pending'}</span>}><form className="settings-form" onSubmit={submit}>
+  return <SettingsSection title="Email" action={<span className={`verification-state${user.emailVerified ? ' verified' : ''}`}><ShieldCheck aria-hidden="true" size={14} />{user.emailVerified ? 'Verified' : 'Pending'}</span>}><form className="settings-form" onSubmit={submit}>
     <FormField autoComplete="email" defaultValue={user.email} label="Email address" name="email" required type="email" />
     <button className="button primary" disabled={pending} type="submit">{pending ? 'Sending...' : 'Change email'}</button>
   </form></SettingsSection>;
@@ -95,7 +95,7 @@ function PasswordSettings() {
     }
   }
 
-  return <SettingsSection eyebrow="Credentials" title="Password"><form className="settings-form" onSubmit={submit}>
+  return <SettingsSection title="Password"><form className="settings-form" onSubmit={submit}>
     <FormField autoComplete="current-password" label="Current password" name="currentPassword" required type="password" />
     <FormField autoComplete="new-password" hint="Use at least 12 characters." label="New password" maxLength={256} minLength={12} name="newPassword" required type="password" />
     <button className="button primary" disabled={pending} type="submit">{pending ? 'Updating...' : 'Change password'}</button>
@@ -132,7 +132,7 @@ function SessionSettings() {
     }
   }
 
-  return <SettingsSection eyebrow="Security" title="Active sessions" action={<button className="button danger" onClick={() => void leave(true)} type="button"><LogOut aria-hidden="true" size={16} /> Sign out all</button>}>
+  return <SettingsSection title="Active sessions" action={<button className="button danger" onClick={() => void leave(true)} type="button"><LogOut aria-hidden="true" size={16} /> Sign out all</button>}>
     {failed ? <p className="form-message error" role="alert">Sessions could not be loaded.</p> : null}
     {!failed && sessions === null ? <p className="form-message" role="status">Loading sessions...</p> : null}
     {sessions?.length === 0 ? <p className="form-message">No active sessions were returned.</p> : null}
@@ -145,8 +145,8 @@ function SessionSettings() {
   </SettingsSection>;
 }
 
-function SettingsSection({ action, children, eyebrow, title }: { action?: ReactNode; children: ReactNode; eyebrow: string; title: string }) {
-  return <section className="settings-section"><div className="settings-section-heading"><div><span className="eyebrow">{eyebrow}</span><h3>{title}</h3></div>{action}</div>{children}</section>;
+function SettingsSection({ action, children, title }: { action?: ReactNode; children: ReactNode; title: string }) {
+  return <section className="settings-section"><div className="settings-section-heading"><h3>{title}</h3>{action}</div>{children}</section>;
 }
 
 function formatDate(value: string): string {

@@ -184,7 +184,7 @@ export function SessionExpiredRoute() {
 }
 
 function AuthFrame({ children, description, icon, title }: { children: ReactNode; description: string; icon: ReactNode; title: string }) {
-  return <section className="auth-view"><div className="auth-heading"><span className="auth-icon">{icon}</span><div><span className="eyebrow">Account</span><h2>{title}</h2><p>{description}</p></div></div>{children}</section>;
+  return <section className="auth-view"><div className="auth-heading"><span className="auth-icon">{icon}</span><div><h2>{title}</h2><p>{description}</p></div></div>{children}</section>;
 }
 
 export function FormField({ hint, label, ...input }: React.InputHTMLAttributes<HTMLInputElement> & { hint?: string; label: string }) {

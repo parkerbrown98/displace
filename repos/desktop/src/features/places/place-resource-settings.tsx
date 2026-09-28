@@ -89,7 +89,6 @@ export function ForumSettings({ context, onAuthorizationChange }: SettingsProps)
       trigger={<button className="button primary compact" type="button"><Plus size={14} />Add group</button>}
     ><form className="management-form dialog-form" onSubmit={(event) => void createGroup(event)}><TextField label="Name" name="name" placeholder="Knowledge base" required /><TextField label="Description" name="description" placeholder="Long-lived references" /><DialogActions pending={pending} submitLabel="Create group" /></form></SettingsDialog>}
     description="Organize conversations into groups, tune access, and maintain reusable topic tags."
-    eyebrow="Forum structure"
     title="Boards and tags"
   >
     {navigation.groups.length ? <SortableList
@@ -212,7 +211,6 @@ export function ChatSettings({ context, onAuthorizationChange }: SettingsProps) 
   return <SettingsPanel
     action={<SettingsDialog description="Create a channel for quick conversation." onOpenChange={setCreateOpen} open={createOpen} title="New chat channel" trigger={<button className="button primary compact" type="button"><Plus size={14} />Add channel</button>}><form className="management-form dialog-form" onSubmit={(event) => void create(event)}><TextField label="Name" name="name" required /><TextField label="Slug" name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><DialogActions pending={pending} submitLabel="Create channel" /></form></SettingsDialog>}
     description="Create channels and configure who can read or send messages."
-    eyebrow="Live conversation"
     title="Chat channels"
   >
     {channels.length ? <SortableList disabled={pending} items={channels} label="Chat channels" onReorder={reorder} renderItem={(channel, handle) => <ChannelEditor channel={channel} handle={handle} pending={pending} onArchive={() => confirm({ confirmLabel: 'Archive channel', message: 'Existing messages remain preserved.', title: `Archive ${channel.name}?` }).then((accepted) => accepted ? run(() => client.archiveChatChannel(context.place.id, channel.id), 'Channel archived.') : undefined)} onSave={(input) => run(() => client.updateChatChannel(context.place.id, channel.id, input), 'Channel saved.')} />} /> : <EmptySettings message="No chat channels yet." />}
@@ -254,7 +252,6 @@ export function VoiceSettings({ context, onAuthorizationChange }: SettingsProps)
   return <SettingsPanel
     action={<SettingsDialog description="Create a room for live audio conversation." onOpenChange={setCreateOpen} open={createOpen} title="New voice room" trigger={<button className="button primary compact" type="button"><Plus size={14} />Add room</button>}><form className="management-form dialog-form" onSubmit={(event) => void create(event)}><TextField label="Name" name="name" required /><TextField label="Slug" name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><DialogActions pending={pending} submitLabel="Create room" /></form></SettingsDialog>}
     description="Set room capacity and decide who can listen or speak."
-    eyebrow="Live audio"
     title="Voice rooms"
   >
     {rooms.length ? <SortableList disabled={pending} items={rooms} label="Voice rooms" onReorder={reorder} renderItem={(room, handle) => <VoiceRoomEditor handle={handle} key={room.id} room={room} pending={pending} onArchive={() => confirm({ confirmLabel: 'Archive room', message: 'Members will no longer be able to join.', title: `Archive ${room.name}?` }).then((accepted) => accepted ? run(() => client.archiveVoiceRoom(context.place.id, room.id), 'Voice room archived.') : undefined)} onSave={(input) => run(() => client.updateVoiceRoom(context.place.id, room.id, input), 'Voice room saved.')} />} /> : <EmptySettings message="No voice rooms yet." />}
@@ -300,7 +297,6 @@ export function RoleSettings({ context, onAuthorizationChange }: SettingsProps) 
   return <SettingsPanel
     action={<SettingsDialog description="Create a reusable set of permissions for members." onOpenChange={setCreateOpen} open={createOpen} title="New role" trigger={<button className="button primary compact" type="button"><Plus size={14} />Add role</button>}><form className="management-form dialog-form" onSubmit={(event) => void create(event)}><TextField label="Role name" name="name" required /><DialogActions pending={pending} submitLabel="Create role" /></form></SettingsDialog>}
     description="Group permissions into roles that can be assigned from the member directory."
-    eyebrow="Capabilities"
     title="Roles and permissions"
   >
     <div className="settings-resource-list">{systemRoles.map((role) => editor(role))}</div>
@@ -358,8 +354,8 @@ function SelectField({ defaultValue, label, name, options }: { defaultValue?: st
   return <label>{label}<Select defaultValue={defaultValue} name={name} options={options} /></label>;
 }
 
-function SettingsPanel({ action, children, description, eyebrow, title }: { action?: ReactNode; children: ReactNode; description: string; eyebrow: string; title: string }) {
-  return <section className="management-section settings-panel"><header><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{description}</p></div>{action}</header>{children}</section>;
+function SettingsPanel({ action, children, description, title }: { action?: ReactNode; children: ReactNode; description: string; title: string }) {
+  return <section className="management-section settings-panel"><header><div><h2>{title}</h2><p>{description}</p></div>{action}</header>{children}</section>;
 }
 
 function EmptySettings({ message }: { message: string }) { return <p className="settings-muted settings-empty">{message}</p>; }

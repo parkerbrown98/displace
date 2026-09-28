@@ -78,7 +78,6 @@ function HomeRoute() {
     <div className="home-view">
       <section className="welcome-band">
         <div>
-          <span className="eyebrow">Your communities</span>
           <h2>Pick up where you left off.</h2>
           <p>Recent conversations and saved places stay close at hand.</p>
         </div>

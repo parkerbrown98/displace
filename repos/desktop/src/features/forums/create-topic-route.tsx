@@ -71,7 +71,7 @@ function CreateTopicForm({ context, navigation, userId }: { context: PlaceContex
 
   return <div className="community-view topic-compose-view">
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link to={`/places/${place.slug}`}>{place.name}</Link><span>/</span><span>New topic</span></nav>
-    <header className="compact-page-heading"><span className="eyebrow">Discussion</span><h2>Start a new topic.</h2><p>Set the context clearly, then let the conversation develop.</p></header>
+    <header className="compact-page-heading"><h2>Start a new topic.</h2><p>Set the context clearly, then let the conversation develop.</p></header>
     {draft ? <p className="draft-notice" role="status">Draft restored from {new Date(draft.updatedAt).toLocaleString()}.</p> : null}
     <form className="topic-compose-form" onSubmit={submit}>
       <div className="topic-compose-fields"><label className="form-field">Board<Select onValueChange={setForumId} options={forums.map((forum) => ({ label: forum.name, value: forum.id }))} required value={forumId} /></label><label className="form-field">Title<input autoFocus maxLength={300} minLength={1} onChange={(event) => setTitle(event.target.value)} required value={title} /></label></div>

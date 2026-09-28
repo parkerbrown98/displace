@@ -48,7 +48,7 @@ export function PlaceSettingsRoute() {
   return <div className="community-view place-workspace-page settings-workspace">
     <PlaceToolbar active="settings" context={context} place={context.place} />
     <div className="settings-workspace-grid">
-      <aside className="settings-navigation"><span className="eyebrow">Place settings</span><nav aria-label="Settings sections">{available.map((item) => <NavLink key={item.section} to={`/places/${context.place.slug}/settings/${item.section}`}>{item.icon}<span>{item.label}</span><ChevronRight /></NavLink>)}</nav></aside>
+      <aside className="settings-navigation"><strong className="settings-navigation-title">Place settings</strong><nav aria-label="Settings sections">{available.map((item) => <NavLink key={item.section} to={`/places/${context.place.slug}/settings/${item.section}`}>{item.icon}<span>{item.label}</span><ChevronRight /></NavLink>)}</nav></aside>
       <main className="settings-content">
         {selected.section === 'identity' ? <IdentitySettings context={context} reload={resource.reload} /> : null}
         {selected.section === 'preferences' ? <PreferenceSettings context={context} reload={resource.reload} /> : null}
@@ -78,7 +78,7 @@ function IdentitySettings({ context, reload }: SettingsProps) {
     } catch (error) { notify(errorMessage(error, 'Place identity could not be saved.')); if (isAuthorizationChange(error)) reload(); }
     finally { setPending(false); }
   }
-  return <SettingsPanel eyebrow="Identity and access" title="Place identity" description="Control how this place appears and how people can join.">
+  return <SettingsPanel title="Place identity" description="Control how this place appears and how people can join.">
     {canUpload ? <div className="place-image-uploaders">
       <PlaceImageUploader description="Square JPEG, PNG, or WebP for compact navigation." kind="icon" label="Place icon" onChanged={reload} placeId={context.place.id} />
       <PlaceImageUploader description="Wide JPEG, PNG, or WebP for place headers." kind="banner" label="Place banner" onChanged={reload} placeId={context.place.id} shape="landscape" />
@@ -104,7 +104,7 @@ function PreferenceSettings({ context, reload }: SettingsProps) {
     } catch (error) { notify(errorMessage(error, 'Preferences could not be saved.')); if (isAuthorizationChange(error)) reload(); }
     finally { setPending(false); }
   }
-  return <SettingsPanel eyebrow="Defaults and discovery" title="Community preferences" description="Help people find this place and choose how conversations appear by default."><form className="management-form" onSubmit={submit}><TextField defaultValue={tags.join(', ')} hint="Up to eight comma-separated tags." label="Discovery tags" name="tags" /><SelectField defaultValue={String(context.place.settings.locale ?? 'en-US')} label="Locale" name="locale" options={[['en-US', 'English (United States)'], ['en-GB', 'English (United Kingdom)']]} /><SelectField defaultValue={String(context.place.settings.topicSort ?? 'activity')} label="Default topic order" name="topicSort" options={[['activity', 'Recent activity'], ['created', 'Newest topics']]} /><button className="button primary" disabled={pending}>{pending ? 'Saving...' : 'Save preferences'}</button></form></SettingsPanel>;
+  return <SettingsPanel title="Community preferences" description="Help people find this place and choose how conversations appear by default."><form className="management-form" onSubmit={submit}><TextField defaultValue={tags.join(', ')} hint="Up to eight comma-separated tags." label="Discovery tags" name="tags" /><SelectField defaultValue={String(context.place.settings.locale ?? 'en-US')} label="Locale" name="locale" options={[['en-US', 'English (United States)'], ['en-GB', 'English (United Kingdom)']]} /><SelectField defaultValue={String(context.place.settings.topicSort ?? 'activity')} label="Default topic order" name="topicSort" options={[['activity', 'Recent activity'], ['created', 'Newest topics']]} /><button className="button primary" disabled={pending}>{pending ? 'Saving...' : 'Save preferences'}</button></form></SettingsPanel>;
 }
 
 function ArchiveSettings({ context, reload }: SettingsProps) {
@@ -117,10 +117,10 @@ function ArchiveSettings({ context, reload }: SettingsProps) {
     try { await client.archive(context.place.id); notify('Place archived.'); navigate('/discover', { replace: true }); }
     catch (error) { notify(errorMessage(error, 'The place could not be archived.')); if (isAuthorizationChange(error)) reload(); }
   }
-  return <SettingsPanel eyebrow="Restricted action" title="Archive place" description="Archiving removes this place from discovery and blocks new activity while preserving its records."><div className="danger-row"><p>This cannot be undone from the desktop app.</p><button className="button danger" onClick={() => void archive()}><Archive size={15} />Archive place</button></div></SettingsPanel>;
+  return <SettingsPanel title="Archive place" description="Archiving removes this place from discovery and blocks new activity while preserving its records."><div className="danger-row"><p>This cannot be undone from the desktop app.</p><button className="button danger" onClick={() => void archive()}><Archive size={15} />Archive place</button></div></SettingsPanel>;
 }
 
-function SettingsPanel({ children, description, eyebrow, title }: { children: ReactNode; description: string; eyebrow: string; title: string }) { return <section className="management-section settings-panel"><header><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{description}</p></div></header>{children}</section>; }
+function SettingsPanel({ children, description, title }: { children: ReactNode; description: string; title: string }) { return <section className="management-section settings-panel"><header><div><h2>{title}</h2><p>{description}</p></div></header>{children}</section>; }
 function SignInGate({ returnTo }: { returnTo: string }) { return <section className="settings-gate"><UsersRound size={28} /><h2>Sign in required</h2><p>Sign in to manage this place.</p><Link className="button primary" to={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</Link></section>; }
 function TextField(props: { defaultValue?: string; hint?: string; label: string; maxLength?: number; name: string; required?: boolean }) { return <label>{props.label}<input defaultValue={props.defaultValue} maxLength={props.maxLength} name={props.name} required={props.required} />{props.hint ? <small>{props.hint}</small> : null}</label>; }
 function SelectField({ defaultValue, label, name, options }: { defaultValue?: string; label: string; name: string; options: [string, string][] }) { return <label>{label}<Select defaultValue={defaultValue} name={name} options={options.map(([value, text]) => ({ label: text, value }))} /></label>; }

@@ -36,7 +36,7 @@ export function DiscoverRoute() {
   return (
     <div className="community-view discovery-view">
       <section className="discovery-masthead">
-        <div><span className="eyebrow">Community atlas</span><h2>Find a place worth returning to.</h2><p>Browse public communities, or narrow the field by conversation and access.</p></div>
+        <div><h2>Find a place worth returning to.</h2><p>Browse public communities, or narrow the field by conversation and access.</p></div>
         <span className="signal-mark" aria-hidden="true"><i /><i /><i /><strong>D</strong></span>
       </section>
       <form className="command-bar" onSubmit={submit} role="search">
@@ -48,7 +48,7 @@ export function DiscoverRoute() {
         <Link className={!tag ? 'active' : ''} to={withQuery('/discover', { join: joinPolicy })}><Compass size={14} />All</Link>
         {page.tags.map((facet) => <Link className={tag === facet.name ? 'active' : ''} key={facet.name} to={withQuery('/discover', { join: joinPolicy, tag: facet.name })}><Hash size={13} />{humanize(facet.name)} <span>{facet.count}</span></Link>)}
       </nav> : null}
-      <div className="directory-heading"><div><span className="eyebrow">In view</span><h3>{tag ? `Places tagged #${tag}` : 'Public places'}</h3></div><span>{page.items.length} found</span></div>
+      <div className="directory-heading"><h3>{tag ? `Places tagged #${tag}` : 'Public places'}</h3><span>{page.items.length} found</span></div>
       {page.items.length ? <div className="place-grid">{page.items.map((place, index) => <PlaceCard index={index} key={place.id} place={place} />)}</div> : <EmptyContent icon={<Compass />} title="No communities found" message="Try a broader search or another access filter." />}
       <CursorButton cursor={page.nextCursor} path="/discover" parameters={{ join: joinPolicy, q: query, tag }} />
     </div>
@@ -74,9 +74,9 @@ export function SearchRoute() {
   }
 
   return <div className="community-view search-view">
-    <header className="compact-page-heading"><span className="eyebrow">Across Displace</span><h2>Search the conversation.</h2><p>Find public communities, topics, and replies without leaving the keyboard.</p></header>
+    <header className="compact-page-heading"><h2>Search the conversation.</h2><p>Find public communities, topics, and replies without leaving the keyboard.</p></header>
     <form className="command-bar search-command-bar" onSubmit={submit} role="search"><Search aria-hidden="true" size={19} /><input autoFocus defaultValue={query} minLength={2} name="q" placeholder="Try a topic, place, or phrase" required type="search" /><Select aria-label="Result type" defaultValue={type ?? ''} name="type" options={[{ label: 'Everything', value: '' }, { label: 'Places', value: 'place' }, { label: 'Topics', value: 'topic' }, { label: 'Replies', value: 'post' }]} /><Select aria-label="Search scope" defaultValue={placeId ?? ''} name="placeId" options={[{ label: 'Everywhere', value: '' }, ...(places.state.status === 'ready' ? places.state.data.items.map((place) => ({ label: place.name, value: place.id })) : [])]} /><button className="button primary">Search</button></form>
-    {query.length < 2 ? <EmptyContent icon={<Search />} title="Start with a phrase" message="Enter at least two characters to search public content." /> : resource.state.status !== 'ready' ? <ResourceState resource={resource} title="Searching" /> : resource.state.data.items.length ? <div className="search-results">{resource.state.data.items.map((result) => <article className="search-result" key={`${result.type}:${result.postId ?? result.topicId ?? result.placeId}`}><span className="result-icon">{result.type === 'place' ? <MapPin /> : result.type === 'topic' ? <MessageSquareText /> : <FileText />}</span><div><span className="eyebrow">{result.type} · {result.placeSlug}</span><h3><Link to={result.type === 'place' ? `/places/${result.placeSlug}` : `/places/${result.placeSlug}/topics/${result.topicId}`}>{highlight(result.highlights?.title ?? result.title)}</Link></h3><p>{highlight(result.highlights?.text ?? result.text)}</p><time dateTime={result.createdAt}>{formatDate(result.createdAt)}</time></div></article>)}</div> : <EmptyContent icon={<Search />} title="No matches" message="Try a broader phrase or another result type." />}
+    {query.length < 2 ? <EmptyContent icon={<Search />} title="Start with a phrase" message="Enter at least two characters to search public content." /> : resource.state.status !== 'ready' ? <ResourceState resource={resource} title="Searching" /> : resource.state.data.items.length ? <div className="search-results">{resource.state.data.items.map((result) => <article className="search-result" key={`${result.type}:${result.postId ?? result.topicId ?? result.placeId}`}><span className="result-icon">{result.type === 'place' ? <MapPin /> : result.type === 'topic' ? <MessageSquareText /> : <FileText />}</span><div><span className="result-meta">{result.type} · {result.placeSlug}</span><h3><Link to={result.type === 'place' ? `/places/${result.placeSlug}` : `/places/${result.placeSlug}/topics/${result.topicId}`}>{highlight(result.highlights?.title ?? result.title)}</Link></h3><p>{highlight(result.highlights?.text ?? result.text)}</p><time dateTime={result.createdAt}>{formatDate(result.createdAt)}</time></div></article>)}</div> : <EmptyContent icon={<Search />} title="No matches" message="Try a broader phrase or another result type." />}
     {resource.state.status === 'ready' ? <CursorButton cursor={resource.state.data.nextCursor} path="/search" parameters={{ placeId, q: query, type }} /> : null}
   </div>;
 }
@@ -114,7 +114,7 @@ export function PlaceRoute() {
     <PlaceToolbar action={session.status === 'authenticated' && !context ? <button className="button primary compact" onClick={join}>Join place</button> : null} active="forums" context={context} place={place} />
     {actionMessage ? <p className="inline-notice" role="status">{actionMessage}</p> : null}
     <div className="forum-workbench">
-      {selectedForum ? <section className="forum-subroute-heading"><nav className="breadcrumbs" aria-label="Breadcrumb"><Link to={`/places/${place.slug}`}>Forums</Link><span aria-hidden="true">/</span><span>{selectedForum.name}</span></nav><header><span className="eyebrow">Forum</span><h2>{selectedForum.name}</h2>{selectedForum.description ? <p>{selectedForum.description}</p> : null}</header></section> : <ForumDirectory navigation={navigation} placeSlug={place.slug} topics={topics.items} />}
+      {selectedForum ? <section className="forum-subroute-heading"><nav className="breadcrumbs" aria-label="Breadcrumb"><Link to={`/places/${place.slug}`}>Forums</Link><span aria-hidden="true">/</span><span>{selectedForum.name}</span></nav><header><h2>{selectedForum.name}</h2>{selectedForum.description ? <p>{selectedForum.description}</p> : null}</header></section> : <ForumDirectory navigation={navigation} placeSlug={place.slug} topics={topics.items} />}
       <section className="topic-directory"><header className="topic-directory-header"><div className="topic-directory-title"><h2>Discussions</h2>{context?.viewer.permissions.includes('topic.create') ? <Link className="button primary compact" to={`/places/${place.slug}/topics/new`}><Plus size={14} />New topic</Link> : null}</div><nav aria-label="Topic filters">{(['latest', 'popular', 'following'] as const).map((value) => <Link className={feed === value ? 'active' : ''} key={value} to={withQuery(forumId ? `/places/${place.slug}/forums/${forumId}` : `/places/${place.slug}`, { feed: value })}>{humanize(value)}</Link>)}</nav></header>{topics.items.length ? <div className="topic-list">{topics.items.map((topic) => <TopicRow key={topic.id} placeSlug={place.slug} topic={topic} />)}</div> : <EmptyContent icon={<MessageSquareText />} title="No discussions here yet" message="Choose another board or check back later." />}<CursorButton cursor={topics.nextCursor} path={forumId ? `/places/${place.slug}/forums/${forumId}` : `/places/${place.slug}`} parameters={{ feed }} /></section>
     </div>
   </div>;
@@ -141,7 +141,7 @@ export function ProfileRoute() {
   const resource = useRemoteResource(`profile:${handle}`, () => client.profile(handle));
   if (resource.state.status !== 'ready') return <ResourceState resource={resource} title="Loading profile" />;
   const profile = resource.state.data;
-  return <div className="community-view profile-view"><span className="profile-avatar">{initials(profile.displayName)}</span><div><span className="eyebrow">Public profile</span><h2>{profile.displayName}</h2><p>@{profile.handle}</p><time dateTime={profile.joinedAt}>Joined {formatDate(profile.joinedAt)}</time></div></div>;
+  return <div className="community-view profile-view"><span className="profile-avatar">{initials(profile.displayName)}</span><div><h2>{profile.displayName}</h2><p>@{profile.handle}</p><time dateTime={profile.joinedAt}>Joined {formatDate(profile.joinedAt)}</time></div></div>;
 }
 
 function ResourceState({ resource, title }: { resource: { reload(): void; state: { status: string; error?: unknown } }; title: string }) {
@@ -152,7 +152,7 @@ function ResourceState({ resource, title }: { resource: { reload(): void; state:
 }
 
 function PlaceCard({ index, place }: { index: number; place: Place }) {
-  return <article className="place-card"><div className={`place-card-visual tone-${index % 4}`}><span>{String(index + 1).padStart(2, '0')}</span><strong>{initials(place.name)}</strong><i /></div><div className="place-card-copy"><span className="eyebrow">Community</span><h3><Link to={`/places/${place.slug}`}>{place.name}</Link></h3><p>{place.description || 'A public place for focused conversation.'}</p><footer><span>{place.joinPolicy === 'open' ? <UsersRound size={14} /> : <Lock size={14} />}{joinLabel(place.joinPolicy)}</span><Link aria-label={`Open ${place.name}`} to={`/places/${place.slug}`}><ArrowRight size={17} /></Link></footer></div></article>;
+  return <article className="place-card"><div className={`place-card-visual tone-${index % 4}`}><span>{String(index + 1).padStart(2, '0')}</span><strong>{initials(place.name)}</strong><i /></div><div className="place-card-copy"><h3><Link to={`/places/${place.slug}`}>{place.name}</Link></h3><p>{place.description || 'A public place for focused conversation.'}</p><footer><span>{place.joinPolicy === 'open' ? <UsersRound size={14} /> : <Lock size={14} />}{joinLabel(place.joinPolicy)}</span><Link aria-label={`Open ${place.name}`} to={`/places/${place.slug}`}><ArrowRight size={17} /></Link></footer></div></article>;
 }
 
 function TopicRow({ placeSlug, topic }: { placeSlug: string; topic: Topic }) {

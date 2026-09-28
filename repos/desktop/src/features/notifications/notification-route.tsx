@@ -17,7 +17,7 @@ export function NotificationRoute() {
   }
 
   return <div className="community-view notification-view">
-    <header className="compact-page-heading"><span className="eyebrow">Inbox</span><h2>Notifications</h2><p>Mentions, replies, and updates from your places.</p></header>
+    <header className="compact-page-heading"><h2>Notifications</h2><p>Mentions, replies, and updates from your places.</p></header>
     <section className="notification-preferences" aria-label="Desktop notification preferences">
       <label><input checked={inbox.preferences.enabled} onChange={(event) => inbox.setEnabled(event.target.checked)} type="checkbox" />Desktop alerts</label>
       <label><input checked={inbox.preferences.showPreviews} disabled={!inbox.preferences.enabled} onChange={(event) => inbox.setShowPreviews(event.target.checked)} type="checkbox" />Show message previews</label>
