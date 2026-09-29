@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Displace soft dark-mode concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --page: #080a10;
+  --page-ink: #f4f5fb;
+  --page-muted: #9096a8;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--page-ink);
+  background:
+    radial-gradient(900px 520px at 14% -10%, rgba(80, 114, 164, 0.16), transparent 68%),
+    radial-gradient(760px 440px at 92% 4%, rgba(151, 93, 119, 0.12), transparent 64%),
+    var(--page);
+  font-family: "Manrope", sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input { font: inherit; }
+
+button { color: inherit; }
+
+.gallery {
+  width: min(1580px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 34px 0 72px;
+}
+
+.gallery-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 4px 28px;
+}
+
+.gallery-head h1 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.45rem, 3vw, 2.55rem);
+  line-height: 1.1;
+}
+
+.gallery-head p {
+  max-width: 580px;
+  margin: 10px 0 0;
+  color: var(--page-muted);
+  line-height: 1.65;
+}
+
+.jump-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.jump-nav a {
+  padding: 8px 12px;
+  color: #c9ccda;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.concept {
+  margin-top: 36px;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: reveal 0.7s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+.concept:nth-of-type(3) { animation-delay: 0.12s; }
+.concept:nth-of-type(4) { animation-delay: 0.24s; }
+
+.concept-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 4px 12px;
+}
+
+.concept-index {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-family: "Sora", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.concept-head h2 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.15rem, 2vw, 1.65rem);
+}
+
+.concept-head p {
+  max-width: 540px;
+  margin: 0;
+  color: var(--page-muted);
+  font-size: 0.86rem;
+  text-align: right;
+}
+
+.frame {
+  height: 820px;
+  padding: 10px;
+  overflow: hidden;
+  background: var(--frame-bg);
+  border: 1px solid var(--frame-line);
+  border-radius: 18px;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr) 276px;
+  height: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.server-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 10px;
+  background: var(--server-bg);
+  border-right: 1px solid var(--line);
+}
+
+.server-icon,
+.icon-button,
+.avatar,
+.brand-mark,
+.channel-icon,
+.post-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.server-icon {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  color: var(--muted);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+.server-icon.active {
+  color: var(--accent-ink);
+  background: linear-gradient(145deg, var(--accent), var(--accent-two));
+  border-color: transparent;
+  border-radius: 13px;
+  box-shadow: 0 8px 24px var(--accent-shadow);
+}
+
+.server-icon.active::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  width: 3px;
+  height: 24px;
+  background: var(--accent);
+  border-radius: 0 6px 6px 0;
+}
+
+.server-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.server-icon.spacer { margin-top: auto; }
+
+.sidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--line);
+}
+
+.community {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 68px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  color: var(--accent-ink);
+  background: linear-gradient(145deg, var(--accent), var(--accent-two));
+  border-radius: 11px;
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+}
+
+.community-copy { min-width: 0; }
+
+.community-copy strong,
+.community-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.community-copy strong { font-size: 0.86rem; }
+.community-copy small { margin-top: 2px; color: var(--muted); font-size: 0.67rem; }
+
+.channel-list {
+  flex: 1;
+  padding: 18px 10px;
+  overflow: hidden;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 8px 7px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.channel {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  margin-bottom: 3px;
+  padding: 7px 9px;
+  color: var(--muted-strong);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.channel.active {
+  color: var(--ink);
+  background: var(--selected);
+}
+
+.channel-icon { width: 18px; height: 18px; color: var(--muted); }
+.channel .count { margin-left: auto; color: var(--accent); font-size: 0.67rem; }
+.channel-group + .channel-group { margin-top: 20px; }
+
+.user-bar {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 10px 11px;
+  background: var(--user-bg);
+  border-top: 1px solid var(--line);
+}
+
+.avatar {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  color: #fff;
+  background: linear-gradient(145deg, #5a6685, #31384e);
+  border-radius: 50%;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.avatar.online::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 8px;
+  height: 8px;
+  background: var(--online);
+  border: 2px solid var(--sidebar-bg);
+  border-radius: 50%;
+}
+
+.user-name { min-width: 0; }
+.user-name b, .user-name small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-name b { font-size: 0.72rem; }
+.user-name small { color: var(--muted); font-size: 0.62rem; }
+.user-tools { display: flex; gap: 2px; }
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--muted-strong);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+
+.icon-button:hover { color: var(--ink); background: var(--selected); }
+.icon-button svg, .server-icon svg, .channel-icon svg, .post-icon svg { width: 17px; height: 17px; }
+
+.main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background:
+    radial-gradient(700px 420px at 100% 0%, var(--main-glow), transparent 68%),
+    var(--main-bg);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 11px 20px;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+}
+
+.topbar-title { min-width: 0; }
+.topbar-title b { display: block; font-family: "Sora", sans-serif; font-size: 0.88rem; }
+.topbar-title small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.67rem; }
+.topbar-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+
+.place-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 106px;
+  padding: 16px 22px 0;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+}
+
+.place-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  align-self: start;
+}
+
+.place-identity .brand-mark { width: 42px; height: 42px; }
+.place-identity h3 { margin: 0; font-family: "Sora", sans-serif; font-size: 0.94rem; }
+.place-identity p { margin: 3px 0 0; color: var(--muted); font-size: 0.65rem; }
+.place-actions { display: flex; align-self: start; gap: 6px; }
+
+.place-tabs {
+  display: flex;
+  align-self: end;
+  gap: 24px;
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+
+.place-tab {
+  position: relative;
+  padding: 9px 1px 12px;
+  color: var(--muted-strong);
+  font-size: 0.69rem;
+  font-weight: 700;
+}
+
+.place-tab.active { color: var(--ink); }
+.place-tab.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(210px, 22vw);
+  height: 34px;
+  padding: 0 11px;
+  color: var(--muted);
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 0.69rem;
+}
+
+.search svg { width: 15px; }
+
+.content {
+  flex: 1;
+  min-height: 0;
+  padding: 22px;
+  overflow: hidden;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.content h3 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+.content-intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.soft-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 35px;
+  padding: 7px 12px;
+  color: var(--ink);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 0.71rem;
+  font-weight: 700;
+}
+
+.soft-button.primary {
+  color: var(--accent-ink);
+  background: linear-gradient(135deg, var(--accent), var(--accent-two));
+  border-color: transparent;
+  box-shadow: 0 8px 24px var(--accent-shadow);
+}
+
+.soft-button svg { width: 15px; height: 15px; }
+
+.feed-list { display: grid; gap: 8px; }
+
+.forum-directory {
+  margin-bottom: 16px;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+.forum-directory-head,
+.forum-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px minmax(110px, .55fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.forum-directory-head {
+  min-height: 38px;
+  padding: 8px 14px;
+  color: var(--muted);
+  background: var(--raised);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.59rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.forum-board {
+  min-height: 58px;
+  padding: 9px 14px;
+}
+
+.forum-board + .forum-board { border-top: 1px solid var(--line); }
+.forum-board-main { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.forum-board .post-icon { width: 34px; height: 34px; border-radius: 9px; }
+.forum-board-copy { min-width: 0; }
+.forum-board-copy b, .forum-board-copy small, .forum-latest b, .forum-latest small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forum-board-copy b, .forum-latest b { font-size: 0.69rem; }
+.forum-board-copy small, .forum-latest small { margin-top: 3px; color: var(--muted); font-size: 0.58rem; }
+.forum-count { color: var(--muted); font-size: 0.65rem; text-align: center; }
+
+.feed-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  min-height: 76px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+.feed-item:hover { background: var(--card-hover); border-color: var(--line-strong); }
+
+.post-icon {
+  width: 42px;
+  height: 42px;
+  color: var(--accent);
+  background: var(--selected);
+  border-radius: 11px;
+}
+
+.feed-copy { min-width: 0; }
+.feed-copy b { display: block; overflow: hidden; font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
+.feed-copy p { margin: 5px 0 0; color: var(--muted); font-size: 0.69rem; }
+
+.pill-row { display: flex; gap: 5px; margin-top: 7px; }
+.pill { padding: 3px 7px; color: var(--muted-strong); background: var(--pill); border-radius: 999px; font-size: 0.58rem; font-weight: 700; }
+.feed-stats { display: flex; gap: 15px; padding-left: 8px; }
+.feed-stats span { color: var(--muted); font-size: 0.62rem; text-align: center; }
+.feed-stats b { display: block; margin-bottom: 2px; color: var(--ink); font-family: "Sora", sans-serif; font-size: 0.78rem; }
+
+.right-rail {
+  min-width: 0;
+  padding: 18px 14px;
+  overflow: hidden;
+  background: var(--rail-bg);
+  border-left: 1px solid var(--line);
+}
+
+.right-rail h4 {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rail-section + .rail-section { margin-top: 24px; }
+
+.member {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 43px;
+}
+
+.member .avatar { width: 32px; height: 32px; }
+.member-copy { min-width: 0; }
+.member-copy b, .member-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-copy b { font-size: 0.7rem; }
+.member-copy small { margin-top: 2px; color: var(--muted); font-size: 0.59rem; }
+.status-dot { width: 7px; height: 7px; background: var(--online); border-radius: 50%; }
+
+.now-card {
+  padding: 13px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.now-card strong { display: block; font-size: 0.75rem; }
+.now-card p { margin: 6px 0 10px; color: var(--muted); font-size: 0.63rem; line-height: 1.45; }
+.mini-avatars { display: flex; }
+.mini-avatars .avatar { width: 25px; height: 25px; margin-right: -6px; border: 2px solid var(--raised); font-size: 0.5rem; }
+
+/* Chat rendering */
+.chat-content { display: flex; flex-direction: column; padding: 0; }
+.messages { flex: 1; padding: 22px 24px 10px; overflow: hidden; }
+.message { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 11px; padding: 9px 0; }
+.message .avatar { width: 38px; height: 38px; }
+.message-head { display: flex; align-items: baseline; gap: 8px; }
+.message-head b { font-size: 0.76rem; }
+.message-head time { color: var(--muted); font-size: 0.58rem; }
+.message p { margin: 4px 0 0; color: var(--muted-strong); font-size: 0.72rem; line-height: 1.55; }
+
+.code-snippet {
+  max-width: 620px;
+  margin-top: 9px;
+  padding: 12px 14px;
+  color: var(--code-ink);
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 7px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.66rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 20px 18px;
+  padding: 8px;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.composer span { color: var(--muted); font-size: 0.7rem; }
+
+/* Voice rendering */
+.voice-layout { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+.voice-stage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+}
+
+.speaker {
+  position: relative;
+  display: flex;
+  align-items: end;
+  min-width: 0;
+  padding: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 70% 18%, var(--speaker-glow), transparent 48%),
+    var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.speaker.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.speaker .avatar { position: absolute; inset: 50% auto auto 50%; width: 64px; height: 64px; transform: translate(-50%, -50%); font-size: 0.94rem; }
+.speaker-name { display: flex; align-items: center; gap: 7px; font-size: 0.68rem; font-weight: 700; }
+.speaker-name svg { width: 13px; color: var(--online); }
+.voice-controls { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.voice-controls .icon-button { width: 38px; height: 38px; background: var(--raised); border: 1px solid var(--line); border-radius: 50%; }
+.voice-controls .hangup { color: #fff; background: #d75562; border-color: transparent; }
+
+/* Themes */
+.orbit {
+  --accent: #89d8c2;
+  --accent-two: #77a9ea;
+  --accent-ink: #10201e;
+  --accent-shadow: rgba(102, 186, 178, 0.17);
+  --ink: #edf3f4;
+  --muted: #7f8c99;
+  --muted-strong: #aebac2;
+  --online: #68d2a3;
+  --frame-bg: linear-gradient(145deg, #15232d, #101520 52%, #172230);
+  --frame-line: #314555;
+  --surface: #101720;
+  --server-bg: #0b1118;
+  --sidebar-bg: rgba(19, 28, 38, 0.96);
+  --user-bg: #0f171f;
+  --main-bg: #131c25;
+  --main-glow: rgba(83, 147, 167, 0.11);
+  --topbar-bg: rgba(16, 24, 33, 0.86);
+  --rail-bg: #111922;
+  --raised: #1b2631;
+  --card: rgba(27, 39, 50, 0.72);
+  --card-hover: #202e3a;
+  --input: #0e151d;
+  --selected: rgba(117, 184, 190, 0.13);
+  --pill: #202d36;
+  --line: rgba(166, 197, 207, 0.09);
+  --line-strong: rgba(137, 216, 194, 0.3);
+  --speaker-glow: rgba(119, 169, 234, 0.12);
+  --code-bg: #0b1219;
+  --code-ink: #a9d9cc;
+}
+
+.bloom {
+  --accent: #f3ad9d;
+  --accent-two: #bea9ed;
+  --accent-ink: #281b25;
+  --accent-shadow: rgba(222, 145, 165, 0.17);
+  --ink: #f5eef2;
+  --muted: #968791;
+  --muted-strong: #c8bac3;
+  --online: #77d0a4;
+  --frame-bg: linear-gradient(145deg, #281d2a, #171622 54%, #20213a);
+  --frame-line: #4c384d;
+  --surface: #1a171f;
+  --server-bg: #110f16;
+  --sidebar-bg: rgba(34, 27, 37, 0.96);
+  --user-bg: #1b161f;
+  --main-bg: #211b26;
+  --main-glow: rgba(166, 126, 185, 0.13);
+  --topbar-bg: rgba(31, 25, 36, 0.86);
+  --rail-bg: #1c171f;
+  --raised: #302632;
+  --card: rgba(48, 38, 50, 0.74);
+  --card-hover: #392c3a;
+  --input: #18131c;
+  --selected: rgba(238, 169, 159, 0.12);
+  --pill: #382c38;
+  --line: rgba(229, 198, 218, 0.09);
+  --line-strong: rgba(243, 173, 157, 0.3);
+  --speaker-glow: rgba(190, 169, 237, 0.13);
+  --code-bg: #161119;
+  --code-ink: #e7c4d3;
+}
+
+.current {
+  --accent: #9ec7ff;
+  --accent-two: #b8e385;
+  --accent-ink: #142018;
+  --accent-shadow: rgba(127, 181, 220, 0.17);
+  --ink: #edf1f8;
+  --muted: #818b9d;
+  --muted-strong: #b5becc;
+  --online: #a8dc81;
+  --frame-bg: linear-gradient(145deg, #192438, #111722 55%, #142a2b);
+  --frame-line: #34455e;
+  --surface: #121823;
+  --server-bg: #0b1018;
+  --sidebar-bg: rgba(23, 31, 44, 0.97);
+  --user-bg: #111822;
+  --main-bg: #171f2b;
+  --main-glow: rgba(92, 139, 194, 0.13);
+  --topbar-bg: rgba(20, 28, 40, 0.86);
+  --rail-bg: #141b26;
+  --raised: #202a38;
+  --card: rgba(30, 40, 54, 0.76);
+  --card-hover: #253143;
+  --input: #101620;
+  --selected: rgba(133, 182, 235, 0.13);
+  --pill: #26313e;
+  --line: rgba(183, 203, 232, 0.09);
+  --line-strong: rgba(158, 199, 255, 0.3);
+  --speaker-glow: rgba(157, 203, 255, 0.12);
+  --code-bg: #0d141d;
+  --code-ink: #b6d2f6;
+}
+
+.avatar.coral { background: linear-gradient(145deg, #d87c78, #8d4f69); }
+.avatar.blue { background: linear-gradient(145deg, #699dd0, #4c5c97); }
+.avatar.green { background: linear-gradient(145deg, #69b894, #3d6c74); }
+.avatar.gold { background: linear-gradient(145deg, #c89b5e, #84645e); }
+
+@keyframes reveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1120px) {
+  .app { grid-template-columns: 220px minmax(0, 1fr); }
+  .right-rail { display: none; }
+}
+
+@media (max-width: 760px) {
+  .gallery { width: min(100% - 20px, 1580px); padding-top: 20px; }
+  .gallery-head, .concept-head { align-items: flex-start; flex-direction: column; }
+  .jump-nav { justify-content: flex-start; }
+  .concept-head p { text-align: left; }
+  .frame { height: 690px; padding: 6px; border-radius: 13px; }
+  .app { display: block; }
+  .sidebar { display: none; }
+  .main { height: 100%; }
+  .place-toolbar { min-height: 98px; padding: 12px 12px 0; }
+  .place-actions .soft-button { display: none; }
+  .place-tabs { gap: 17px; overflow: hidden; }
+  .topbar { min-height: 58px; padding: 9px 12px; }
+  .topbar-title small, .search, .topbar-actions .icon-button:nth-child(-n+2) { display: none; }
+  .content { padding: 16px 12px; }
+  .content-intro { align-items: flex-start; }
+  .content h3 { font-size: 1.15rem; }
+  .feed-item { grid-template-columns: 38px minmax(0, 1fr); padding: 10px; }
+  .post-icon { width: 38px; height: 38px; }
+  .feed-stats { display: none; }
+  .forum-directory-head, .forum-board { grid-template-columns: minmax(0, 1fr) 48px; }
+  .forum-directory-head span:last-child, .forum-latest { display: none; }
+  .pill-row .pill:nth-child(n+3) { display: none; }
+  .messages { padding: 15px 13px 8px; }
+  .message:nth-child(n+6) { display: none; }
+  .composer { margin: 8px 10px 12px; }
+  .voice-stage { grid-template-columns: 1fr; grid-template-rows: repeat(3, 1fr); }
+  .speaker:nth-child(4) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .concept { opacity: 1; transform: none; animation: none; }
+}
+</style>
+</head>
+<body>
+<main class="gallery">
+  <header class="gallery-head">
+    <div>
+      <h1>Soft dark-mode directions</h1>
+      <p>Three views of Displace with calm gradients, layered charcoal surfaces, and social navigation tuned for long forum sessions.</p>
+    </div>
+    <nav class="jump-nav" aria-label="Mockup concepts">
+      <a href="#orbit">Quiet orbit</a>
+      <a href="#bloom">Midnight bloom</a>
+      <a href="#current">Soft current</a>
+    </nav>
+  </header>
+
+  <section class="concept orbit" id="orbit">
+    <header class="concept-head">
+      <div><span class="concept-index">01 · Forum home</span><h2>Quiet orbit</h2></div>
+      <p>Blue-charcoal structure, misty mint accents, and low-contrast surfaces for reading-heavy communities.</p>
+    </header>
+    <div class="frame">
+      <div class="app">
+        <aside class="sidebar">
+          <header class="community"><span class="brand-mark">D</span><div class="community-copy"><strong>Displace</strong><small>Forum-first communities</small></div></header>
+          <div class="channel-list">
+            <div class="channel-group"><div class="section-label"><span>Browse</span></div><div class="channel"><span class="channel-icon"><i data-lucide="house"></i></span>Home</div><div class="channel"><span class="channel-icon"><i data-lucide="compass"></i></span>Discover</div><div class="channel"><span class="channel-icon"><i data-lucide="bookmark"></i></span>Saved</div></div>
+            <div class="channel-group"><div class="section-label"><span>Your places</span><i data-lucide="plus"></i></div><div class="channel active"><span class="channel-icon"><i data-lucide="shapes"></i></span>Studio Commons <span class="count">8</span></div><div class="channel"><span class="channel-icon"><i data-lucide="moon-star"></i></span>Night Shift</div><div class="channel"><span class="channel-icon"><i data-lucide="terminal-square"></i></span>Core Contributors</div></div>
+          </div>
+          <footer class="user-bar"><span class="avatar online coral">PL</span><div class="user-name"><b>Parker</b><small>@parker</small></div><div class="user-tools"><button class="icon-button" title="Settings"><i data-lucide="settings"></i></button></div></footer>
+        </aside>
+        <section class="main">
+          <header class="place-toolbar"><div class="place-identity"><span class="brand-mark">SC</span><div><h3>Studio Commons</h3><p>1,284 members · Public community</p></div></div><div class="place-actions"><button class="soft-button"><i data-lucide="search"></i>Search</button><button class="icon-button" title="Notifications"><i data-lucide="bell"></i></button><button class="icon-button" title="Place settings"><i data-lucide="settings"></i></button></div><nav class="place-tabs"><span class="place-tab active">Forums</span><span class="place-tab">Live</span><span class="place-tab">Members</span><span class="place-tab">About</span></nav></header>
+          <div class="content">
+            <div class="content-intro"><div><p class="eyebrow">Community index</p><h3>Forum boards</h3></div><button class="soft-button primary"><i data-lucide="square-pen"></i>New topic</button></div>
+            <section class="forum-directory"><header class="forum-directory-head"><span>Board</span><span>Topics</span><span>Latest activity</span></header><article class="forum-board"><div class="forum-board-main"><span class="post-icon"><i data-lucide="palette"></i></span><div class="forum-board-copy"><b>Showcase</b><small>Share work, progress, and experiments</small></div></div><span class="forum-count">128</span><div class="forum-latest"><b>Material studies</b><small>12 minutes ago</small></div></article><article class="forum-board"><div class="forum-board-main"><span class="post-icon"><i data-lucide="code-2"></i></span><div class="forum-board-copy"><b>Build logs</b><small>Document the process, not just the result</small></div></div><span class="forum-count">84</span><div class="forum-latest"><b>Portable mod queues</b><small>34 minutes ago</small></div></article></section>
+            <div class="content-intro"><div><p class="eyebrow">Latest · Popular · Following</p><h3>Discussions</h3></div></div>
+            <div class="feed-list">
+              <article class="feed-item"><span class="post-icon"><i data-lucide="sparkles"></i></span><div class="feed-copy"><b>What are you building this week?</b><p>Mina replied 8 minutes ago in Studio Commons</p><div class="pill-row"><span class="pill">Showcase</span><span class="pill">Weekly thread</span></div></div><div class="feed-stats"><span><b>18</b>replies</span><span><b>94</b>views</span></div></article>
+              <article class="feed-item"><span class="post-icon"><i data-lucide="boxes"></i></span><div class="feed-copy"><b>Material studies: translucent UI surfaces</b><p>Alex posted a new prototype 21 minutes ago</p><div class="pill-row"><span class="pill">Design</span><span class="pill">Feedback wanted</span></div></div><div class="feed-stats"><span><b>12</b>replies</span><span><b>61</b>views</span></div></article>
+              <article class="feed-item"><span class="post-icon"><i data-lucide="git-pull-request-arrow"></i></span><div class="feed-copy"><b>RFC: portable moderation queues</b><p>Jun updated the proposal in Core Contributors</p><div class="pill-row"><span class="pill">RFC</span><span class="pill">Backend</span></div></div><div class="feed-stats"><span><b>27</b>replies</span><span><b>142</b>views</span></div></article>
+            </div>
+          </div>
+        </section>
+        <aside class="right-rail">
+          <section class="rail-section"><h4>Happening now</h4><div class="now-card"><strong>Open studio</strong><p>Design critique and quiet co-working.</p><div class="mini-avatars"><span class="avatar coral">MI</span><span class="avatar blue">AL</span><span class="avatar green">JU</span><span class="avatar gold">+4</span></div></div></section>
+          <section class="rail-section"><h4>Online · 5</h4><div class="member"><span class="avatar online coral">MI</span><div class="member-copy"><b>Mina</b><small>Reviewing a prototype</small></div><span class="status-dot"></span></div><div class="member"><span class="avatar online blue">AL</span><div class="member-copy"><b>Alex</b><small>In Open studio</small></div><span class="status-dot"></span></div><div class="member"><span class="avatar online green">JU</span><div class="member-copy"><b>Jun</b><small>Writing</small></div><span class="status-dot"></span></div><div class="member"><span class="avatar online gold">SA</span><div class="member-copy"><b>Sam</b><small>Listening to music</small></div><span class="status-dot"></span></div></section>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept bloom" id="bloom">
+    <header class="concept-head">
+      <div><span class="concept-index">02 · Live chat</span><h2>Midnight bloom</h2></div>
+      <p>Plum-black layers, warm coral actions, and softer social detail for late-night conversation.</p>
+    </header>
+    <div class="frame">
+      <div class="app">
+        <aside class="sidebar">
+          <header class="community"><span class="brand-mark">D</span><div class="community-copy"><strong>Displace</strong><small>Forum-first communities</small></div></header>
+          <div class="channel-list">
+            <div class="channel-group"><div class="section-label"><span>Browse</span></div><div class="channel"><span class="channel-icon"><i data-lucide="house"></i></span>Home</div><div class="channel"><span class="channel-icon"><i data-lucide="compass"></i></span>Discover</div><div class="channel"><span class="channel-icon"><i data-lucide="bookmark"></i></span>Saved</div></div>
+            <div class="channel-group"><div class="section-label"><span>Your places</span><i data-lucide="plus"></i></div><div class="channel"><span class="channel-icon"><i data-lucide="shapes"></i></span>Studio Commons</div><div class="channel active"><span class="channel-icon"><i data-lucide="moon-star"></i></span>Night Shift <span class="count">12</span></div><div class="channel"><span class="channel-icon"><i data-lucide="terminal-square"></i></span>Core Contributors</div></div>
+          </div>
+          <footer class="user-bar"><span class="avatar online blue">PL</span><div class="user-name"><b>Parker</b><small>@parker</small></div><div class="user-tools"><button class="icon-button" title="Settings"><i data-lucide="settings"></i></button></div></footer>
+        </aside>
+        <section class="main">
+          <header class="place-toolbar"><div class="place-identity"><span class="brand-mark">NS</span><div><h3>Night Shift</h3><p>1,284 members · Public community</p></div></div><div class="place-actions"><button class="soft-button"><i data-lucide="search"></i>Search</button><button class="icon-button" title="Notifications"><i data-lucide="bell"></i></button><button class="icon-button" title="Place settings"><i data-lucide="settings"></i></button></div><nav class="place-tabs"><span class="place-tab">Forums</span><span class="place-tab active">Live</span><span class="place-tab">Members</span><span class="place-tab">About</span></nav></header>
+          <header class="topbar"><span class="post-icon"><i data-lucide="messages-square"></i></span><div class="topbar-title"><b>Dev lounge</b><small>Live chat · Code, architecture, and things learned the hard way</small></div><div class="topbar-actions"><button class="icon-button" title="Pinned messages"><i data-lucide="pin"></i></button><div class="search"><i data-lucide="search"></i><span>Search this room</span></div><button class="icon-button" title="Members"><i data-lucide="users"></i></button></div></header>
+          <div class="content chat-content">
+            <div class="messages">
+              <div class="message"><span class="avatar coral">MI</span><div><div class="message-head"><b>Mina</b><time>Today at 8:42 PM</time></div><p>I pushed the reconnect state pass. The room list no longer flashes empty when the socket resumes.</p></div></div>
+              <div class="message"><span class="avatar green">JU</span><div><div class="message-head"><b>Jun</b><time>Today at 8:44 PM</time></div><p>Nice. Are you preserving the last sequence number across the reconnect?</p></div></div>
+              <div class="message"><span class="avatar coral">MI</span><div><div class="message-head"><b>Mina</b><time>Today at 8:45 PM</time></div><p>Yep, and reconciliation stays in the transport adapter now.</p><div class="code-snippet">socket.on("resume", ({ cursor }) =&gt; {
+  syncChannelHistory(cursor);
+});</div></div></div>
+              <div class="message"><span class="avatar gold">SA</span><div><div class="message-head"><b>Sam</b><time>Today at 8:49 PM</time></div><p>That boundary feels much cleaner. I can add the duplicate acknowledgement case to the browser suite.</p></div></div>
+              <div class="message"><span class="avatar blue">PL</span><div><div class="message-head"><b>Parker</b><time>Today at 8:53 PM</time></div><p>Perfect. I’ll review both after the voice check wraps up.</p></div></div>
+            </div>
+            <div class="composer"><button class="icon-button" title="Add attachment"><i data-lucide="plus-circle"></i></button><span>Message Dev lounge</span><div class="user-tools"><button class="icon-button" title="Add image"><i data-lucide="file-image"></i></button><button class="icon-button" title="Add reaction"><i data-lucide="smile"></i></button></div></div>
+          </div>
+        </section>
+        <aside class="right-rail">
+          <section class="rail-section"><h4>Room members</h4><div class="member"><span class="avatar online coral">MI</span><div class="member-copy"><b>Mina</b><small>Frontend engineer</small></div><span class="status-dot"></span></div><div class="member"><span class="avatar online green">JU</span><div class="member-copy"><b>Jun</b><small>Platform engineer</small></div><span class="status-dot"></span></div><div class="member"><span class="avatar online gold">SA</span><div class="member-copy"><b>Sam</b><small>Test engineer</small></div><span class="status-dot"></span></div></section>
+          <section class="rail-section"><h4>Pinned</h4><div class="now-card"><strong>Realtime test matrix</strong><p>Reconnect, revoked membership, duplicate ACK, and late events.</p><button class="soft-button">Open topic</button></div></section>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="concept current" id="current">
+    <header class="concept-head">
+      <div><span class="concept-index">03 · Voice room</span><h2>Soft current</h2></div>
+      <p>Ink-blue chrome, cool sky highlights, and restrained lime presence cues for focused collaboration.</p>
+    </header>
+    <div class="frame">
+      <div class="app">
+        <aside class="sidebar">
+          <header class="community"><span class="brand-mark">D</span><div class="community-copy"><strong>Displace</strong><small>Forum-first communities</small></div></header>
+          <div class="channel-list">
+            <div class="channel-group"><div class="section-label"><span>Browse</span></div><div class="channel"><span class="channel-icon"><i data-lucide="house"></i></span>Home</div><div class="channel"><span class="channel-icon"><i data-lucide="compass"></i></span>Discover</div><div class="channel"><span class="channel-icon"><i data-lucide="bookmark"></i></span>Saved</div></div>
+            <div class="channel-group"><div class="section-label"><span>Your places</span><i data-lucide="plus"></i></div><div class="channel"><span class="channel-icon"><i data-lucide="shapes"></i></span>Studio Commons</div><div class="channel"><span class="channel-icon"><i data-lucide="moon-star"></i></span>Night Shift</div><div class="channel active"><span class="channel-icon"><i data-lucide="terminal-square"></i></span>Core Contributors <span class="count">4</span></div></div>
+          </div>
+          <footer class="user-bar"><span class="avatar online blue">PL</span><div class="user-name"><b>Parker</b><small>@parker</small></div><div class="user-tools"><button class="icon-button" title="Settings"><i data-lucide="settings"></i></button></div></footer>
+        </aside>
+        <section class="main">
+          <header class="place-toolbar"><div class="place-identity"><span class="brand-mark">CC</span><div><h3>Core Contributors</h3><p>42 members · Private community</p></div></div><div class="place-actions"><button class="soft-button"><i data-lucide="search"></i>Search</button><button class="icon-button" title="Notifications"><i data-lucide="bell"></i></button><button class="icon-button" title="Place settings"><i data-lucide="settings"></i></button></div><nav class="place-tabs"><span class="place-tab">Forums</span><span class="place-tab active">Live</span><span class="place-tab">Members</span><span class="place-tab">About</span></nav></header>
+          <header class="topbar"><span class="post-icon"><i data-lucide="audio-lines"></i></span><div class="topbar-title"><b>Release room</b><small>Voice room · 4 connected</small></div><div class="topbar-actions"><button class="soft-button"><i data-lucide="screen-share"></i>Share screen</button><button class="icon-button" title="Room settings"><i data-lucide="sliders-horizontal"></i></button></div></header>
+          <div class="content voice-layout">
+            <div class="content-intro"><div><p class="eyebrow">Voice connected · 32 ms</p><h3>Release 0.8 check-in</h3></div><button class="soft-button primary"><i data-lucide="user-plus"></i>Invite</button></div>
+            <div class="voice-stage">
+              <div class="speaker active"><span class="avatar blue">PL</span><span class="speaker-name"><i data-lucide="mic"></i>Parker</span></div>
+              <div class="speaker"><span class="avatar coral">MI</span><span class="speaker-name"><i data-lucide="mic"></i>Mina</span></div>
+              <div class="speaker"><span class="avatar green">JU</span><span class="speaker-name"><i data-lucide="mic"></i>Jun</span></div>
+              <div class="speaker"><span class="avatar gold">SA</span><span class="speaker-name"><i data-lucide="mic-off"></i>Sam</span></div>
+            </div>
+            <div class="voice-controls"><button class="icon-button" title="Mute microphone"><i data-lucide="mic"></i></button><button class="icon-button" title="Deafen"><i data-lucide="headphones"></i></button><button class="icon-button" title="Toggle camera"><i data-lucide="video"></i></button><button class="icon-button" title="More options"><i data-lucide="ellipsis"></i></button><button class="icon-button hangup" title="Leave room"><i data-lucide="phone-off"></i></button></div>
+          </div>
+        </section>
+        <aside class="right-rail">
+          <section class="rail-section"><h4>Release checklist</h4><div class="now-card"><strong>12 of 15 complete</strong><p>Production build, API compatibility, and smoke tests are green.</p><button class="soft-button">View board</button></div></section>
+          <section class="rail-section"><h4>Room chat</h4><div class="message"><span class="avatar green">JU</span><div><div class="message-head"><b>Jun</b><time>9:14 PM</time></div><p>API checks are all green.</p></div></div><div class="message"><span class="avatar gold">SA</span><div><div class="message-head"><b>Sam</b><time>9:16 PM</time></div><p>Running the final mobile smoke now.</p></div></div></section>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+<script>lucide.createIcons({ attrs: { "stroke-width": 1.8 } });</script>
+</body>
+</html>
