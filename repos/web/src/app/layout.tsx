@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
+import { Manrope, Sora } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/features/auth/session-provider";
 import "./globals.css";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-sora",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +30,7 @@ export default function RootLayout({
   modal: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html className={`${manrope.variable} ${sora.variable}`} lang="en">
       <body>
         <a className="skip-link" href="#main-content">Skip to content</a>
         <ToastProvider>
