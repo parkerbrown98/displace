@@ -1,5 +1,6 @@
-import { ArrowUpRight, Clock3, Compass, Hash, LayoutList, Lock, LockKeyhole, MessagesSquare, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ArrowUpRight, Clock3, Compass, Eye, Hash, Info, LayoutList, Lock, LockKeyhole, MessagesSquare, MessageSquareText, Pin, SlidersHorizontal, UsersRound } from "lucide-react";
 import Link from "next/link";
+import { ContextRail } from "@/components/app-shell/context-rail";
 import { Avatar } from "@/components/ui/avatar";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { Select } from "@/components/ui/select";
@@ -137,22 +138,27 @@ export function ForumView({
   return (
     <main className="public-main place-workspace-page forum-subroute" id="main-content">
       <PlaceForumHeader active="forums" place={place} />
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
-      </nav>
-      <header className="public-page-heading compact-heading">
-        <p className="eyebrow">Forum</p>
-        <h1>{forum.name}</h1>
-        <p>{forum.description}</p>
-      </header>
-      <TopicDirectory
-        feed={feed}
-        nextCursor={topics.nextCursor}
-        path={routes.forum(place.slug, forum.id)}
-        placeId={place.id}
-        placeSlug={place.slug}
-        topics={topics.items}
-      />
+      <div className="route-context-layout">
+        <div className="route-context-content">
+          <nav className="breadcrumbs" aria-label="Breadcrumb">
+            <Link href={routes.place(place.slug)}>Forums</Link><span aria-hidden="true">/</span><span>{forum.name}</span>
+          </nav>
+          <header className="public-page-heading compact-heading">
+            <p className="eyebrow">Forum</p>
+            <h1>{forum.name}</h1>
+            <p>{forum.description}</p>
+          </header>
+          <TopicDirectory
+            feed={feed}
+            nextCursor={topics.nextCursor}
+            path={routes.forum(place.slug, forum.id)}
+            placeId={place.id}
+            placeSlug={place.slug}
+            topics={topics.items}
+          />
+        </div>
+        <ForumPortalRail forum={forum} place={place} topics={topics.items} />
+      </div>
     </main>
   );
 }
@@ -173,12 +179,17 @@ export function TopicView({
   return (
     <main className="public-main place-workspace-page topic-page forum-subroute" id="main-content">
       <PlaceForumHeader active="forums" place={place} />
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href={routes.place(place.slug)}>Forums</Link>
-        {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}
-      </nav>
-      <TopicDiscussion initialPosts={posts} initialTopic={topic} place={place} />
-      <CursorPagination nextCursor={posts.nextCursor} parameters={cursor ? { from: cursor } : undefined} path={routes.topic(place.slug, topic.id)} />
+      <div className="route-context-layout">
+        <div className="route-context-content">
+          <nav className="breadcrumbs" aria-label="Breadcrumb">
+            <Link href={routes.place(place.slug)}>Forums</Link>
+            {forum ? <><span aria-hidden="true">/</span><Link href={routes.forum(place.slug, forum.id)}>{forum.name}</Link></> : null}
+          </nav>
+          <TopicDiscussion initialPosts={posts} initialTopic={topic} place={place} />
+          <CursorPagination nextCursor={posts.nextCursor} parameters={cursor ? { from: cursor } : undefined} path={routes.topic(place.slug, topic.id)} />
+        </div>
+        <TopicContextRail forum={forum} place={place} topic={topic} />
+      </div>
     </main>
   );
 }
@@ -219,12 +230,17 @@ export function findForum(navigation: ForumNavigationContract, forumId: string):
   return navigation.groups.flatMap((group) => group.forums).find((forum) => forum.id === forumId);
 }
 
-function ForumPortalRail({ place, topics }: { place: PlaceContract; topics: TopicContract[] }) {
+function ForumPortalRail({ forum, place, topics }: { forum?: ForumContract; place: PlaceContract; topics: TopicContract[] }) {
   const recentTopics = [...topics]
     .sort((left, right) => Date.parse(right.latestPostAt) - Date.parse(left.latestPostAt))
     .slice(0, 6);
   return (
-    <aside className="forum-portal-rail" aria-label="Community activity">
+    <ContextRail ariaLabel="Community activity" className="forum-portal-rail" title="Community activity">
+      {forum ? <section className="portal-panel portal-context-summary">
+        <header><Info size={17} aria-hidden="true" /><h2>About this forum</h2></header>
+        <p>{forum.description}</p>
+        <Link className="portal-panel-link" href={routes.place(place.slug)}>All forum boards <span aria-hidden="true">→</span></Link>
+      </section> : null}
       <section className="portal-panel">
         <header><Clock3 size={17} aria-hidden="true" /><h2>Recent activity</h2></header>
         {recentTopics.length ? <div className="portal-activity-list">{recentTopics.map((topic) => (
@@ -236,8 +252,29 @@ function ForumPortalRail({ place, topics }: { place: PlaceContract; topics: Topi
       </section>
       <ForumMemberPreview placeId={place.id} placeName={place.name} placeSlug={place.slug} />
       <ForumLiveSpaces placeId={place.id} placeSlug={place.slug} />
-    </aside>
+    </ContextRail>
   );
+}
+
+function TopicContextRail({ forum, place, topic }: { forum?: ForumContract; place: PlaceContract; topic: TopicContract }) {
+  return <ContextRail ariaLabel="Discussion context" className="forum-portal-rail route-context-rail" title="Discussion context">
+    <section className="portal-panel portal-topic-context">
+      <header><Info size={17} aria-hidden="true" /><h2>Discussion</h2></header>
+      <dl>
+        <div><dt>Replies</dt><dd>{topic.replyCount}</dd></div>
+        <div><dt>Views</dt><dd>{formatCount(topic.viewCount)}</dd></div>
+        <div><dt>Status</dt><dd>{capitalize(topic.status)}</dd></div>
+      </dl>
+      {topic.tags.length ? <div className="portal-topic-tags">{topic.tags.map((tag) => <span key={tag.id}>#{tag.name}</span>)}</div> : null}
+    </section>
+    <section className="portal-panel portal-context-summary">
+      <header><Eye size={17} aria-hidden="true" /><h2>Where you are</h2></header>
+      <p>{forum ? `${forum.name} in ${place.name}` : place.name}</p>
+      <Link className="portal-panel-link" href={forum ? routes.forum(place.slug, forum.id) : routes.place(place.slug)}>Back to {forum ? "forum" : "community"} <span aria-hidden="true">→</span></Link>
+    </section>
+    <ForumMemberPreview placeId={place.id} placeName={place.name} placeSlug={place.slug} />
+    <ForumLiveSpaces placeId={place.id} placeSlug={place.slug} />
+  </ContextRail>;
 }
 
 function ForumNavigation({ navigation, placeSlug, topics }: { navigation: ForumNavigationContract; placeSlug: string; topics: TopicContract[] }) {

@@ -4,7 +4,7 @@ import { placeContractFixture } from "@/features/places/place-fixtures";
 import { forumNavigationFixture, postPageFixture, publicIds, topicPageFixture } from "./public-fixtures";
 import type { RichTextNodeContract } from "./public-contracts";
 import { RichText } from "./rich-text";
-import { PlaceView, TopicView } from "./public-views";
+import { ForumView, PlaceView, TopicView } from "./public-views";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }) }));
 const sessionState = vi.hoisted(() => ({ authenticated: false }));
@@ -16,6 +16,15 @@ vi.mock("@/features/auth/session-provider", () => ({
 }));
 
 describe("public content rendering", () => {
+  it("renders forum context beside the topic directory", () => {
+    const forum = forumNavigationFixture.groups[0]!.forums[0]!;
+    render(<ForumView feed="latest" forum={forum} place={placeContractFixture} topics={topicPageFixture} />);
+
+    const context = screen.getByRole("complementary", { name: "Community activity" });
+    expect(within(context).getByRole("heading", { name: "About this forum" })).toBeInTheDocument();
+    expect(within(context).getByText(forum.description)).toBeInTheDocument();
+  });
+
   it("shows topic authors instead of latest activity dates", () => {
     const topic = topicPageFixture.items[0]!;
     render(<PlaceView feed="latest" navigation={forumNavigationFixture} place={placeContractFixture} topics={{ items: [topic] }} />);
@@ -87,6 +96,9 @@ describe("public content rendering", () => {
     expect(screen.getByRole("link", { name: post.author.displayName })).toHaveAttribute("href", `/members/${post.author.handle}`);
     expect(screen.getByText(`@${post.author.handle}`)).toBeInTheDocument();
     expect(screen.getByText(/Joined/)).toBeInTheDocument();
+    const context = screen.getByRole("complementary", { name: "Discussion context" });
+    expect(within(context).getByRole("heading", { name: "Discussion" })).toBeInTheDocument();
+    expect(within(context).getByText("1.2K")).toBeInTheDocument();
   });
 
   it("keeps authenticated topic controls inside the heading card", () => {

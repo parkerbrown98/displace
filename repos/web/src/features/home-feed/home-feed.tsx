@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useRef, useState } from "react";
+import { ContextRail } from "@/components/app-shell/context-rail";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/session-provider";
 import { setReaction, setTopicFollow, setTopicSave } from "@/features/forums/forum-client";
@@ -304,7 +305,7 @@ function FeedRail({ authenticated, items }: { authenticated: boolean; items: Hom
   }, new Map<string, HomeFeedItemContract["place"] & { count: number }>()).values()]
     .sort((left, right) => right.count - left.count)
     .slice(0, 5);
-  return <aside className="feed-rail" aria-label="Feed context">
+  return <ContextRail ariaLabel="Feed context" className="feed-rail" title="Feed context">
     <section>
       <header><Compass aria-hidden="true" size={17} /><h2>Active places</h2></header>
       {places.length ? <ol className="feed-place-list">{places.map((place, index) => <li key={place.id}><span>{index + 1}</span><Link href={routes.place(place.slug)}><strong>{place.name}</strong><small>{place.count} in your feed</small></Link></li>)}</ol> : <div className="feed-rail-placeholder" />}
@@ -318,7 +319,7 @@ function FeedRail({ authenticated, items }: { authenticated: boolean; items: Hom
         {!authenticated ? <Link href={`${routes.signIn}?returnTo=${encodeURIComponent(routes.home)}`}>Sign in</Link> : null}
       </div>
     </section>
-  </aside>;
+  </ContextRail>;
 }
 
 function FeedSkeleton() {

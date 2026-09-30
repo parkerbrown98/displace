@@ -46,10 +46,11 @@ export function AppShell({ activeNavigation, activePlaceSlug, children }: AppShe
     : activeNavigation;
   const brand = <Link className="brand" href={routes.home} aria-label="Displace home">
     <span className="brand-mark">D</span>
-    <span>Displace</span>
+    <span className="brand-copy"><strong>Displace</strong><small>Forum-first communities</small></span>
   </Link>;
   const navigation = (idSuffix: string) => <>
-    <nav className="primary-nav" aria-label="Primary navigation">
+    <nav className="primary-nav" aria-labelledby={`browse-heading${idSuffix}`}>
+      <h2 className="sidebar-section-label" id={`browse-heading${idSuffix}`}>Browse</h2>
       <Link className={`nav-item${currentNavigation === "home" ? " active" : ""}`} href={routes.home}>
         <HomeIcon size={18} /> Home
       </Link>
@@ -88,6 +89,7 @@ export function AppShell({ activeNavigation, activePlaceSlug, children }: AppShe
     </section>}
 
     {authenticated ? <div className="profile-row">
+      <span className="profile-avatar" aria-hidden="true">{initials(session.user?.displayName ?? session.user?.handle ?? "Member")}</span>
       <span className="profile-copy">
         <strong>{session.user?.displayName}</strong>
         <small>@{session.user?.handle}</small>
@@ -163,4 +165,8 @@ export function ShellTopbar() {
       </Link> : null}
     </header>
   );
+}
+
+function initials(value: string) {
+  return value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
